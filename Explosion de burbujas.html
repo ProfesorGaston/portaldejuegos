@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pescador de Palabras - Prof. Gastón</title>
+    <style>
+        :root {
+            --sea-bg: #00a8ff;
+            --panel: #ffffff;
+            --primary: #273c75;
+            --correct: #44bd32;
+            --wrong: #e84118;
+            --easy: #fbc531;
+            --hard: #e84118;
+        }
+
+        body {
+            background-color: var(--sea-bg);
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        #game-container {
+            background: linear-gradient(to bottom, #74b9ff, #0984e3);
+            width: 95%;
+            max-width: 900px;
+            height: 92vh;
+            border-radius: 40px;
+            border: 8px solid white;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Pantalla de Selección */
+        #menu {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(11, 23, 59, 0.9);
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-align: center;
+        }
+
+        .menu-btn {
+            padding: 20px 50px;
+            margin: 15px;
+            font-size: 1.8rem;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            font-weight: bold;
+            width: 300px;
+        }
+
+        .menu-btn:active { transform: scale(0.95); }
+        .btn-easy { background: var(--easy); color: #333; box-shadow: 0 6px 0 #d1a328; }
+        .btn-hard { background: var(--hard); color: white; box-shadow: 0 6px 0 #a32c10; }
+
+        /* Interfaz */
+        #ui {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(5px);
+            z-index: 10;
+        }
+
+        .stat {
+            background: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: var(--primary);
+            box-shadow: 0 4px 0 rgba(0,0,0,0.1);
+        }
+
+        #target-display {
+            font-size: 1.8rem;
+            color: #ffffff;
+            background: var(--primary);
+            padding: 5px 25px;
+            border-radius: 30px;
+            text-shadow: 1px 1px #000;
+        }
+
+        #ocean { flex-grow: 1; position: relative; }
+
+        .bubble {
+            position: absolute;
+            width: 135px;
+            height: 135px;
+            background: rgba(255, 255, 255, 0.5);
+            border: 3px solid rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            color: #111;
+            user-select: none;
+            box-shadow: inset -5px -5px 15px rgba(255,255,255,0.3);
+            cursor: pointer;
+            text-align: center;
+            animation: wobble 3s infinite ease-in-out;
+        }
+
+        @keyframes wobble {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(10px); }
+        }
+
+        .bubble .emoji { font-size: 42px; margin-bottom: 2px; }
+        .bubble .word { font-size: 17px; color: var(--primary); text-transform: uppercase; padding: 0 5px; }
+
+        #overlay {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.95);
+            z-index: 100;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #overlay h2 { font-size: 3rem; color: var(--primary); margin: 10px; }
+        #overlay button {
+            padding: 15px 40px; font-size: 1.5rem;
+            background: var(--correct); color: white;
+            border: none; border-radius: 20px; cursor: pointer;
+            box-shadow: 0 6px 0 #2d8a24;
+        }
+
+        #credits {
+            position: absolute;
+            bottom: 20px; right: 30px;
+            font-size: 0.95rem; color: #fff; font-weight: bold; font-style: italic;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="menu">
+        <h1>Selecciona la Dificultad</h1>
+        <button class="menu-btn btn-easy" onclick="setDifficulty('easy')">🐢 FÁCIL (90s)</button>
+        <button class="menu-btn btn-hard" onclick="setDifficulty('hard')">⚡ DIFÍCIL (60s)</button>
+        <p>¡Busca 12 palabras para ganar!</p>
+    </div>
+
+    <div id="ui">
+        <div id="level-txt" class="stat">Nivel 1</div>
+        <div id="target-display">¡Listo!</div>
+        <div id="score-txt" class="stat">Puntos: 0/12</div>
+        <div id="timer-txt" class="stat">⏳ --</div>
+    </div>
+
+    <div id="ocean"></div>
+
+    <div id="overlay">
+        <h2 id="overlay-emoji">🐙</h2>
+        <h2 id="overlay-title">¡Genial!</h2>
+        <p id="overlay-msg"></p>
+        <button onclick="closeOverlay()">Siguiente Letra</button>
+    </div>
+
+    <div id="credits">Creado por el Prof. Gastón</div>
+</div>
+
+<script>
+    const dictionary = [
+        { letter: 'A', items: [{w:'Árbol', e:'🌳'}, {w:'Avión', e:'✈️'}, {w:'Abeja', e:'🐝'}, {w:'Auto', e:'🚗'}, {w:'Anillo', e:'💍'}, {w:'Araña', e:'🕷️'}, {w:'Arcoiris', e:'🌈'}] },
+        { letter: 'E', items: [{w:'Elefante', e:'🐘'}, {w:'Escuela', e:'🏫'}, {w:'Estrella', e:'⭐'}, {w:'Erizo', e:'🦔'}, {w:'Escoba', e:'🧹'}, {w:'Espejo', e:'🪞'}, {w:'Escudo', e:'🛡️'}] },
+        { letter: 'I', items: [{w:'Iglú', e:'🛖'}, {w:'Isla', e:'🏝️'}, {w:'Imán', e:'🧲'}, {w:'Indio', e:'🏹'}, {w:'Insecto', e:'🐞'}, {w:'Iglesia', e:'⛪'}, {w:'Idea', e:'💡'}] },
+        { letter: 'O', items: [{w:'Oso', e:'🐻'}, {w:'Ojo', e:'👁️'}, {w:'Ola', e:'🌊'}, {w:'Oveja', e:'🐑'}, {w:'Olla', e:'🍲'}, {w:'Oreja', e:'👂'}, {w:'Ocho', e:'8️⃣'}] },
+        { letter: 'U', items: [{w:'Uva', e:'🍇'}, {w:'Uno', e:'1️⃣'}, {w:'Uña', e:'💅'}, {w:'Unicornio', e:'🦄'}, {w:'Universo', e:'🌌'}, {w:'Urna', e:'🗳️'}, {w:'Uslero', e:'🥖'}] },
+        { letter: 'C', items: [{w:'Casa', e:'🏠'}, {w:'Cebra', e:'🦓'}, {w:'Cama', e:'🛏️'}, {w:'Copa', e:'🏆'}, {w:'Cuchara', e:'🥄'}, {w:'Conejo', e:'🐰'}, {w:'Cero', e:'0️⃣'}] },
+        { letter: 'D', items: [{w:'Dado', e:'🎲'}, {w:'Dedo', e:'☝️'}, {w:'Dinosaurio', e:'🦖'}, {w:'Diente', e:'🦷'}, {w:'Dulce', e:'🍭'}, {w:'Dardo', e:'🎯'}, {w:'Delfín', e:'🐬'}] },
+        { letter: 'M', items: [{w:'Mono', e:'🐒'}, {w:'Mano', e:'✋'}, {w:'Mesa', e:'🪑'}, {w:'Manzana', e:'🍎'}, {w:'Martillo', e:'🔨'}, {w:'Mochila', e:'🎒'}, {w:'Miel', e:'🍯'}] },
+        { letter: 'N', items: [{w:'Nido', e:'🪹'}, {w:'Nube', e:'☁️'}, {w:'Nene', e:'👦'}, {w:'Nueve', e:'9️⃣'}, {w:'Nota', e:'🎵'}, {w:'Nariz', e:'👃'}, {w:'Naranja', e:'🍊'}] },
+        { letter: 'P', items: [{w:'Pato', e:'🦆'}, {w:'Pelota', e:'⚽'}, {w:'Perro', e:'🐶'}, {w:'Pez', e:'🐟'}, {w:'Puerta', e:'🚪'}, {w:'Pala', e:'🧹'}, {w:'Payaso', e:'🤡'}] }
+    ];
+
+    let currentLevel = 0;
+    let score = 0;
+    let timeLeft = 90;
+    let gameInterval;
+    let bubbleInterval;
+    let difficulty = 'easy';
+    let maxTime = 90;
+    let bubbleSpeedBase = 1.0;
+
+    function setDifficulty(mode) {
+        difficulty = mode;
+        maxTime = (mode === 'easy') ? 90 : 60;
+        bubbleSpeedBase = (mode === 'easy') ? 1.0 : 1.6;
+        document.getElementById('menu').style.display = 'none';
+        startGame();
+    }
+
+    function normalize(str) {
+        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+    }
+
+    function playSound(type) {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.frequency.setValueAtTime(type === 'pop' ? 600 : 150, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+    }
+
+    function createBubble() {
+        const ocean = document.getElementById('ocean');
+        if(!ocean) return;
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        
+        const isTarget = Math.random() > 0.35;
+        let data;
+
+        if (isTarget) {
+            const options = dictionary[currentLevel].items;
+            data = options[Math.floor(Math.random() * options.length)];
+        } else {
+            const otherLevels = dictionary.filter((_, i) => i !== currentLevel);
+            const randomLevel = otherLevels[Math.floor(Math.random() * otherLevels.length)];
+            data = randomLevel.items[Math.floor(Math.random() * randomLevel.items.length)];
+        }
+
+        bubble.innerHTML = `<span class="emoji">${data.e}</span><span class="word">${data.w}</span>`;
+        bubble.dataset.initial = normalize(data.w[0]);
+
+        const startX = Math.random() * (ocean.offsetWidth - 150);
+        bubble.style.left = startX + 'px';
+        bubble.style.top = ocean.offsetHeight + 'px';
+        
+        ocean.appendChild(bubble);
+
+        let speed = bubbleSpeedBase + Math.random() * 1.5;
+        let pos = ocean.offsetHeight;
+
+        function move() {
+            if (!bubble.parentElement) return;
+            pos -= speed;
+            bubble.style.top = pos + 'px';
+            if (pos < -160) bubble.remove();
+            else requestAnimationFrame(move);
+        }
+        requestAnimationFrame(move);
+
+        bubble.onclick = () => {
+            const target = normalize(dictionary[currentLevel].letter);
+            if (bubble.dataset.initial === target) {
+                score++;
+                playSound('pop');
+                bubble.style.background = '#44bd32';
+                document.getElementById('score-txt').innerText = `Puntos: ${score}/12`;
+                if (score >= 12) winLevel();
+            } else {
+                playSound('error');
+                bubble.style.background = '#e84118';
+            }
+            setTimeout(() => bubble.remove(), 150);
+        };
+    }
+
+    function startGame() {
+        score = 0; 
+        timeLeft = maxTime;
+        document.getElementById('ocean').innerHTML = '';
+        document.getElementById('score-txt').innerText = `Puntos: 0/12`;
+        document.getElementById('timer-txt').innerText = `⏳ ${timeLeft}`;
+        document.getElementById('level-txt').innerText = `Nivel ${currentLevel + 1}`;
+        document.getElementById('target-display').innerHTML = `Busca la letra <strong>${dictionary[currentLevel].letter}</strong>`;
+        
+        clearInterval(bubbleInterval);
+        clearInterval(gameInterval);
+        
+        const spawnRate = (difficulty === 'easy') ? 1300 : 1000;
+        bubbleInterval = setInterval(createBubble, spawnRate);
+        
+        gameInterval = setInterval(() => {
+            timeLeft--;
+            document.getElementById('timer-txt').innerText = `⏳ ${timeLeft}`;
+            if (timeLeft <= 0) gameOver();
+        }, 1000);
+    }
+
+    function winLevel() {
+        clearInterval(gameInterval); clearInterval(bubbleInterval);
+        if (currentLevel < dictionary.length - 1) {
+            showOverlay("¡EXCELENTE!", "¡Lograste los 12 puntos con la " + dictionary[currentLevel].letter + "!", "🌟", true);
+        } else {
+            showOverlay("¡FELICIDADES!", "¡Has completado todos los niveles!", "🏆", true);
+        }
+    }
+
+    function gameOver() {
+        clearInterval(gameInterval); clearInterval(bubbleInterval);
+        showOverlay("¡TIEMPO!", "Casi lo logras. ¿Reintentamos?", "⏰", false);
+    }
+
+    function showOverlay(title, msg, emoji, success) {
+        document.getElementById('overlay-title').innerText = title;
+        document.getElementById('overlay-msg').innerText = msg;
+        document.getElementById('overlay-emoji').innerText = emoji;
+        const btn = document.querySelector('#overlay button');
+        btn.innerText = success ? (currentLevel < dictionary.length - 1 ? "Siguiente Letra" : "Menú Inicio") : "Reintentar";
+        document.getElementById('overlay').style.display = 'flex';
+    }
+
+    function closeOverlay() {
+        document.getElementById('overlay').style.display = 'none';
+        
+        // Si ganó el juego completo o perdió, volver al menú de dificultad
+        if (document.getElementById('overlay-emoji').innerText === "🏆" || 
+            document.getElementById('overlay-emoji').innerText === "⏰") {
+            currentLevel = 0;
+            document.getElementById('menu').style.display = 'flex';
+        } else {
+            currentLevel++;
+            startGame();
+        }
+    }
+</script>
+</body>
+</html>

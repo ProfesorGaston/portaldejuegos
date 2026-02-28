@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Armando el Cuerpo - Prof. Gastón</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Open+Sans:wght@600&display=swap');
+
+        :root {
+            --bg-body: #a29bfe;
+            --bg-app: #f7f1e3;
+            --slot-bg: rgba(0,0,0,0.08);
+            --skin: #ffeaa7;
+            --shirt: #ff7675;
+            --pants: #0984e3;
+            --shoes: #2d3436;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            background-image: radial-gradient(#6c5ce7 20%, transparent 20%),
+                              radial-gradient(#6c5ce7 20%, transparent 20%);
+            background-size: 40px 40px;
+            background-position: 0 0, 20px 20px;
+            font-family: 'Open Sans', sans-serif;
+            margin: 0; height: 100vh;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            overflow: hidden; user-select: none; touch-action: none;
+        }
+
+        #game-app {
+            position: relative;
+            width: 360px;
+            height: 720px; 
+            background: var(--bg-app);
+            border-radius: 35px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column;
+            overflow: hidden;
+            border: 8px solid #2d3436;
+        }
+
+        header {
+            padding: 15px; text-align: center;
+            background: white; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            z-index: 10; flex-shrink: 0; cursor: pointer;
+        }
+        h1 { font-family: 'Fredoka One'; margin: 0; font-size: 1.4rem; color: #2d3436; }
+        .level-badge { 
+            background: #fdcb6e; padding: 4px 15px; 
+            border-radius: 15px; font-size: 0.85rem; margin-top: 5px; 
+            display: inline-block; font-weight: bold; color: #2d3436;
+        }
+
+        /* MENU OCULTO */
+        #debug-menu {
+            position: absolute; top: 75px; right: 10px;
+            background: rgba(45, 52, 54, 0.95); padding: 10px; border-radius: 10px;
+            z-index: 5000; display: none; flex-direction: column; gap: 8px;
+        }
+        .btn-debug {
+            background: #00cec9; border: none; color: white; padding: 8px 12px;
+            border-radius: 5px; font-weight: bold; font-size: 0.8rem; cursor: pointer;
+        }
+
+        #play-area {
+            flex: 1; position: relative;
+            background: linear-gradient(180deg, #ffffff 0%, #dfe6e9 100%);
+            overflow: hidden; 
+        }
+
+        #silhouette-board {
+            position: absolute;
+            top: 68%; left: 50%; 
+            transform: translate(-50%, -50%);
+            width: 300px; height: 500px;
+        }
+
+        .slot {
+            position: absolute;
+            background: var(--slot-bg);
+            border: 2px dashed #b2bec3;
+            border-radius: 10px;
+            box-sizing: border-box;
+        }
+        .slot.highlight {
+            background: #fdcb6e; border-color: #e17055; transform: scale(1.1); opacity: 0.8;
+        }
+        .slot.small-slot { border-width: 1px; border-style: solid; border-color: rgba(0,0,0,0.2); }
+
+        .piece {
+            position: absolute;
+            cursor: grab;
+            filter: drop-shadow(0 3px 3px rgba(0,0,0,0.2));
+            z-index: 100;
+            touch-action: none;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .piece:active { cursor: grabbing; z-index: 1000; }
+        .piece.placed { cursor: default; pointer-events: none; filter: none; }
+
+        /* --- ARTE CSS --- */
+        .p-torso { width: 90px; height: 110px; background: var(--shirt); border-radius: 20px 20px 10px 10px; }
+        .p-torso::before { content: '★'; color: white; font-size: 40px; opacity: 0.8; }
+        
+        .p-head { width: 80px; height: 85px; background: var(--skin); border-radius: 40px; }
+        .p-head::before { content: ''; position: absolute; top: -5px; left: 0; width: 100%; height: 30px; background: #636e72; border-radius: 40px 40px 0 0; }
+
+        .p-eye { width: 14px; height: 14px; background: #2d3436; border-radius: 50%; border: 2px solid white; }
+        .p-nose { width: 10px; height: 14px; background: #e17055; border-radius: 4px; opacity: 0.6; }
+        .p-mouth { width: 22px; height: 10px; border-bottom: 3px solid #d63031; border-radius: 0 0 10px 10px; background: white; }
+        .p-ear { width: 14px; height: 20px; background: var(--skin); border-radius: 6px; border: 1px solid rgba(0,0,0,0.1); }
+
+        .p-arm-basic { width: 26px; height: 75px; background: var(--skin); border-radius: 13px; }
+        .p-arm-basic.sleeve { background: linear-gradient(to bottom, var(--shirt) 40%, var(--skin) 40%); }
+        .p-leg-basic { width: 32px; height: 85px; background: var(--pants); border-radius: 10px; }
+        
+        .p-foot { width: 36px; height: 18px; background: var(--skin); border-radius: 10px 20px 5px 10px; border-right: 4px solid rgba(0,0,0,0.1); }
+        .p-foot::before { content: '||||'; font-size: 8px; color: rgba(0,0,0,0.2); position: absolute; right: 4px; top: 4px; }
+        
+        /* MANOS (Dedos abajo) */
+        .p-hand {
+            width: 28px; height: 26px; background: var(--skin); border-radius: 6px; position: relative;
+        }
+        /* Dedos */
+        .p-hand::after {
+            content: ''; position: absolute; bottom: -8px; left: 4px; width: 6px; height: 10px; 
+            background: var(--skin); border-radius: 3px;
+            box-shadow: 7px 0 0 var(--skin), 14px 0 0 var(--skin);
+        }
+        /* Pulgar */
+        .p-hand::before {
+            content: ''; position: absolute; top: 2px; left: -4px; width: 8px; height: 16px;
+            background: var(--skin); border-radius: 8px; transform: rotate(30deg);
+        }
+
+        #tray {
+            height: 120px; background: white; box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
+            display: flex; align-items: center; justify-content: center;
+            gap: 15px; padding: 0 10px; z-index: 20; flex-shrink: 0;
+        }
+
+        .modal-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(45, 52, 54, 0.95); z-index: 2000;
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            text-align: center; border-radius: 25px;
+        }
+        .btn-game {
+            margin-top: 20px; padding: 12px 40px;
+            font-size: 1.3rem; background: #00cec9; border: none;
+            color: white; border-radius: 50px; font-family: 'Fredoka One'; cursor: pointer;
+            box-shadow: 0 5px 0 #00b894;
+        }
+
+        .watermark { 
+            position: fixed; bottom: 10px; right: 15px; 
+            color: rgba(255,255,255,0.4); font-family: 'Fredoka One'; 
+            pointer-events: none; font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="watermark">Creado por el Prof. Gastón</div>
+
+    <div id="game-app">
+        <header id="app-header">
+            <h1>🧩 El Cuerpo Humano</h1>
+            <span class="level-badge" id="level-display">Nivel 1</span>
+        </header>
+
+        <div id="debug-menu">
+            <button class="btn-debug" onclick="jumpToLevel(0)">Nivel 1 (Básico)</button>
+            <button class="btn-debug" onclick="jumpToLevel(1)">Nivel 2 (Rostro)</button>
+            <button class="btn-debug" onclick="jumpToLevel(2)">Nivel 3 (Manos)</button>
+        </div>
+
+        <div id="play-area">
+            <div id="silhouette-board"></div>
+        </div>
+
+        <div id="tray"></div>
+
+        <div id="win-modal" class="modal-overlay">
+            <div style="font-size: 4rem;">🎉</div>
+            <h2 id="win-msg">¡Excelente!</h2>
+            <button class="btn-game" onclick="nextLevel()">Siguiente</button>
+        </div>
+    </div>
+
+<script>
+    // --- Lógica del Menú Secreto ---
+    let tapCount = 0;
+    let tapTimer = null;
+    document.getElementById('app-header').addEventListener('click', () => {
+        tapCount++; clearTimeout(tapTimer);
+        tapTimer = setTimeout(() => { tapCount = 0; }, 800);
+        if (tapCount === 3) {
+            const menu = document.getElementById('debug-menu');
+            menu.style.display = (menu.style.display === 'flex') ? 'none' : 'flex';
+            tapCount = 0;
+        }
+    });
+    function jumpToLevel(lvlIndex) {
+        document.getElementById('debug-menu').style.display = 'none';
+        document.getElementById('win-modal').style.display = 'none';
+        currentLvl = lvlIndex; initLevel();
+    }
+
+    // --- Definición de Niveles ---
+    const levels = [
+        {
+            id: 1, name: "Tronco y Extremidades",
+            parts: [
+                { id: 'torso', type: 'p-torso', x: 105, y: 140, z: 10 },
+                { id: 'head', type: 'p-head', x: 110, y: 60, z: 10 },
+                { id: 'armL', type: 'p-arm-basic sleeve', x: 70, y: 145, z: 5 },
+                { id: 'armR', type: 'p-arm-basic sleeve', x: 200, y: 145, z: 5 },
+                { id: 'legL', type: 'p-leg-basic', x: 110, y: 245, z: 5 },
+                { id: 'legR', type: 'p-leg-basic', x: 155, y: 245, z: 5 },
+                { id: 'footL', type: 'p-foot flip-x', x: 108, y: 330, z: 4 }, 
+                { id: 'footR', type: 'p-foot', x: 153, y: 330, z: 4 }
+            ]
+        },
+        {
+            id: 2, name: "Rostro y Sentidos",
+            parts: [
+                { id: 'torso', type: 'p-torso', x: 105, y: 140, z: 10 },
+                { id: 'head', type: 'p-head', x: 110, y: 60, z: 10 },
+                { id: 'armL', type: 'p-arm-basic sleeve', x: 70, y: 145, z: 5 },
+                { id: 'armR', type: 'p-arm-basic sleeve', x: 200, y: 145, z: 5 },
+                { id: 'legL', type: 'p-leg-basic', x: 110, y: 245, z: 5 },
+                { id: 'legR', type: 'p-leg-basic', x: 155, y: 245, z: 5 },
+                { id: 'footL', type: 'p-foot flip-x', x: 108, y: 330, z: 4 },
+                { id: 'footR', type: 'p-foot', x: 153, y: 330, z: 4 },
+                { id: 'eyeL', type: 'p-eye', x: 125, y: 95, z: 20 },
+                { id: 'eyeR', type: 'p-eye', x: 160, y: 95, z: 20 },
+                { id: 'nose', type: 'p-nose', x: 145, y: 110, z: 20 },
+                { id: 'mouth', type: 'p-mouth', x: 140, y: 125, z: 20 },
+                { id: 'earL', type: 'p-ear', x: 100, y: 95, z: 4 },
+                { id: 'earR', type: 'p-ear', x: 188, y: 95, z: 4 }
+            ]
+        },
+        {
+            id: 3, name: "Manos y Dedos",
+            parts: [
+                { id: 'torso', type: 'p-torso', x: 105, y: 140, z: 10 },
+                { id: 'head', type: 'p-head', x: 110, y: 60, z: 10 },
+                { id: 'armL', type: 'p-arm-basic sleeve', x: 70, y: 145, z: 5 },
+                { id: 'armR', type: 'p-arm-basic sleeve', x: 200, y: 145, z: 5 },
+                { id: 'legL', type: 'p-leg-basic', x: 110, y: 245, z: 5 },
+                { id: 'legR', type: 'p-leg-basic', x: 155, y: 245, z: 5 },
+                { id: 'footL', type: 'p-foot flip-x', x: 108, y: 330, z: 4 },
+                { id: 'footR', type: 'p-foot', x: 153, y: 330, z: 4 },
+                { id: 'eyeL', type: 'p-eye', x: 125, y: 95, z: 20 },
+                { id: 'eyeR', type: 'p-eye', x: 160, y: 95, z: 20 },
+                { id: 'nose', type: 'p-nose', x: 145, y: 110, z: 20 },
+                { id: 'mouth', type: 'p-mouth', x: 140, y: 125, z: 20 },
+                { id: 'earL', type: 'p-ear', x: 100, y: 95, z: 4 },
+                { id: 'earR', type: 'p-ear', x: 188, y: 95, z: 4 },
+                // MANOS CON AJUSTE FINAL
+                { id: 'handL', type: 'p-hand flip-x', x: 68, y: 223, z: 15 }, 
+                { id: 'handR', type: 'p-hand', x: 200, y: 190, z: 15 } // Subida 3px (193 -> 190)
+            ]
+        }
+    ];
+
+    let currentLvl = 0;
+    let piecesLeft = 0;
+    let reservePieces = []; 
+    const MAX_ON_TRAY = 4;
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playSound(type) {
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        const now = audioCtx.currentTime;
+
+        if (type === 'snap') {
+            osc.frequency.setValueAtTime(500, now);
+            osc.frequency.exponentialRampToValueAtTime(1000, now + 0.1);
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.linearRampToValueAtTime(0, now + 0.1);
+            osc.start(); osc.stop(now + 0.15);
+        } else if (type === 'win') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(300, now);
+            osc.frequency.linearRampToValueAtTime(600, now + 0.2);
+            osc.frequency.linearRampToValueAtTime(900, now + 0.4);
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.linearRampToValueAtTime(0, now + 0.8);
+            osc.start(); osc.stop(now + 0.8);
+        } else if (type === 'pop') {
+            osc.frequency.setValueAtTime(800, now);
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            osc.start(); osc.stop(now + 0.1);
+        }
+    }
+
+    function initLevel() {
+        const data = levels[currentLvl];
+        document.getElementById('level-display').innerText = data.name;
+        
+        const board = document.getElementById('silhouette-board');
+        const tray = document.getElementById('tray');
+        board.innerHTML = '';
+        tray.innerHTML = '';
+        reservePieces = [];
+        
+        piecesLeft = data.parts.length;
+
+        // Crear Slots
+        data.parts.forEach(p => {
+            const slot = document.createElement('div');
+            let typeClass = p.type.split(' ')[0]; // Solo la clase base para el slot
+            slot.className = `slot ${typeClass}`;
+            
+            // Forzamos el tamaño del slot si es 'p-hand' para que coincida con el borde
+            if (p.type.includes('p-hand')) {
+                slot.classList.add('p-hand'); 
+                if (p.type.includes('flip-x')) slot.style.transform = "scaleX(-1)";
+            } else if (p.type.includes('flip-x')) {
+                slot.style.transform = "scaleX(-1)";
+            }
+
+            if(p.type.includes('p-eye') || p.type.includes('p-nose') || p.type.includes('p-ear')) {
+                slot.classList.add('small-slot');
+            }
+            
+            slot.id = `slot-${p.id}`;
+            slot.style.left = p.x + 'px';
+            slot.style.top = p.y + 'px';
+            slot.style.zIndex = p.z - 1; 
+            board.appendChild(slot);
+        });
+
+        // Crear Piezas
+        let partsToPlay = [...data.parts];
+        partsToPlay.sort(() => Math.random() - 0.5);
+
+        const initialTray = partsToPlay.slice(0, MAX_ON_TRAY);
+        reservePieces = partsToPlay.slice(MAX_ON_TRAY);
+
+        initialTray.forEach(p => createPieceInTray(p));
+    }
+
+    function createPieceInTray(p) {
+        const tray = document.getElementById('tray');
+        const piece = document.createElement('div');
+        piece.className = `piece ${p.type}`;
+        piece.id = `piece-${p.id}`;
+        piece.dataset.target = `slot-${p.id}`;
+        
+        // Estilos iniciales
+        piece.style.position = 'relative'; 
+        
+        // Manejo robusto de escala y flip
+        let baseScale = "1";
+        if(p.type.includes('p-eye') || p.type.includes('p-nose') || p.type.includes('p-ear') || p.type.includes('p-hand')) {
+            baseScale = "1.5"; 
+        } else {
+            baseScale = "0.7"; // Piezas grandes un poco más chicas en bandeja
+        }
+        
+        // Guardamos si está volteada en dataset para usarlo luego
+        const isFlipped = p.type.includes('flip-x');
+        piece.dataset.baseScale = baseScale;
+        piece.dataset.flipped = isFlipped ? "true" : "false";
+
+        // Aplicar transformación inicial
+        applyTransform(piece, baseScale, isFlipped);
+
+        setupDrag(piece);
+        tray.appendChild(piece);
+        playSound('pop');
+    }
+
+    function applyTransform(el, scale, flipped) {
+        let transformString = `scale(${scale})`;
+        if (flipped) {
+            transformString = `scaleX(-1) ${transformString}`;
+        }
+        el.style.transform = transformString;
+    }
+
+    function refillTray() {
+        if(reservePieces.length > 0) {
+            const nextP = reservePieces.shift(); 
+            setTimeout(() => {
+                createPieceInTray(nextP);
+            }, 200); 
+        }
+    }
+
+    // --- Motor de Arrastre ---
+    let activePiece = null;
+    let startX, startY;
+    let isDragging = false;
+
+    function setupDrag(el) {
+        el.addEventListener('mousedown', dragStart);
+        el.addEventListener('touchstart', dragStart, {passive: false});
+    }
+
+    function dragStart(e) {
+        e.preventDefault();
+        activePiece = e.target;
+        isDragging = true;
+        
+        const isFlipped = activePiece.dataset.flipped === "true";
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const rect = activePiece.getBoundingClientRect();
+        
+        activePiece.style.position = 'fixed';
+        activePiece.style.left = rect.left + 'px';
+        activePiece.style.top = rect.top + 'px';
+        activePiece.style.margin = 0;
+        activePiece.style.zIndex = 1000;
+
+        // Al arrastrar, hacemos la pieza un poco más grande (1.2x su base)
+        applyTransform(activePiece, 1.2, isFlipped);
+
+        startX = clientX - rect.left;
+        startY = clientY - rect.top;
+
+        document.addEventListener('mousemove', dragMove);
+        document.addEventListener('touchmove', dragMove, {passive: false});
+        document.addEventListener('mouseup', dragEnd);
+        document.addEventListener('touchend', dragEnd);
+    }
+
+    function dragMove(e) {
+        if (!isDragging || !activePiece) return;
+        e.preventDefault();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        activePiece.style.left = (clientX - startX) + 'px';
+        activePiece.style.top = (clientY - startY) + 'px';
+        checkProximity();
+    }
+
+    function checkProximity() {
+        const targetId = activePiece.dataset.target;
+        const slot = document.getElementById(targetId);
+        if(!slot) return;
+        
+        const pRect = activePiece.getBoundingClientRect();
+        const sRect = slot.getBoundingClientRect();
+        const dist = Math.hypot(
+            (pRect.left + pRect.width/2) - (sRect.left + sRect.width/2),
+            (pRect.top + pRect.height/2) - (sRect.top + sRect.height/2)
+        );
+
+        if(dist < 50) slot.classList.add('highlight');
+        else slot.classList.remove('highlight');
+    }
+
+    function dragEnd(e) {
+        if(!isDragging || !activePiece) return;
+        isDragging = false;
+        
+        const targetId = activePiece.dataset.target;
+        const slot = document.getElementById(targetId);
+        const isFlipped = activePiece.dataset.flipped === "true";
+        
+        const pRect = activePiece.getBoundingClientRect();
+        const sRect = slot.getBoundingClientRect();
+        const dist = Math.hypot(
+            (pRect.left + pRect.width/2) - (sRect.left + sRect.width/2),
+            (pRect.top + pRect.height/2) - (sRect.top + sRect.height/2)
+        );
+
+        document.removeEventListener('mousemove', dragMove);
+        document.removeEventListener('touchmove', dragMove);
+        document.removeEventListener('mouseup', dragEnd);
+        document.removeEventListener('touchend', dragEnd);
+        slot.classList.remove('highlight');
+
+        if(dist < 50) {
+            playSound('snap');
+            document.getElementById('silhouette-board').appendChild(activePiece);
+            
+            // Colocar en posición exacta
+            activePiece.style.position = 'absolute';
+            activePiece.style.left = slot.style.left;
+            activePiece.style.top = slot.style.top;
+            
+            // Al soltar en el slot, escala 1 normal
+            applyTransform(activePiece, 1, isFlipped);
+            
+            // Z-Index según tipo
+            if(activePiece.className.includes('p-eye') || activePiece.className.includes('p-nose')) {
+                activePiece.style.zIndex = 30;
+            } else {
+                activePiece.style.zIndex = 15; 
+            }
+            
+            activePiece.classList.add('placed');
+            slot.style.opacity = 0; 
+            refillTray();
+            piecesLeft--;
+            if(piecesLeft === 0) setTimeout(winLevel, 500);
+
+        } else {
+            // Devolver a la bandeja
+            activePiece.style.position = 'relative';
+            activePiece.style.left = 'auto';
+            activePiece.style.top = 'auto';
+            activePiece.style.zIndex = 10;
+            
+            const baseScale = activePiece.dataset.baseScale || "1";
+            applyTransform(activePiece, baseScale, isFlipped);
+            
+            document.getElementById('tray').appendChild(activePiece);
+        }
+        activePiece = null;
+    }
+
+    function winLevel() {
+        playSound('win');
+        document.getElementById('win-modal').style.display = 'flex';
+        if(currentLvl === levels.length - 1) {
+             document.getElementById('win-msg').innerText = "¡Cuerpo Completo!";
+             document.querySelector('.btn-game').innerText = "Reiniciar";
+             document.querySelector('.btn-game').onclick = () => location.reload();
+        }
+    }
+
+    function nextLevel() {
+        document.getElementById('win-modal').style.display = 'none';
+        currentLvl++;
+        initLevel();
+    }
+
+    // Iniciar juego
+    initLevel();
+
+</script>
+</body>
+</html>

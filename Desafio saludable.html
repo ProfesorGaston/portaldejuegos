@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nutri-Swipe - Prof. Gastón</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Open+Sans:wght@600&display=swap');
+
+        :root {
+            --bg-body: #2d3436;
+            --green-zone: #00b894;
+            --red-zone: #ff7675;
+            --card-bg: #ffffff;
+            --text-color: #2d3436;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            font-family: 'Open Sans', sans-serif;
+            margin: 0; height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden; touch-action: none; user-select: none;
+        }
+
+        /* --- CONTENEDOR PRINCIPAL --- */
+        #game-container {
+            position: relative;
+            width: 100%; max-width: 400px; height: 100%; max-height: 800px;
+            background: linear-gradient(135deg, #f5f6fa 0%, #dcdde1 100%);
+            display: flex; flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+        }
+        @media (min-width: 450px) { #game-container { height: 90vh; border-radius: 30px; } }
+
+        /* --- UI SUPERIOR --- */
+        #hud {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 20px; z-index: 100;
+        }
+        .stats-left { display: flex; flex-direction: column; gap: 5px; }
+        
+        .score-box {
+            font-family: 'Fredoka One'; font-size: 1.2rem; color: var(--text-color);
+            background: white; padding: 5px 12px; border-radius: 15px;
+            box-shadow: 0 3px 0 rgba(0,0,0,0.1); display: inline-flex; align-items: center; gap: 5px; width: fit-content;
+        }
+        .level-box {
+            font-family: 'Fredoka One'; font-size: 1rem; color: white;
+            background: #6c5ce7; padding: 4px 10px; border-radius: 10px;
+            box-shadow: 0 3px 0 #4834d4; width: fit-content;
+        }
+        .lives { display: flex; gap: 3px; font-size: 1.5rem; }
+
+        /* --- ZONAS DE JUEGO (IZQ / DER) --- */
+        #zones-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; pointer-events: none; z-index: 10;
+        }
+        .zone {
+            flex: 1; height: 100%; display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            transition: background 0.2s, opacity 0.2s; opacity: 0;
+        }
+        .zone-label {
+            font-family: 'Fredoka One'; font-size: 2rem; color: white;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.2); margin-top: 20%;
+            transform: scale(0.8); transition: transform 0.2s;
+        }
+        .zone.active { opacity: 0.8; }
+        .zone.active .zone-label { transform: scale(1.2); }
+        
+        #zone-healthy { background: var(--green-zone); }
+        #zone-junk { background: var(--red-zone); }
+
+        /* --- ÁREA DE CARTAS --- */
+        #play-area {
+            flex: 1; position: relative;
+            display: flex; justify-content: center; align-items: center;
+            perspective: 1000px; z-index: 50;
+        }
+
+        .food-card {
+            position: absolute;
+            width: 200px; height: 280px;
+            background: white;
+            border-radius: 25px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            cursor: grab;
+            transition: transform 0.1s;
+            transform-origin: center bottom;
+            border: 6px solid white;
+        }
+        .food-card:active { cursor: grabbing; }
+        .food-emoji { font-size: 7rem; line-height: 1; margin-bottom: 15px; pointer-events: none; }
+        .food-name { 
+            font-family: 'Fredoka One'; color: #636e72; font-size: 1.4rem; 
+            text-align: center; pointer-events: none; padding: 0 10px; line-height: 1.2;
+        }
+
+        /* --- FEEDBACK VISUAL --- */
+        .feedback-text {
+            position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
+            font-family: 'Fredoka One'; font-size: 4rem; color: white;
+            text-shadow: 0 5px 0 rgba(0,0,0,0.2);
+            pointer-events: none; z-index: 200;
+            display: none;
+        }
+        @keyframes popUp {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            100% { transform: translate(-50%, -100%) scale(1); opacity: 0; }
+        }
+
+        /* --- PANTALLAS (INICIO / FIN / NIVEL) --- */
+        .overlay-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.95);
+            z-index: 1000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            text-align: center; padding: 20px; box-sizing: border-box;
+        }
+        .btn-start {
+            background: #6c5ce7; color: white; border: none;
+            padding: 15px 50px; font-size: 1.5rem; border-radius: 50px;
+            font-family: 'Fredoka One'; margin-top: 20px; cursor: pointer;
+            box-shadow: 0 6px 0 #4834d4; transition: transform 0.1s;
+        }
+        .btn-start:active { transform: translateY(6px); box-shadow: none; }
+        
+        .tutorial {
+            display: flex; width: 100%; justify-content: space-around; margin: 30px 0;
+        }
+        .tut-box { display: flex; flex-direction: column; align-items: center; color: #636e72; }
+        .tut-arrow { font-size: 2rem; font-weight: bold; margin-bottom: 5px; }
+
+        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake { 10%, 90% { transform: translate3d(-4px, 0, 0); } 20%, 80% { transform: translate3d(8px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-16px, 0, 0); } 40%, 60% { transform: translate3d(16px, 0, 0); } }
+
+        /* MARCA DE AGUA (AJUSTADA) */
+        .watermark { 
+            position: absolute; bottom: 10px; right: 15px; 
+            color: rgba(0,0,0,0.3); font-family: 'Fredoka One'; 
+            pointer-events: none; font-size: 0.9rem;
+            z-index: 100;
+        }
+
+        /* BARRA DE PROGRESO DE NIVEL */
+        .level-progress-container {
+            width: 100%; height: 6px; background: rgba(0,0,0,0.1);
+            position: absolute; bottom: 0; left: 0;
+        }
+        .level-bar {
+            height: 100%; background: #0984e3; width: 0%;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div class="watermark">Creado por el Prof. Gastón</div>
+
+    <div id="feedback-msg" class="feedback-text">¡Bien!</div>
+
+    <div id="hud">
+        <div class="stats-left">
+            <div class="level-box">Nivel <span id="current-level">1</span>/3</div>
+            <div class="score-box">⭐ <span id="score-val">0</span></div>
+        </div>
+        <div class="lives" id="lives-box">❤️❤️❤️</div>
+    </div>
+    <div class="level-progress-container">
+        <div class="level-bar" id="level-bar"></div>
+    </div>
+
+    <div id="zones-layer">
+        <div id="zone-healthy" class="zone">
+            <div style="font-size:4rem;">🥦</div>
+            <div class="zone-label">SANO</div>
+        </div>
+        <div id="zone-junk" class="zone">
+            <div style="font-size:4rem;">🍔</div>
+            <div class="zone-label">CHATARRA</div>
+        </div>
+    </div>
+
+    <div id="play-area"></div>
+
+    <div id="start-screen" class="overlay-screen">
+        <h1 style="font-family:'Fredoka One'; font-size: 2.5rem; color:#6c5ce7; margin-bottom:10px;">Nutri-Swipe</h1>
+        <p style="color:#636e72; margin:0;">Prof. Gastón</p>
+        
+        <div class="tutorial">
+            <div class="tut-box">
+                <div class="tut-arrow">⬅️</div>
+                <span>Saludable</span>
+                <span style="font-size:2rem; margin-top:5px;">🍎</span>
+            </div>
+            <div class="tut-box">
+                <div class="tut-arrow">➡️</div>
+                <span>Chatarra</span>
+                <span style="font-size:2rem; margin-top:5px;">🍩</span>
+            </div>
+        </div>
+
+        <button class="btn-start" onclick="startGame()">¡JUGAR!</button>
+    </div>
+
+    <div id="level-screen" class="overlay-screen" style="display:none;">
+        <div style="font-size: 4rem;">🎉</div>
+        <h2 style="font-family:'Fredoka One'; color:#2d3436;">¡Nivel Completado!</h2>
+        <p style="font-size: 1.2rem; color:#636e72;">Prepárate para la siguiente ronda.</p>
+        <button class="btn-start" onclick="nextLevel()">Continuar</button>
+    </div>
+
+    <div id="win-screen" class="overlay-screen" style="display:none;">
+        <div style="font-size: 5rem;">🏆</div>
+        <h2 style="font-family:'Fredoka One'; color:#f1c40f;">¡VICTORIA!</h2>
+        <p style="font-size: 1.2rem;">Has completado los 3 niveles.</p>
+        <p style="font-size: 1.5rem;">Puntaje Final: <strong id="win-score">0</strong></p>
+        <button class="btn-start" onclick="location.reload()">Jugar de Nuevo</button>
+    </div>
+
+    <div id="end-screen" class="overlay-screen" style="display:none;">
+        <div style="font-size: 4rem;">😢</div>
+        <h2 style="font-family:'Fredoka One'; color:#e74c3c;">¡Juego Terminado!</h2>
+        <p style="font-size: 1.2rem;">Inténtalo de nuevo.</p>
+        <button class="btn-start" onclick="location.reload()">Reiniciar</button>
+    </div>
+</div>
+
+<script>
+    // --- BASE DE DATOS EXTENDIDA (50+ Items) ---
+    const allFoods = [
+        // SALUDABLES
+        { name: 'Manzana', icon: '🍎', type: 'healthy' },
+        { name: 'Pera', icon: '🍐', type: 'healthy' },
+        { name: 'Naranja', icon: '🍊', type: 'healthy' },
+        { name: 'Plátano', icon: '🍌', type: 'healthy' },
+        { name: 'Sandía', icon: '🍉', type: 'healthy' },
+        { name: 'Uvas', icon: '🍇', type: 'healthy' },
+        { name: 'Fresa', icon: '🍓', type: 'healthy' },
+        { name: 'Cereza', icon: '🍒', type: 'healthy' },
+        { name: 'Piña', icon: '🍍', type: 'healthy' },
+        { name: 'Kiwi', icon: '🥝', type: 'healthy' },
+        { name: 'Tomate', icon: '🍅', type: 'healthy' },
+        { name: 'Aguacate', icon: '🥑', type: 'healthy' },
+        { name: 'Berenjena', icon: '🍆', type: 'healthy' },
+        { name: 'Zanahoria', icon: '🥕', type: 'healthy' },
+        { name: 'Maíz', icon: '🌽', type: 'healthy' },
+        { name: 'Pepino', icon: '🥒', type: 'healthy' },
+        { name: 'Lechuga', icon: '🥬', type: 'healthy' },
+        { name: 'Brócoli', icon: '🥦', type: 'healthy' },
+        { name: 'Champiñón', icon: '🍄', type: 'healthy' },
+        { name: 'Huevo', icon: '🥚', type: 'healthy' },
+        { name: 'Leche', icon: '🥛', type: 'healthy' },
+        { name: 'Pescado', icon: '🐟', type: 'healthy' },
+        { name: 'Ensalada', icon: '🥗', type: 'healthy' },
+        { name: 'Agua', icon: '💧', type: 'healthy' },
+        { name: 'Arroz', icon: '🍚', type: 'healthy' },
+        { name: 'Limón', icon: '🍋', type: 'healthy' },
+        { name: 'Coco', icon: '🥥', type: 'healthy' },
+        { name: 'Cebolla', icon: '🧅', type: 'healthy' },
+        { name: 'Espinaca', icon: '🌿', type: 'healthy' },
+        { name: 'Queso', icon: '🧀', type: 'healthy' },
+        
+        // CHATARRA / PROCESADOS
+        { name: 'Hamburguesa', icon: '🍔', type: 'junk' },
+        { name: 'Papas Fritas', icon: '🍟', type: 'junk' },
+        { name: 'Pizza', icon: '🍕', type: 'junk' },
+        { name: 'Hot Dog', icon: '🌭', type: 'junk' },
+        { name: 'Taco', icon: '🌮', type: 'junk' },
+        { name: 'Burrito', icon: '🌯', type: 'junk' },
+        { name: 'Tocino', icon: '🥓', type: 'junk' },
+        { name: 'Palomitas', icon: '🍿', type: 'junk' },
+        { name: 'Dona', icon: '🍩', type: 'junk' },
+        { name: 'Galleta', icon: '🍪', type: 'junk' },
+        { name: 'Pastel', icon: '🎂', type: 'junk' },
+        { name: 'Cupcake', icon: '🧁', type: 'junk' },
+        { name: 'Pastel', icon: '🍰', type: 'junk' },
+        { name: 'Chocolate', icon: '🍫', type: 'junk' },
+        { name: 'Caramelo', icon: '🍬', type: 'junk' },
+        { name: 'Paleta', icon: '🍭', type: 'junk' },
+        { name: 'Flan', icon: '🍮', type: 'junk' },
+        { name: 'Helado', icon: '🍦', type: 'junk' },
+        { name: 'Gaseosa', icon: '🥤', type: 'junk' },
+        { name: 'Cerveza', icon: '🍺', type: 'junk' },
+        { name: 'Croissant', icon: '🥐', type: 'junk' },
+        { name: 'Hotcakes', icon: '🥞', type: 'junk' },
+        { name: 'Waffle', icon: '🧇', type: 'junk' },
+        { name: 'Papas Bolsa', icon: '🥔', type: 'junk' },
+        { name: 'Mantequilla', icon: '🧈', type: 'junk' }
+    ];
+
+    // --- VARIABLES DE JUEGO ---
+    let availableFoods = [];
+    let score = 0;
+    let lives = 3;
+    let isPlaying = false;
+    let currentCard = null;
+    let startX = 0;
+    let currentX = 0;
+
+    // Variables de Niveles
+    let currentLevel = 1;
+    const MAX_LEVELS = 3;
+    const CARDS_PER_LEVEL = 10;
+    let cardsPlayedInLevel = 0;
+
+    // AUDIO CONTEXT
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playTone(type) {
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        const now = audioCtx.currentTime;
+
+        if (type === 'pop') {
+            osc.frequency.setValueAtTime(400, now);
+            osc.frequency.exponentialRampToValueAtTime(600, now + 0.1);
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.linearRampToValueAtTime(0, now + 0.1);
+            osc.start(); osc.stop(now + 0.1);
+        } else if (type === 'correct') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600, now);
+            osc.frequency.linearRampToValueAtTime(1200, now + 0.1);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.linearRampToValueAtTime(0, now + 0.2);
+            osc.start(); osc.stop(now + 0.2);
+        } else if (type === 'wrong') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(150, now);
+            osc.frequency.linearRampToValueAtTime(50, now + 0.3);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.linearRampToValueAtTime(0, now + 0.3);
+            osc.start(); osc.stop(now + 0.3);
+        } else if (type === 'win') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(300, now);
+            osc.frequency.linearRampToValueAtTime(600, now + 0.2);
+            osc.frequency.linearRampToValueAtTime(900, now + 0.4);
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.linearRampToValueAtTime(0, now + 0.8);
+            osc.start(); osc.stop(now + 0.8);
+        }
+    }
+
+    function startGame() {
+        document.getElementById('start-screen').style.display = 'none';
+        isPlaying = true;
+        score = 0;
+        lives = 3;
+        currentLevel = 1;
+        cardsPlayedInLevel = 0;
+        
+        // Reiniciar mazo completo
+        availableFoods = [...allFoods];
+        
+        updateUI();
+        spawnCard();
+    }
+
+    function updateUI() {
+        document.getElementById('score-val').innerText = score;
+        document.getElementById('current-level').innerText = currentLevel;
+        
+        let livesStr = '';
+        for(let i=0; i<lives; i++) livesStr += '❤️';
+        document.getElementById('lives-box').innerText = livesStr;
+
+        // Barra de progreso del nivel
+        const progress = (cardsPlayedInLevel / CARDS_PER_LEVEL) * 100;
+        document.getElementById('level-bar').style.width = `${progress}%`;
+    }
+
+    // --- LÓGICA DE CARTAS ---
+    function spawnCard() {
+        if(!isPlaying) return;
+
+        const area = document.getElementById('play-area');
+        area.innerHTML = ''; 
+
+        // Rellenar si se acaban (por seguridad)
+        if (availableFoods.length === 0) availableFoods = [...allFoods];
+
+        // Elegir y eliminar del mazo
+        const randomIndex = Math.floor(Math.random() * availableFoods.length);
+        const food = availableFoods[randomIndex];
+        availableFoods.splice(randomIndex, 1);
+
+        // Crear elemento
+        const card = document.createElement('div');
+        card.className = 'food-card';
+        card.innerHTML = `
+            <div class="food-emoji">${food.icon}</div>
+            <div class="food-name">${food.name}</div>
+        `;
+        
+        card.dataset.type = food.type;
+        card.style.transform = "scale(0)";
+        setTimeout(() => card.style.transform = "scale(1)", 50);
+
+        area.appendChild(card);
+        currentCard = card;
+        playTone('pop');
+
+        setupDrag(card);
+    }
+
+    // --- ARRASTRE ---
+    function setupDrag(card) {
+        card.addEventListener('mousedown', dragStart);
+        card.addEventListener('touchstart', dragStart, {passive: false});
+    }
+
+    function dragStart(e) {
+        if(!isPlaying) return;
+        if(e.type === 'mousedown') e.preventDefault();
+        startX = e.touches ? e.touches[0].clientX : e.clientX;
+        card = e.target.closest('.food-card');
+        document.addEventListener('mousemove', dragMove);
+        document.addEventListener('touchmove', dragMove, {passive: false});
+        document.addEventListener('mouseup', dragEnd);
+        document.addEventListener('touchend', dragEnd);
+    }
+
+    function dragMove(e) {
+        if(!currentCard) return;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const deltaX = clientX - startX;
+        
+        if(Math.abs(deltaX) > 10 && e.cancelable) e.preventDefault();
+        
+        currentX = deltaX;
+        const rotate = deltaX * 0.05;
+        currentCard.style.transform = `translate(${deltaX}px, 0) rotate(${rotate}deg)`;
+
+        const zoneL = document.getElementById('zone-healthy');
+        const zoneR = document.getElementById('zone-junk');
+        
+        if (deltaX < -50) {
+            zoneL.classList.add('active'); zoneR.classList.remove('active');
+        } else if (deltaX > 50) {
+            zoneR.classList.add('active'); zoneL.classList.remove('active');
+        } else {
+            zoneL.classList.remove('active'); zoneR.classList.remove('active');
+        }
+    }
+
+    function dragEnd(e) {
+        document.removeEventListener('mousemove', dragMove);
+        document.removeEventListener('touchmove', dragMove);
+        document.removeEventListener('mouseup', dragEnd);
+        document.removeEventListener('touchend', dragEnd);
+
+        document.getElementById('zone-healthy').classList.remove('active');
+        document.getElementById('zone-junk').classList.remove('active');
+
+        if(!currentCard) return;
+        const threshold = 80;
+        
+        if (currentX < -threshold) {
+            checkChoice('healthy'); 
+        } else if (currentX > threshold) {
+            checkChoice('junk'); 
+        } else {
+            currentCard.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+            currentCard.style.transform = 'translate(0,0) rotate(0)';
+            setTimeout(() => { if(currentCard) currentCard.style.transition = 'transform 0.1s'; }, 300);
+        }
+        currentX = 0;
+    }
+
+    function checkChoice(direction) {
+        const type = currentCard.dataset.type;
+        const correct = (direction === type);
+
+        const exitX = direction === 'healthy' ? -500 : 500;
+        currentCard.style.transition = 'transform 0.3s ease-in';
+        currentCard.style.transform = `translate(${exitX}px, 100px) rotate(${exitX*0.1}deg)`;
+        currentCard.style.opacity = '0';
+
+        if (correct) {
+            score += 10;
+            showFeedback("¡Bien!", "#00b894");
+            playTone('correct');
+        } else {
+            lives--;
+            showFeedback("¡Ups!", "#ff7675");
+            playTone('wrong');
+            document.getElementById('game-container').classList.add('shake');
+            setTimeout(()=>document.getElementById('game-container').classList.remove('shake'), 500);
+        }
+
+        cardsPlayedInLevel++;
+        updateUI();
+
+        if (lives <= 0) {
+            isPlaying = false;
+            setTimeout(gameOver, 500);
+        } else if (cardsPlayedInLevel >= CARDS_PER_LEVEL) {
+            // FIN DEL NIVEL
+            isPlaying = false;
+            setTimeout(handleLevelComplete, 500);
+        } else {
+            setTimeout(spawnCard, 350);
+        }
+    }
+
+    function handleLevelComplete() {
+        if (currentLevel >= MAX_LEVELS) {
+            // GANÓ EL JUEGO
+            playTone('win');
+            document.getElementById('win-score').innerText = score;
+            document.getElementById('win-screen').style.display = 'flex';
+        } else {
+            // PASA AL SIGUIENTE NIVEL
+            playTone('win');
+            document.getElementById('level-screen').style.display = 'flex';
+        }
+    }
+
+    function nextLevel() {
+        currentLevel++;
+        cardsPlayedInLevel = 0;
+        document.getElementById('level-screen').style.display = 'none';
+        isPlaying = true;
+        updateUI();
+        spawnCard();
+    }
+
+    function showFeedback(text, color) {
+        const el = document.getElementById('feedback-msg');
+        el.innerText = text;
+        el.style.color = color;
+        el.style.textShadow = `0 5px 0 ${color === '#00b894' ? '#006266' : '#c0392b'}`;
+        el.style.display = 'block';
+        el.style.animation = 'none';
+        el.offsetHeight; 
+        el.style.animation = 'popUp 0.8s forwards';
+    }
+
+    function gameOver() {
+        document.getElementById('end-screen').style.display = 'flex';
+        playTone('wrong');
+    }
+
+</script>
+</body>
+</html>

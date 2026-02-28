@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Robot Explorador - Prof. Gastón</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Open+Sans:wght@600&display=swap');
+
+        :root {
+            --bg: #2c3e50;
+            --panel: #34495e;
+            --cell-bg: #ecf0f1;
+            --btn-size: 60px;
+            --btn-blue: #3498db;
+            --btn-green: #2ecc71;
+            --btn-red: #e74c3c;
+            --btn-purple: #9b59b6; 
+        }
+
+        body {
+            background-color: var(--bg);
+            font-family: 'Open Sans', sans-serif;
+            margin: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            overflow: hidden; 
+            touch-action: none;
+        }
+
+        .watermark {
+            position: fixed; bottom: 10px; right: 15px;
+            color: rgba(255, 255, 255, 0.4);
+            font-family: 'Fredoka One', cursive; font-size: 1rem;
+            pointer-events: none; z-index: 999;
+        }
+
+        .header {
+            display: flex; justify-content: space-between;
+            width: 90%; max-width: 400px;
+            color: white; margin-bottom: 10px;
+            font-family: 'Fredoka One', cursive; font-size: 1.3rem;
+        }
+
+        #game-box {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 15px; border-radius: 20px;
+            border: 2px solid rgba(255,255,255,0.15);
+            display: flex; flex-direction: column; align-items: center;
+            gap: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            width: 90%; max-width: 400px; box-sizing: border-box;
+            position: relative;
+        }
+
+        #grid {
+            display: grid; grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(5, 1fr);
+            gap: 5px; background: var(--panel);
+            padding: 6px; border-radius: 10px;
+            width: 100%; aspect-ratio: 1/1; box-sizing: border-box;
+        }
+
+        .cell {
+            background: var(--cell-bg); border-radius: 6px;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1.8rem; width: 100%; height: 100%; position: relative;
+        }
+
+        /* Estilo para el contenedor del robot */
+        .robot-sprite {
+            display: inline-block;
+            transition: transform 0.3s;
+        }
+
+        #screen {
+            background: #000; color: #00ff00;
+            font-family: 'Courier New', monospace;
+            width: 100%; height: 45px; border-radius: 8px;
+            display: flex; align-items: center; padding: 0 10px;
+            box-sizing: border-box; overflow-x: auto; overflow-y: hidden;
+            white-space: nowrap; border: 3px solid #555;
+            font-size: 1.3rem; font-weight: bold;
+        }
+        
+        #screen::-webkit-scrollbar { height: 4px; }
+        #screen::-webkit-scrollbar-thumb { background: #555; }
+
+        #controls {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 10px; width: 100%; justify-items: center;
+        }
+
+        .btn {
+            width: 100%; max-width: var(--btn-size); height: var(--btn-size);
+            aspect-ratio: 1/1; border: none; border-radius: 12px;
+            font-size: 1.8rem; cursor: pointer; display: flex;
+            justify-content: center; align-items: center; color: white;
+            box-shadow: 0 5px 0 rgba(0,0,0,0.25);
+            transition: transform 0.1s;
+        }
+        .btn:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,0.25); }
+        
+        .b-arrow { background-color: var(--btn-blue); }
+        .b-run { background-color: var(--btn-green); font-size: 1.4rem; }
+        .b-del { background-color: var(--btn-red); font-size: 1.4rem; }
+        .b-jump { background-color: var(--btn-purple); font-size: 1.6rem; }
+        
+        .jump-active { 
+            background-color: #f1c40f !important; 
+            color: #2c3e50; transform: scale(0.95);
+            box-shadow: 0 0 10px #f1c40f; border: 2px solid white;
+        }
+
+        .spacer { width: 100%; max-width: var(--btn-size); visibility: hidden; }
+
+        #modal {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            background: rgba(44, 62, 80, 0.95); display: none;
+            flex-direction: column; justify-content: center; align-items: center;
+            z-index: 100; color: white; text-align: center;
+        }
+        #modal button {
+            padding: 15px 30px; font-size: 1.2rem;
+            background: var(--btn-green); color: white;
+            border: none; border-radius: 10px; margin-top: 25px;
+        }
+
+        #cheat-toast {
+            position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+            background: rgba(241, 196, 15, 0.9); color: #000;
+            padding: 10px 20px; border-radius: 20px; font-weight: bold;
+            display: none; z-index: 200; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .crash-anim { background-color: #e74c3c !important; animation: shake 0.4s; }
+        @keyframes shake { 0%, 100% {transform: translateX(0);} 25% {transform: translateX(-5px);} 75% {transform: translateX(5px);} }
+        
+        .jump-anim { animation: jumpEffect 0.6s ease-in-out forwards; }
+        @keyframes jumpEffect {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.8) translateY(-15px); text-shadow: 0 10px 10px rgba(0,0,0,0.3); }
+            100% { transform: scale(1); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="watermark">Creado por el Prof. Gastón</div>
+    <div id="cheat-toast">🚀 ¡Salto a Nivel Detectado!</div>
+
+    <div class="header">
+        <span>Nivel <span id="lvl-display">1</span>/12</span>
+        <span>🤖 Robot Explorador</span>
+    </div>
+
+    <div id="game-box">
+        <div id="grid"></div>
+        <div id="screen"></div> 
+        <div id="controls">
+            <button class="btn b-del" onclick="forceReset()" title="Reiniciar (Pánico)">🗑️</button>
+            <button class="btn b-arrow" onclick="add('up')">⬆️</button>
+            <button class="btn b-del" onclick="deleteLast()" title="Borrar uno">🔙</button>
+            
+            <button class="btn b-arrow" onclick="add('left')">⬅️</button>
+            <button class="btn b-run" onclick="run()" title="Ejecutar">▶️</button>
+            <button class="btn b-arrow" onclick="add('right')">➡️</button>
+            
+            <button class="btn b-jump" id="btn-jump" onclick="toggleJumpMode()" title="Saltar Obstáculo" style="visibility: hidden;">🦘</button>
+            <button class="btn b-arrow" onclick="add('down')">⬇️</button>
+            <div class="spacer"></div>
+        </div>
+    </div>
+
+    <div id="modal">
+        <div style="font-size: 6rem; margin-bottom: 20px;" id="modal-icon">🏆</div>
+        <h1 id="modal-title">¡Ganaste!</h1>
+        <p id="modal-msg" style="font-size: 1.3rem;">Camino completado.</p>
+        <button onclick="nextLevel()" id="modal-btn">Siguiente Nivel</button>
+    </div>
+
+<script>
+    // --- NIVELES ---
+    const levels = [
+        { start:[0,2], end:[4,2], walls:[] },
+        { start:[0,0], end:[0,4], walls:[[0,1],[0,2],[0,3], [1,1],[1,2],[1,3]] }, 
+        { start:[0,2], end:[4,2], walls:[[2,2], [2,1], [2,3]] },
+        { start:[0,4], end:[4,0], walls:[[1,0],[1,1],[1,2],[1,3], [3,4],[3,3],[3,2],[3,1]] },
+        { start:[0,0], end:[4,0], walls:[[1,0],[2,0],[3,0], [1,1],[2,1],[3,1], [2,2]] },
+        { start:[0,2], end:[4,2], walls:[[2,0], [2,1], [2,2], [2,3]] },
+        { start:[0,0], end:[4,4], walls:[[1,0],[1,1],[1,2], [3,2],[3,3],[3,4]] },
+        { start:[0,2], end:[4,2], walls:[[1,1],[1,2],[1,3], [3,1],[3,2],[3,3]] },
+        { start:[0,0], end:[2,2], walls:[[0,1], [1,1],[2,1],[3,1], [3,2],[3,3], [2,3],[1,3]] },
+        { start:[0,0], end:[4,0], walls:[[2,0], [2,1], [2,2], [2,3], [0,1], [0,2], [0,3], [4,1], [4,2], [4,3]] },
+        { start:[2,4], end:[2,0], walls:[[2,3],[2,2],[2,1], [1,1],[3,1]] },
+        // Nivel 12
+        { start:[0,0], end:[4,4], walls:[
+            [1,0],[1,1],[1,2],[1,3], 
+            [3,4],[3,3],[3,2],[3,1], 
+            [2,2], [0,2], [4,2] 
+        ]}
+    ];
+
+    let currentLvl = 0;
+    let robot = {x:0, y:0};
+    let commands = [];
+    let isRunning = false;
+    let jumpMode = false;
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // --- TRUCO ---
+    let cheatBuffer = "";
+    window.addEventListener('keydown', (e) => {
+        if(e.key === "Enter") {
+            const match = cheatBuffer.match(/nivel\s?(\d+)$/);
+            if(match) {
+                const target = parseInt(match[1]);
+                if(target >= 1 && target <= levels.length) {
+                    currentLvl = target - 1;
+                    forceReset();
+                    showToast(`🚀 ¡Salto al Nivel ${target}!`);
+                }
+            }
+            cheatBuffer = "";
+        } else {
+            if(e.key.length === 1) cheatBuffer += e.key.toLowerCase();
+            if(cheatBuffer.length > 50) cheatBuffer = cheatBuffer.slice(-50);
+        }
+    });
+
+    function showToast(msg) {
+        const t = document.getElementById('cheat-toast');
+        t.innerText = msg;
+        t.style.display = 'block';
+        setTimeout(() => { t.style.display = 'none'; }, 2000);
+    }
+
+    function beep(freq, type, dur) {
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.frequency.value = freq;
+        osc.type = type;
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + dur);
+        osc.stop(audioCtx.currentTime + dur);
+    }
+
+    function init() {
+        if(currentLvl >= levels.length) {
+            alert("¡Juego Completado!");
+            currentLvl = 0;
+        }
+        document.getElementById('lvl-display').innerText = currentLvl + 1;
+        document.getElementById('modal').style.display = 'none';
+        
+        const jumpBtn = document.getElementById('btn-jump');
+        if (currentLvl === 11) { 
+            jumpBtn.style.visibility = 'visible';
+            if(!isRunning) showToast("¡SALTO HABILITADO!"); 
+        } else {
+            jumpBtn.style.visibility = 'hidden';
+        }
+        
+        commands = [];
+        jumpMode = false;
+        updateJumpBtn();
+        
+        const lvl = levels[currentLvl];
+        robot = { x: lvl.start[0], y: lvl.start[1] };
+        isRunning = false;
+        updateScreen();
+        drawGrid();
+    }
+
+    function drawGrid() {
+        const grid = document.getElementById('grid');
+        grid.innerHTML = ''; 
+        const lvl = levels[currentLvl];
+        for(let y=0; y<5; y++) {
+            for(let x=0; x<5; x++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                
+                if(x === robot.x && y === robot.y) {
+                    // AQUÍ ESTÁ EL CAMBIO CLAVE: Span para el robot
+                    const botSpan = document.createElement('span');
+                    botSpan.innerText = '🤖';
+                    botSpan.className = 'robot-sprite';
+                    botSpan.id = 'active-robot'; // ID para encontrarlo fácil
+                    cell.appendChild(botSpan);
+                } else if(x === lvl.end[0] && y === lvl.end[1]) {
+                    cell.innerText = '🔋';
+                } else if(lvl.walls.some(w => w[0] === x && w[1] === y)) {
+                    cell.innerText = '🔩'; 
+                    cell.style.backgroundColor = '#95a5a6'; 
+                    cell.style.boxShadow = 'inset 0 0 5px rgba(0,0,0,0.5)';
+                }
+                grid.appendChild(cell);
+            }
+        }
+    }
+
+    function toggleJumpMode() {
+        if(isRunning) return;
+        jumpMode = !jumpMode;
+        updateJumpBtn();
+        if(jumpMode) beep(800, 'sine', 0.1);
+    }
+
+    function updateJumpBtn() {
+        const btn = document.getElementById('btn-jump');
+        if(jumpMode) btn.classList.add('jump-active');
+        else btn.classList.remove('jump-active');
+    }
+
+    function add(direction) {
+        if(isRunning) return;
+        if(commands.length < 60) {
+            if(jumpMode) {
+                commands.push('jump-' + direction);
+                jumpMode = false; 
+                updateJumpBtn();
+                beep(600, 'triangle', 0.1); 
+            } else {
+                commands.push(direction);
+                beep(400, 'sine', 0.08);
+            }
+            updateScreen();
+        }
+    }
+
+    function deleteLast() {
+        if(isRunning) return;
+        commands.pop();
+        beep(300, 'sine', 0.08);
+        updateScreen();
+    }
+
+    function forceReset() {
+        isRunning = false;
+        commands = [];
+        jumpMode = false;
+        updateJumpBtn();
+        beep(200, 'square', 0.1);
+        updateScreen();
+        const lvl = levels[currentLvl];
+        robot = { x: lvl.start[0], y: lvl.start[1] };
+        drawGrid();
+        init(); 
+    }
+
+    function updateScreen() {
+        const sc = document.getElementById('screen');
+        const icons = { 
+            'up':'⬆️', 'down':'⬇️', 'left':'⬅️', 'right':'➡️',
+            'jump-up':'🦘⬆️', 'jump-down':'🦘⬇️', 'jump-left':'🦘⬅️', 'jump-right':'🦘➡️'
+        };
+        sc.innerText = commands.map(c => icons[c]).join(' ');
+        sc.scrollLeft = sc.scrollWidth; 
+    }
+
+    async function run() {
+        if(isRunning || commands.length === 0) return;
+        isRunning = true;
+        const lvl = levels[currentLvl];
+        
+        // Reset posición
+        robot = { x: lvl.start[0], y: lvl.start[1] };
+        drawGrid();
+        await new Promise(r => setTimeout(r, 400));
+
+        try {
+            for(let i=0; i<commands.length; i++) {
+                if(!isRunning) break;
+                const cmd = commands[i];
+                
+                let isJump = cmd.startsWith('jump-');
+                let dir = isJump ? cmd.split('-')[1] : cmd;
+                
+                let dx = 0, dy = 0;
+                if(dir === 'up') dy = -1;
+                if(dir === 'down') dy = 1;
+                if(dir === 'left') dx = -1;
+                if(dir === 'right') dx = 1;
+
+                let steps = isJump ? 2 : 1;
+                let targetX = robot.x + (dx * steps);
+                let targetY = robot.y + (dy * steps);
+
+                if(targetX < 0 || targetX > 4 || targetY < 0 || targetY > 4) {
+                    crash("¡Te saliste del área!");
+                    break;
+                }
+
+                if(isJump) {
+                    // Verificar aterrizaje
+                    if(lvl.walls.some(w => w[0] === targetX && w[1] === targetY)) {
+                        robot.x = targetX; robot.y = targetY; drawGrid();
+                        crash("¡Aterrizaste sobre un tornillo!");
+                        break;
+                    }
+                    beep(800, 'square', 0.15); 
+                } else {
+                    if(lvl.walls.some(w => w[0] === targetX && w[1] === targetY)) {
+                        robot.x = targetX; robot.y = targetY; drawGrid();
+                        const crashCell = document.querySelectorAll('.cell')[targetY*5 + targetX];
+                        if(crashCell) crashCell.classList.add('crash-anim');
+                        crash("¡Chocaste con un tornillo!");
+                        break;
+                    }
+                    beep(500, 'triangle', 0.08);
+                }
+
+                robot.x = targetX; 
+                robot.y = targetY;
+                drawGrid(); // Dibuja el robot en su nueva posición
+                
+                // Animación Visual (Ahora segura)
+                if(isJump) {
+                    const botSprite = document.getElementById('active-robot');
+                    if(botSprite) {
+                        botSprite.classList.add('jump-anim');
+                    }
+                }
+
+                if(robot.x === lvl.end[0] && robot.y === lvl.end[1]) {
+                    beep(800, 'sine', 0.1);
+                    setTimeout(() => beep(1200, 'sine', 0.3), 150);
+                    showModal(true);
+                    isRunning = false;
+                    break;
+                }
+                
+                await new Promise(r => setTimeout(r, isJump ? 700 : 500)); 
+            }
+        } catch (e) {
+            console.error("Error crítico:", e);
+            isRunning = false;
+        }
+        
+        if(isRunning) isRunning = false;
+    }
+
+    function crash(msg) {
+        isRunning = false;
+        beep(150, 'sawtooth', 0.4);
+        showModal(false, msg);
+    }
+
+    function showModal(win, msg="") {
+        const m = document.getElementById('modal');
+        const icon = document.getElementById('modal-icon');
+        const title = document.getElementById('modal-title');
+        const txt = document.getElementById('modal-msg');
+        const btn = document.getElementById('modal-btn');
+        if(win) {
+            icon.innerText = "🔋"; title.innerText = "¡Batería Cargada!";
+            txt.innerText = "¡Lo lograste!"; btn.innerText = "Siguiente Nivel";
+            btn.style.backgroundColor = "#2ecc71"; btn.onclick = nextLevel;
+        } else {
+            icon.innerText = "💥"; title.innerText = "¡Boom!";
+            txt.innerText = msg; btn.innerText = "Reintentar";
+            btn.style.backgroundColor = "#e74c3c";
+            btn.onclick = () => {
+                m.style.display = 'none';
+                const lvl = levels[currentLvl];
+                robot = { x: lvl.start[0], y: lvl.start[1] };
+                drawGrid();
+            };
+        }
+        m.style.display = 'flex';
+    }
+
+    function nextLevel() { currentLvl++; init(); }
+    init();
+</script>
+</body>
+</html>

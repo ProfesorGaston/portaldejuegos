@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Constructor de Palabras</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap');
+        
+        body {
+            background-color: #f0f3f5;
+            font-family: 'Fredoka One', cursive;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            touch-action: manipulation;
+            user-select: none;
+        }
+
+        #game-container {
+            width: 95%;
+            /* TAMAÑO GIGANTE */
+            max-width: 900px; 
+            background: white;
+            border-radius: 30px;
+            padding: 30px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+            text-align: center;
+            position: relative;
+            border-bottom: 10px solid #ddd;
+        }
+
+        #header {
+            display: flex; justify-content: space-between; align-items: center;
+            color: #7f8c8d; 
+            font-size: 1.5rem; 
+            margin-bottom: 30px;
+            font-family: sans-serif; font-weight: bold;
+            background: #f7f9fa;
+            padding: 15px 20px;
+            border-radius: 20px;
+        }
+        
+        .level-info { color: #2980b9; }
+        .stat-group { display: flex; gap: 20px; align-items: center; }
+
+        #timer {
+            color: #2c3e50;
+            background: #ecf0f1;
+            padding: 8px 20px;
+            border-radius: 25px;
+            min-width: 70px;
+            display: inline-block;
+        }
+        
+        .urgent {
+            color: white !important;
+            background: #e74c3c !important;
+            animation: pulse-red 1s infinite;
+        }
+        @keyframes pulse-red {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        #image-display {
+            font-size: 120px; 
+            margin: 10px 0 35px 0;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            filter: drop-shadow(0 8px 8px rgba(0,0,0,0.15));
+            height: 140px; line-height: 140px; 
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0); }
+            to { transform: scale(1); }
+        }
+
+        /* Contenedor de Slots (Donde se escribe) */
+        #slots-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 40px;
+            min-height: 80px;
+            flex-wrap: wrap;
+        }
+
+        .slot {
+            width: 60px; height: 80px;
+            background: #ecf0f1;
+            border-radius: 12px;
+            border-bottom: 6px solid #bdc3c7;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 3rem; 
+            color: #2c3e50;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+        }
+        
+        .slot.filled {
+            background: #fff;
+            border: 3px solid #3498db;
+            color: #3498db;
+            border-bottom: 6px solid #2980b9;
+        }
+
+        .slot.correct {
+            background: #2ecc71; color: white; border-color: #27ae60;
+            animation: bounce 0.5s;
+        }
+
+        /* Banco de Letras */
+        #letters-bank {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .letter-btn {
+            width: 65px; height: 80px;
+            background: #ff9f43;
+            color: white;
+            border-radius: 12px;
+            border: none;
+            border-bottom: 6px solid #e67e22;
+            font-size: 2.5rem;
+            font-family: inherit;
+            cursor: pointer;
+            transition: transform 0.1s;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .letter-btn:active { transform: translateY(6px); border-bottom: 0; }
+        .letter-btn:hover { filter: brightness(1.1); }
+        
+        /* Overlays */
+        #overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.98);
+            border-radius: 30px;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            z-index: 10;
+            text-align: center;
+            padding: 30px;
+            box-sizing: border-box;
+        }
+
+        h1 { 
+            color: #ff9f43; 
+            margin-bottom: 20px; 
+            font-size: 3.5rem; 
+            text-shadow: 3px 3px #feca57; 
+            line-height: 1.1; /* Mejor espaciado para título largo */
+        }
+        
+        button.main-btn {
+            background: #2ecc71; color: white;
+            padding: 20px 60px; font-size: 2rem;
+            border: none; border-radius: 60px;
+            border-bottom: 8px solid #27ae60;
+            cursor: pointer; font-family: inherit;
+            margin-top: 30px;
+        }
+        button.main-btn:active { transform: translateY(6px); border-bottom: 0; }
+        button.main-btn.retry { background: #e74c3c; border-bottom-color: #c0392b; }
+
+        #watermark {
+            position: fixed; bottom: 15px; right: 20px;
+            font-size: 16px; color: rgba(0,0,0,0.3); font-family: sans-serif; pointer-events: none;
+        }
+
+        #overlay-msg {
+            font-size: 1.5rem !important;
+            line-height: 1.6;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+            40% {transform: translateY(-15px);}
+            60% {transform: translateY(-8px);}
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div id="header">
+            <div class="level-info">
+                NIVEL <span id="level-num">1</span> <span style="color:#bdc3c7">•</span> 
+                PALABRA <span id="round-num">1</span>/8
+            </div>
+            <div class="stat-group">
+                <span id="timer">⏱️ 60</span>
+                <span>⭐ <span id="score">0</span></span>
+            </div>
+        </div>
+
+        <div id="image-display">❓</div>
+
+        <div id="slots-container"></div>
+
+        <div id="letters-bank"></div>
+
+        <div id="overlay">
+            <h1 id="overlay-title">CONSTRUCTOR DE PALABRAS</h1>
+            
+            <p id="overlay-msg" style="color:#7f8c8d; font-size:1.5rem; margin-bottom:20px">
+                ¡Ordena las letras!
+            </p>
+            
+            <button id="overlay-btn" class="main-btn" onclick="startGame()">JUGAR</button>
+        </div>
+    </div>
+
+    <div id="watermark">Creado por el Prof. Gastón</div>
+
+<script>
+    // --- BASE DE DATOS ---
+    const gameData = {
+        1: [ // 3 Letras
+            { word: "SOL", icon: "☀️" }, { word: "PAN", icon: "🥖" },
+            { word: "OSO", icon: "🐻" }, { word: "PEZ", icon: "🐟" },
+            { word: "LUZ", icon: "💡" }, { word: "MAR", icon: "🌊" },
+            { word: "SAL", icon: "🧂" }, { word: "UVA", icon: "🍇" }
+        ],
+        2: [ // 4 Letras
+            { word: "PATO", icon: "🦆" }, { word: "GATO", icon: "🐱" },
+            { word: "CASA", icon: "🏠" }, { word: "LUNA", icon: "🌙" },
+            { word: "MONO", icon: "🐒" }, { word: "LEON", icon: "🦁" },
+            { word: "BEBE", icon: "👶" }, { word: "MANO", icon: "✋" }
+        ],
+        3: [ // 5 Letras
+            { word: "LIBRO", icon: "📚" }, { word: "ARBOL", icon: "🌳" },
+            { word: "PERRO", icon: "🐶" }, { word: "LAPIZ", icon: "✏️" },
+            { word: "AVION", icon: "✈️" }, { word: "MUNDO", icon: "🌍" },
+            { word: "RELOJ", icon: "⏰" }, { word: "FUEGO", icon: "🔥" }
+        ],
+        4: [ // 6 Letras
+            { word: "TOMATE", icon: "🍅" }, { word: "REMERA", icon: "👕" },
+            { word: "PELOTA", icon: "⚽" }, { word: "ZAPATO", icon: "👞" },
+            { word: "PUERTA", icon: "🚪" }, { word: "BANANA", icon: "🍌" },
+            { word: "CONEJO", icon: "🐰" }, { word: "JIRAFA", icon: "🦒" }
+        ],
+        5: [ // 7 Letras
+            { word: "MANZANA", icon: "🍎" }, { word: "NARANJA", icon: "🍊" },
+            { word: "VENTANA", icon: "🪟" }, { word: "BALLENA", icon: "🐳" },
+            { word: "TORTUGA", icon: "🐢" }, { word: "VESTIDO", icon: "👗" },
+            { word: "CORAZON", icon: "❤️" }, { word: "PINGUINO", icon: "🐧" } 
+        ],
+        6: [ // 8 Letras
+            { word: "ELEFANTE", icon: "🐘" }, { word: "TELEFONO", icon: "📞" },
+            { word: "ESCALERA", icon: "🪜" }, { word: "CANGREJO", icon: "🦀" },
+            { word: "PANTALON", icon: "👖" }, { word: "PRINCESA", icon: "👸" },
+            { word: "MARIPOSA", icon: "🦋" }, { word: "CARAMELO", icon: "🍬" }
+        ]
+    };
+
+    const TOTAL_LEVELS = 6;
+    const ROUNDS_PER_LEVEL = 8;
+
+    let currentLevel = 1;
+    let currentRound = 1; 
+    let score = 0;
+    
+    let currentWordObj = {};
+    let formedWord = [];
+    let gameActive = false;
+
+    // Timer
+    let timeLeft = 60;
+    let timerInterval;
+    
+    // UI Elements
+    const imageDisplay = document.getElementById('image-display');
+    const slotsContainer = document.getElementById('slots-container');
+    const lettersBank = document.getElementById('letters-bank');
+    const overlay = document.getElementById('overlay');
+    const timerDisplay = document.getElementById('timer');
+
+    // Audio
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSound(type) {
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+
+        if (type === 'click') {
+            osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+        } else if (type === 'win') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+            osc.frequency.setValueAtTime(600, audioCtx.currentTime + 0.1);
+            osc.frequency.setValueAtTime(800, audioCtx.currentTime + 0.2);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.4);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+        } else if (type === 'pop') {
+            osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.05);
+        } else if (type === 'lose') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+            osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.3);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+        }
+    }
+
+    function startGame() {
+        overlay.style.display = 'none';
+        score = 0;
+        currentLevel = 1;
+        currentRound = 1;
+        loadRound();
+    }
+
+    function loadRound() {
+        if (currentLevel > TOTAL_LEVELS) {
+            document.getElementById('overlay-title').innerText = "¡MAESTRO DE PALABRAS!";
+            document.getElementById('overlay-title').style.color = "#2ecc71";
+            document.getElementById('overlay-msg').innerText = `Has completado los 6 niveles y las 48 palabras.\nPuntaje Final: ${score}`;
+            const btn = document.getElementById('overlay-btn');
+            btn.innerText = "JUGAR DE NUEVO";
+            btn.className = "main-btn";
+            btn.onclick = startGame;
+            overlay.style.display = 'flex';
+            return;
+        }
+
+        gameActive = true;
+        currentWordObj = gameData[currentLevel][currentRound - 1];
+        formedWord = new Array(currentWordObj.word.length).fill(null);
+
+        document.getElementById('level-num').innerText = currentLevel;
+        document.getElementById('round-num').innerText = currentRound;
+        document.getElementById('score').innerText = score;
+        imageDisplay.innerText = currentWordObj.icon;
+        
+        imageDisplay.style.animation = 'none';
+        imageDisplay.offsetHeight; 
+        imageDisplay.style.animation = 'popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+
+        renderSlots();
+        renderLettersBank();
+        startTimer(); 
+    }
+
+    function startTimer() {
+        clearInterval(timerInterval);
+        timeLeft = 60; 
+        updateTimerUI();
+        
+        timerInterval = setInterval(() => {
+            if (!gameActive) return;
+            timeLeft--;
+            updateTimerUI();
+            
+            if (timeLeft <= 0) {
+                handleTimeOut();
+            }
+        }, 1000);
+    }
+
+    function updateTimerUI() {
+        timerDisplay.innerText = "⏱️ " + timeLeft;
+        if (timeLeft <= 10) {
+            timerDisplay.classList.add('urgent');
+        } else {
+            timerDisplay.classList.remove('urgent');
+        }
+    }
+
+    function handleTimeOut() {
+        clearInterval(timerInterval);
+        gameActive = false;
+        playSound('lose');
+        
+        document.getElementById('overlay-title').innerText = "¡TIEMPO AGOTADO!";
+        document.getElementById('overlay-title').style.color = "#e74c3c";
+        document.getElementById('overlay-msg').innerText = "Se acabó el tiempo para esta palabra.";
+        const btn = document.getElementById('overlay-btn');
+        btn.innerText = "REINTENTAR";
+        btn.className = "main-btn retry";
+        btn.onclick = () => {
+            loadRound(); 
+            overlay.style.display = 'none';
+        };
+        overlay.style.display = 'flex';
+    }
+
+    function renderSlots() {
+        slotsContainer.innerHTML = '';
+        formedWord.forEach((char, index) => {
+            const slot = document.createElement('div');
+            slot.className = char ? 'slot filled' : 'slot';
+            slot.innerText = char || '';
+            
+            slot.onclick = () => {
+                if (char && gameActive) {
+                    playSound('pop');
+                    returnLetterToBank(char, index);
+                }
+            };
+            slotsContainer.appendChild(slot);
+        });
+    }
+
+    function renderLettersBank() {
+        lettersBank.innerHTML = '';
+        const currentLettersInSlots = [...formedWord];
+        const targetLetters = currentWordObj.word.split('');
+        const tempTarget = [...targetLetters];
+
+        for(let l of currentLettersInSlots) {
+            if(l) {
+                const idx = tempTarget.indexOf(l);
+                if(idx > -1) tempTarget.splice(idx, 1);
+            }
+        }
+
+        tempTarget.sort(() => Math.random() - 0.5);
+
+        tempTarget.forEach(char => {
+            const btn = document.createElement('button');
+            btn.className = 'letter-btn';
+            btn.innerText = char;
+            btn.onclick = () => {
+                if(gameActive) placeLetter(char);
+            };
+            lettersBank.appendChild(btn);
+        });
+    }
+
+    function placeLetter(char) {
+        if (!gameActive) return;
+        const emptyIndex = formedWord.indexOf(null);
+        if (emptyIndex !== -1) {
+            playSound('click');
+            formedWord[emptyIndex] = char;
+            renderSlots();
+            renderLettersBank();
+            checkWin();
+        }
+    }
+
+    function returnLetterToBank(char, index) {
+        if (!gameActive) return;
+        formedWord[index] = null;
+        renderSlots();
+        renderLettersBank();
+    }
+
+    function checkWin() {
+        if (!formedWord.includes(null)) {
+            const wordString = formedWord.join('');
+            if (wordString === currentWordObj.word) {
+                gameActive = false; 
+                clearInterval(timerInterval); 
+                playSound('win');
+                score += 10 + Math.floor(timeLeft / 2); 
+                document.getElementById('score').innerText = score;
+                
+                const slots = document.querySelectorAll('.slot');
+                slots.forEach(s => s.classList.add('correct'));
+
+                setTimeout(() => {
+                    nextRound();
+                }, 1200);
+            } else {
+                slotsContainer.style.transform = "translateX(5px)";
+                setTimeout(() => slotsContainer.style.transform = "translateX(-5px)", 50);
+                setTimeout(() => slotsContainer.style.transform = "translateX(0)", 100);
+            }
+        }
+    }
+
+    function nextRound() {
+        currentRound++;
+        if (currentRound > ROUNDS_PER_LEVEL) {
+            currentLevel++;
+            currentRound = 1;
+            loadRound();
+        } else {
+            loadRound();
+        }
+    }
+
+    window.addEventListener('keydown', (e) => {
+        if (!gameActive) return;
+
+        if (e.key === 'Backspace') {
+            for (let i = formedWord.length - 1; i >= 0; i--) {
+                if (formedWord[i] !== null) {
+                    returnLetterToBank(formedWord[i], i);
+                    playSound('pop');
+                    return; 
+                }
+            }
+            return;
+        }
+
+        const key = e.key.toUpperCase();
+        if (/^[A-ZÑ]$/.test(key)) {
+            const targetCount = currentWordObj.word.split('').filter(c => c === key).length;
+            const currentCount = formedWord.filter(c => c === key).length;
+
+            if (currentCount < targetCount) {
+                placeLetter(key);
+            }
+        }
+    });
+
+</script>
+</body>
+</html>

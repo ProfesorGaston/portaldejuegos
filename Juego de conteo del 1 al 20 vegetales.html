@@ -1,0 +1,292 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>La Huerta de Números - Prof. Gastón</title>
+    <style>
+        :root {
+            --bg: #f1f8e9;
+            --panel: #ffffff;
+            --primary: #558b2f;
+            --accent: #ff8f00;
+            --correct: #4caf50;
+            --wrong: #d84315;
+        }
+
+        body {
+            background-color: var(--bg);
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #game-container {
+            background: var(--panel);
+            width: 90%;
+            max-width: 800px;
+            padding: 25px;
+            border-radius: 40px;
+            border: 8px solid var(--primary);
+            box-shadow: 0 10px 0 #33691e;
+            text-align: center;
+            position: relative;
+        }
+
+        #credits {
+            position: absolute;
+            bottom: 15px;
+            right: 25px;
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            font-style: italic;
+            pointer-events: none;
+        }
+
+        #overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.98);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 32px;
+        }
+
+        .play-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 20px 60px;
+            font-size: 40px;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 8px 0 #c67100;
+            transition: 0.1s;
+        }
+
+        .play-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #c67100; }
+
+        #progress-wrapper {
+            width: 100%; height: 25px;
+            background: #e0e0e0;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border: 3px solid #ced4da;
+            overflow: hidden;
+        }
+
+        #progress-bar {
+            width: 0%; height: 100%;
+            background: var(--correct);
+            transition: width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        #display-area {
+            background: #fafafa;
+            min-height: 250px;
+            border-radius: 20px;
+            border: 4px dashed #a5d6a7;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .item-huerta {
+            font-size: 45px;
+            margin: 4px;
+            display: inline-block;
+            animation: bounceIn 0.4s ease-out;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0); }
+            100% { transform: scale(1); }
+        }
+
+        .btn-option {
+            background: #fff9c4;
+            border: 4px solid #fbc02d;
+            border-radius: 15px;
+            font-size: 35px;
+            font-weight: bold;
+            padding: 10px 25px;
+            margin: 8px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #f9a825;
+            min-width: 90px;
+        }
+
+        #message { font-size: 1.6rem; font-weight: bold; height: 35px; margin-bottom: 10px; color: #33691e; }
+
+        .shake { animation: shake 0.4s; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="overlay">
+        <h1 style="color: var(--primary); font-size: 3.5rem; margin-bottom: 30px;">🍎 La Huerta de Números</h1>
+        <button class="play-btn" onclick="iniciarApp()">¡COSECHAR!</button>
+    </div>
+
+    <div id="progress-wrapper">
+        <div id="progress-bar"></div>
+    </div>
+
+    <div id="message"></div>
+    <div id="display-area"></div>
+    <div id="options-container"></div>
+    <p id="lvl-info" style="color: #689f38; font-weight: bold; font-size: 1.1rem;"></p>
+    
+    <div id="credits">Creado por el Prof. Gastón</div>
+</div>
+
+<script>
+    let audioCtx;
+    let etapa = 0;
+    let nivel = 1;
+    let metaActual = 0;
+    let ultimoNumero = 0;
+    const etapasPorNivel = 20;
+    
+    // Lista de elementos de la huerta y jardín
+    const itemsOriginales = ['🍎', '🥕', '🌽', '🥦', '🍓', '🍇', '🌻', '🍅', '🥔', '🍐', '🍄', '🍒', '🍋', '🍉', '🍑', '🍊', '🍍', '🌵'];
+    let bolsaItems = [...itemsOriginales];
+
+    function iniciarApp() {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        document.getElementById('overlay').style.display = 'none';
+        nuevaRonda();
+    }
+
+    function sonar(tipo) {
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        if (tipo === 'bien') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        } else {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        }
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.2);
+    }
+
+    function obtenerItemSinRepetir() {
+        if (bolsaItems.length === 0) {
+            bolsaItems = [...itemsOriginales];
+        }
+        const index = Math.floor(Math.random() * bolsaItems.length);
+        const item = bolsaItems[index];
+        bolsaItems.splice(index, 1);
+        return item;
+    }
+
+    function nuevaRonda() {
+        const area = document.getElementById('display-area');
+        const opts = document.getElementById('options-container');
+        const msg = document.getElementById('message');
+        const bar = document.getElementById('progress-bar');
+        const info = document.getElementById('lvl-info');
+
+        area.innerHTML = '';
+        opts.innerHTML = '';
+        msg.innerText = "¿Cuántos hay en la cosecha?";
+        
+        bar.style.width = (etapa * 5) + "%";
+        info.innerText = `Nivel ${nivel} • Aciertos ${etapa}/${etapasPorNivel}`;
+
+        let min, max;
+        switch(nivel) {
+            case 1: min = 1; max = 5; break;
+            case 2: min = 4; max = 10; break;
+            case 3: min = 7; max = 15; break;
+            case 4: min = 11; max = 25; break;
+            default: min = 11; max = 25;
+        }
+
+        let nuevoNumero;
+        do {
+            nuevoNumero = Math.floor(Math.random() * (max - min + 1)) + min;
+        } while (nuevoNumero === ultimoNumero && max > min);
+        
+        metaActual = nuevoNumero;
+        ultimoNumero = nuevoNumero;
+
+        const icono = obtenerItemSinRepetir();
+
+        for (let i = 0; i < metaActual; i++) {
+            const span = document.createElement('span');
+            span.className = 'item-huerta';
+            span.innerText = icono;
+            area.appendChild(span);
+        }
+
+        let botones = [metaActual];
+        while (botones.length < 4) {
+            let error = metaActual + (Math.floor(Math.random() * 7) - 3);
+            if (error > 0 && error <= 30 && !botones.includes(error)) botones.push(error);
+        }
+        botones.sort((a, b) => a - b);
+
+        botones.forEach(num => {
+            const btn = document.createElement('button');
+            btn.className = 'btn-option';
+            btn.innerText = num;
+            btn.onclick = () => validar(num);
+            opts.appendChild(btn);
+        });
+    }
+
+    function validar(n) {
+        if (n === metaActual) {
+            sonar('bien');
+            document.getElementById('message').innerText = "¡Qué buena cosecha! 🌟";
+            document.getElementById('message').style.color = "var(--correct)";
+            etapa++;
+            
+            document.getElementById('progress-bar').style.width = (etapa * 5) + "%";
+
+            if (etapa >= etapasPorNivel) {
+                etapa = 0;
+                nivel++;
+                if(nivel > 4) {
+                    alert("¡Increíble! Eres el mejor agricultor. La huerta del Prof. Gastón está completa.");
+                    nivel = 1;
+                }
+            }
+            setTimeout(nuevaRonda, 1000);
+        } else {
+            sonar('mal');
+            document.getElementById('message').innerText = "Cuenta otra vez... 🧐";
+            document.getElementById('message').style.color = "var(--wrong)";
+            document.getElementById('game-container').classList.add('shake');
+            setTimeout(() => document.getElementById('game-container').classList.remove('shake'), 400);
+        }
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>El Pescador de Especies - Prof. Gastón</title>
+    <style>
+        :root {
+            --sea-bg: #00a8ff;
+            --panel: #ffffff;
+            --primary: #0c2461; /* Azul más oscuro */
+            --correct: #44bd32;
+            --wrong: #e84118;
+            --highlight: #f6b93b;
+        }
+
+        body {
+            background-color: var(--sea-bg);
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        #game-container {
+            background: linear-gradient(to bottom, #82ccdd, #60a3bc, #3c6382);
+            width: 95%;
+            max-width: 900px;
+            height: 92vh;
+            border-radius: 40px;
+            border: 8px solid white;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- UI SUPERIOR --- */
+        #ui-layer {
+            height: 90px;
+            background: rgba(255,255,255,0.95);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            z-index: 10;
+            border-bottom: 5px solid #0a3d62;
+        }
+
+        .stat-box {
+            font-size: 1.4rem;
+            color: var(--primary);
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Caja del objetivo central */
+        #target-display {
+            background: #dff9fb;
+            padding: 5px 25px;
+            border-radius: 50px;
+            border: 3px solid var(--primary);
+            font-weight: bold;
+            display: flex;
+            flex-direction: column; /* Apilado para que se vea bien */
+            align-items: center;
+            line-height: 1;
+        }
+
+        #target-label { font-size: 0.8rem; color: #666; margin-bottom: 2px; }
+        
+        #target-content { 
+            display: flex; align-items: center; gap: 10px; 
+            font-size: 1.5rem; color: var(--primary);
+        }
+        
+        #target-icon { font-size: 2.5rem; filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.2)); }
+
+        /* --- ZONA DE JUEGO --- */
+        #sea-area {
+            flex-grow: 1;
+            position: relative;
+            cursor: none; /* Ocultamos cursor */
+            background-image: radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.1) 100%);
+        }
+
+        /* Las burbujas con peces */
+        .bubble {
+            position: absolute;
+            width: 70px; height: 70px;
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.8), rgba(135, 206, 235, 0.4));
+            border: 2px solid rgba(255,255,255,0.6);
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 3rem; /* Emojis grandes */
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            animation: wobble 3s ease-in-out infinite;
+            user-select: none;
+        }
+
+        @keyframes wobble {
+            0%, 100% { transform: translateX(0) rotate(-5deg); }
+            50% { transform: translateX(10px) rotate(5deg); }
+        }
+
+        /* Anzuelo */
+        #hook-line {
+            position: absolute; top: 0; width: 3px; background: #2c2c54;
+            transform-origin: top center; pointer-events: none;
+        }
+        #hook {
+            position: absolute; width: 40px; height: 40px;
+            font-size: 45px; 
+            transform: translate(-50%, 0);
+            pointer-events: none;
+            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.3));
+        }
+
+        /* --- PANTALLAS --- */
+        #menu, #overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(10, 61, 98, 0.95);
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            z-index: 20; text-align: center;
+            color: white;
+        }
+
+        h1 { font-size: 3rem; margin-bottom: 10px; text-shadow: 0 4px 0 #000; color: #fab1a0; }
+        p { font-size: 1.3rem; margin-bottom: 30px; color: #dfe6e9; }
+
+        .btn {
+            padding: 15px 40px; font-size: 1.5rem; font-weight: bold;
+            background: #fab1a0; color: #2d3436;
+            border: none; border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #e17055;
+            transition: transform 0.1s;
+            margin: 10px;
+        }
+        .btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #e17055; }
+
+        #watermark {
+            position: absolute; bottom: 10px; right: 20px;
+            font-size: 14px; color: rgba(255,255,255,0.5); z-index: 30;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="ui-layer">
+        <div class="stat-box">⭐ <span id="score">0</span></div>
+        
+        <div id="target-display">
+            <span id="target-label">¡PESCA ESTE!</span>
+            <div id="target-content">
+                <span id="target-icon">🐠</span> 
+                <span id="target-name">Nemo</span>
+            </div>
+        </div>
+        
+        <div class="stat-box">❤️ <span id="lives">3</span></div>
+        <div class="stat-box">⏱️ <span id="time">60</span></div>
+    </div>
+
+    <div id="sea-area">
+        <div id="hook-line"></div>
+        <div id="hook">🪝</div>
+        <div id="bubbles-container"></div>
+    </div>
+
+    <div id="menu">
+        <h1>🎣 PESCA MARINA</h1>
+        <p>Atrapa solo el pez que se indica</p>
+        <div>
+            <button class="btn" onclick="startGame('easy')">Fácil</button>
+            <button class="btn" onclick="startGame('normal')">Normal</button>
+            <button class="btn" onclick="startGame('hard')">Experto</button>
+        </div>
+    </div>
+
+    <div id="overlay" style="display: none;">
+        <h1 id="overlay-title">¡TIEMPO!</h1>
+        <div id="overlay-emoji" style="font-size: 80px; margin: 20px;">⏰</div>
+        <p id="overlay-msg">Puntaje final: 0</p>
+        <button class="btn" onclick="closeOverlay()">Continuar</button>
+    </div>
+
+    <div id="watermark">Creado por el Prof. Gastón</div>
+</div>
+
+<script>
+    // --- BASE DE DATOS DE ESPECIES MARINAS ---
+    const seaCreatures = [
+        { icon: "🐠", name: "Pez Tropical" },
+        { icon: "🐡", name: "Pez Globo" },
+        { icon: "🐙", name: "Pulpo" },
+        { icon: "🦀", name: "Cangrejo" },
+        { icon: "🦑", name: "Calamar" },
+        { icon: "🦈", name: "Tiburón" },
+        { icon: "🐬", name: "Delfín" },
+        { icon: "🐳", name: "Ballena" },
+        { icon: "🐢", name: "Tortuga" },
+        { icon: "🦞", name: "Langosta" },
+        { icon: "🐚", name: "Caracol" },
+        { icon: "🦐", name: "Camarón" },
+        { icon: "🐟", name: "Pez Azul" }
+    ];
+
+    let currentLevel = 0;
+    let score = 0;
+    let lives = 3; 
+    let timeLeft = 60;
+    let gameInterval, bubbleInterval;
+    let bubbles = [];
+    let gameActive = false;
+    let difficultySpeed = 2; 
+    let spawnRate = 1000;
+    
+    // Variables de control del mouse
+    const seaArea = document.getElementById('sea-area');
+    const hook = document.getElementById('hook');
+    const hookLine = document.getElementById('hook-line');
+    let hookX = 300;
+
+    // Audio
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSound(type) {
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+
+        if (type === 'pop') { // Burbuja correcta (sonido agudo y corto)
+            osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+        } else if (type === 'wrong') { // Error (sonido grave)
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+            osc.frequency.linearRampToValueAtTime(50, audioCtx.currentTime + 0.3);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+        } else if (type === 'win') { // Victoria
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(523, audioCtx.currentTime); 
+            osc.frequency.setValueAtTime(659, audioCtx.currentTime + 0.2); 
+            osc.frequency.setValueAtTime(784, audioCtx.currentTime + 0.4); 
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.8);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.8);
+        }
+    }
+
+    function startGame(diff) {
+        document.getElementById('menu').style.display = 'none';
+        
+        if (diff === 'easy') { difficultySpeed = 1.5; spawnRate = 1300; }
+        if (diff === 'normal') { difficultySpeed = 2.5; spawnRate = 1000; }
+        if (diff === 'hard') { difficultySpeed = 4; spawnRate = 700; }
+
+        currentLevel = 0;
+        // Mezclamos el orden de los animales para que no sea siempre igual
+        seaCreatures.sort(() => Math.random() - 0.5);
+        startLevel();
+    }
+
+    function startLevel() {
+        // Reset de estado
+        score = 0;
+        timeLeft = 60;
+        lives = 3; 
+        bubbles = [];
+        gameActive = true;
+        document.getElementById('bubbles-container').innerHTML = '';
+        
+        // Configurar UI con el animal objetivo actual
+        const target = seaCreatures[currentLevel];
+        document.getElementById('target-icon').innerText = target.icon;
+        document.getElementById('target-name').innerText = target.name;
+        
+        updateUI();
+
+        // Limpieza de intervalos previos
+        clearInterval(gameInterval);
+        clearInterval(bubbleInterval);
+        
+        // Iniciar loops
+        gameInterval = setInterval(updateGame, 20);
+        bubbleInterval = setInterval(createBubble, spawnRate);
+    }
+
+    function updateUI() {
+        document.getElementById('score').innerText = score;
+        document.getElementById('time').innerText = timeLeft;
+        document.getElementById('lives').innerText = lives;
+    }
+
+    // Seguir al mouse
+    seaArea.addEventListener('mousemove', (e) => {
+        const rect = seaArea.getBoundingClientRect();
+        hookX = e.clientX - rect.left;
+        // Límites laterales
+        if (hookX < 20) hookX = 20;
+        if (hookX > rect.width - 20) hookX = rect.width - 20;
+
+        // Actualizar visual
+        hook.style.left = hookX + 'px';
+        hook.style.top = '100px'; 
+        hookLine.style.left = hookX + 'px';
+        hookLine.style.height = '120px'; 
+    });
+
+    function createBubble() {
+        if (!gameActive) return;
+
+        const b = document.createElement('div');
+        b.className = 'bubble';
+        
+        // LÓGICA DE APARICIÓN:
+        // 40% probabilidad de que sea el animal correcto
+        // 60% probabilidad de distracción (otro animal)
+        let creature;
+        if (Math.random() < 0.4) {
+            creature = seaCreatures[currentLevel];
+        } else {
+            // Elegir uno random que NO sea el actual
+            let randomIdx;
+            do {
+                randomIdx = Math.floor(Math.random() * seaCreatures.length);
+            } while (randomIdx === currentLevel);
+            creature = seaCreatures[randomIdx];
+        }
+        
+        b.innerText = creature.icon;
+        
+        // Posición X aleatoria
+        const startX = Math.random() * (seaArea.offsetWidth - 70);
+        b.style.left = startX + 'px';
+        b.style.bottom = '-80px'; 
+
+        document.getElementById('bubbles-container').appendChild(b);
+        
+        bubbles.push({
+            el: b,
+            x: startX,
+            y: -80,
+            speed: difficultySpeed + Math.random(), // Variación de velocidad
+            icon: creature.icon // Guardamos qué icono es para comparar después
+        });
+    }
+
+    function updateGame() {
+        if (!gameActive) return;
+
+        // Timer simplificado
+        if (Math.random() < 0.02) { 
+            timeLeft--;
+            updateUI();
+            if (timeLeft <= 0) gameOver("time");
+        }
+
+        // Mover burbujas y chequear colisiones
+        for (let i = bubbles.length - 1; i >= 0; i--) {
+            let bubble = bubbles[i];
+            bubble.y += bubble.speed;
+            bubble.el.style.bottom = bubble.y + 'px';
+
+            const hookRect = hook.getBoundingClientRect();
+            const bubbleRect = bubble.el.getBoundingClientRect();
+
+            // Colisión simple AABB
+            if (
+                hookRect.left < bubbleRect.right &&
+                hookRect.right > bubbleRect.left &&
+                hookRect.top < bubbleRect.bottom &&
+                hookRect.bottom > bubbleRect.top
+            ) {
+                checkCatch(bubble, i);
+            }
+
+            // Eliminar si sale por arriba
+            if (bubble.y > seaArea.offsetHeight + 60) {
+                bubble.el.remove();
+                bubbles.splice(i, 1);
+            }
+        }
+    }
+
+    function checkCatch(bubble, index) {
+        const targetIcon = seaCreatures[currentLevel].icon;
+        
+        // Efecto visual: eliminar burbuja
+        bubble.el.remove();
+        bubbles.splice(index, 1);
+
+        if (bubble.icon === targetIcon) {
+            // --- CORRECTO ---
+            score += 10;
+            playSound('pop');
+            updateUI();
+            
+            // Meta: 10 capturas (100 puntos) para pasar de nivel
+            if (score >= 100) {
+                levelWin();
+            }
+        } else {
+            // --- INCORRECTO ---
+            lives--;
+            playSound('wrong');
+            updateUI();
+
+            // Feedback visual de error (borde rojo)
+            document.getElementById('game-container').style.borderColor = '#e84118';
+            setTimeout(() => {
+                document.getElementById('game-container').style.borderColor = 'white';
+            }, 200);
+
+            if (lives <= 0) {
+                gameOver("lives");
+            }
+        }
+    }
+
+    function levelWin() {
+        gameActive = false;
+        clearInterval(gameInterval); clearInterval(bubbleInterval);
+        playSound('win');
+        
+        if (currentLevel < seaCreatures.length - 1) {
+            showOverlay("¡EXCELENTE!", "¡Atrapaste todos los " + seaCreatures[currentLevel].name + "s!", "🌟", true);
+        } else {
+            showOverlay("¡INCREÍBLE!", "¡Eres un maestro pescador!", "🏆", true);
+        }
+    }
+
+    function gameOver(reason) {
+        gameActive = false;
+        clearInterval(gameInterval); clearInterval(bubbleInterval);
+        
+        let msg = "Se acabó el tiempo.";
+        if (reason === "lives") msg = "¡Se rompieron las redes! (0 Vidas)";
+
+        showOverlay("¡FIN DEL JUEGO!", msg, "😢", false);
+    }
+
+    function showOverlay(title, msg, emoji, success) {
+        document.getElementById('overlay-title').innerText = title;
+        document.getElementById('overlay-msg').innerText = msg;
+        document.getElementById('overlay-emoji').innerText = emoji;
+        const btn = document.querySelector('#overlay button');
+        
+        if (success) {
+            if (currentLevel < seaCreatures.length - 1) {
+                 btn.innerText = "Siguiente Especie";
+                 btn.onclick = () => {
+                     closeOverlay();
+                     currentLevel++;
+                     startLevel();
+                 };
+            } else {
+                btn.innerText = "Menú Principal";
+                btn.onclick = () => {
+                    closeOverlay();
+                    document.getElementById('menu').style.display = 'flex';
+                };
+            }
+        } else {
+            btn.innerText = "Reintentar Nivel";
+            btn.onclick = () => {
+                closeOverlay();
+                startLevel(); 
+            };
+        }
+        
+        document.getElementById('overlay').style.display = 'flex';
+    }
+
+    function closeOverlay() {
+        document.getElementById('overlay').style.display = 'none';
+    }
+
+</script>
+</body>
+</html>

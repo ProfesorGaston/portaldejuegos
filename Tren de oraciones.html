@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>El Tren de las Palabras - Prof. Gastón</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Open+Sans:wght@600&display=swap');
+
+        :root {
+            --sky: #87CEEB;
+            --grass: #7cbd7c;
+            --rail-color: #555;
+            --wood: #8B4513;
+        }
+
+        body {
+            background-color: #2c3e50;
+            font-family: 'Open Sans', sans-serif;
+            margin: 0; height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden; user-select: none;
+        }
+
+        .watermark {
+            position: fixed; bottom: 10px; right: 15px;
+            color: rgba(255, 255, 255, 0.3); font-family: 'Fredoka One'; font-size: 0.9rem;
+            pointer-events: none; z-index: 999;
+        }
+
+        /* --- MARCO REDUCIDO UN 10% --- */
+        #game-frame {
+            width: 95%; 
+            max-width: 900px; /* Antes 1000px */
+            height: 90vh; 
+            max-height: 540px; /* Antes 600px */
+            background: linear-gradient(to bottom, var(--sky) 60%, var(--grass) 60%);
+            border-radius: 20px;
+            border: 8px solid #fff;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+            display: flex; flex-direction: column;
+        }
+
+        /* DECORACIÓN */
+        .sun {
+            position: absolute; top: 20px; right: 20px; width: 50px; height: 50px; /* Reducido */
+            background: #f1c40f; border-radius: 50%;
+            box-shadow: 0 0 20px #f39c12; animation: sunPulse 4s infinite alternate;
+        }
+        .cloud {
+            position: absolute; background: rgba(255,255,255,0.8); border-radius: 50px;
+            animation: floatCloud 20s linear infinite;
+        }
+        @keyframes sunPulse { from {transform: scale(1);} to {transform: scale(1.1);} }
+        @keyframes floatCloud { from {left: -20%;} to {left: 120%;} }
+
+        /* UI SUPERIOR */
+        header {
+            text-align: center; padding-top: 15px; z-index: 10;
+        }
+        h1 {
+            font-family: 'Fredoka One'; color: #fff; 
+            font-size: 2.2rem; /* Antes 2.5rem */
+            text-shadow: 3px 3px 0 rgba(0,0,0,0.2); margin: 0;
+        }
+        #level-info {
+            background: rgba(255,255,255,0.9); padding: 4px 18px; border-radius: 20px;
+            display: inline-flex; gap: 15px; margin-top: 8px; font-weight: bold; color: #333;
+            box-shadow: 0 3px 0 rgba(0,0,0,0.1); font-family: 'Fredoka One';
+            font-size: 0.9rem;
+        }
+
+        /* VÍAS */
+        .track-container {
+            position: absolute; bottom: 26%; left: 0; width: 100%; height: 18px;
+        }
+        .rail {
+            position: absolute; top: 0; width: 100%; height: 7px; background: var(--rail-color);
+        }
+        .ties {
+            position: absolute; top: 0; width: 100%; height: 18px;
+            background-image: linear-gradient(90deg, transparent 20px, var(--wood) 20px, var(--wood) 30px, transparent 30px);
+            background-size: 50px 100%; z-index: -1;
+        }
+
+        /* TREN */
+        #train-container {
+            position: absolute; 
+            bottom: 28%; /* Ajustado para el nuevo tamaño */
+            left: 40px;
+            display: flex; align-items: flex-end; gap: 4px;
+            transition: transform 1s cubic-bezier(0.25, 1, 0.5, 1);
+            padding-bottom: 5px;
+        }
+
+        /* COLORES DEL TREN */
+        .t-red { background: #e74c3c; border-color: #c0392b; }
+        .t-blue { background: #3498db; border-color: #2980b9; }
+        .t-green { background: #2ecc71; border-color: #27ae60; }
+        .t-yellow { background: #f1c40f; border-color: #f39c12; }
+        .t-purple { background: #9b59b6; border-color: #8e44ad; }
+        .t-orange { background: #e67e22; border-color: #d35400; }
+
+        .locomotive {
+            width: 108px; height: 90px; /* Reducido de 120x100 */
+            border-radius: 10px 25px 5px 5px;
+            position: relative;
+            display: flex; justify-content: center; align-items: center;
+            border-style: solid; border-width: 3px; z-index: 5;
+        }
+        .chimney {
+            position: absolute; top: -22px; left: 18px; width: 22px; height: 25px;
+            background: #333; border-top: 4px solid #000;
+        }
+        .cabin-window {
+            position: absolute; top: 12px; right: 8px; width: 30px; height: 30px;
+            background: #81ecec; border: 3px solid #333; border-radius: 5px;
+        }
+        .smoke {
+            position: absolute; top: -35px; left: 22px; width: 12px; height: 12px;
+            background: rgba(255,255,255,0.6); border-radius: 50%;
+            animation: smokeAnim 2s infinite; opacity: 0;
+        }
+        @keyframes smokeAnim {
+            0% { transform: translateY(0) scale(1); opacity: 0.8; }
+            100% { transform: translateY(-25px) scale(2); opacity: 0; }
+        }
+
+        .wagon {
+            width: 100px; height: 63px; /* Reducido de 110x70 */
+            border-style: solid; border-width: 3px; border-radius: 8px;
+            position: relative;
+            display: flex; justify-content: center; align-items: center;
+            margin-left: 2px;
+            cursor: pointer; transition: transform 0.1s;
+        }
+        .wagon::before {
+            content: ''; position: absolute; left: -8px; bottom: 18px;
+            width: 8px; height: 6px; background: #333;
+        }
+        .wagon:hover { transform: translateY(-3px); }
+
+        .wheel {
+            position: absolute; 
+            bottom: -11px; /* Ajuste fino */
+            width: 21px; height: 21px; /* Reducido de 24 */
+            background: #222; border: 3px solid #777; border-radius: 50%;
+            animation: spin 2s linear infinite; animation-play-state: paused;
+            z-index: 6;
+        }
+        .wheel::after {
+            content: ''; position: absolute; top: 50%; left: 0; width: 100%; height: 2px;
+            background: #777; transform: translateY(-50%);
+        }
+        .wheel::before {
+            content: ''; position: absolute; left: 50%; top: 0; width: 2px; height: 100%;
+            background: #777; transform: translateX(-50%);
+        }
+
+        .wagon-word {
+            font-family: 'Fredoka One'; color: #2c3e50; 
+            font-size: 1rem; /* Reducido */
+            pointer-events: none; text-shadow: 0 0 5px rgba(255,255,255,0.5);
+        }
+
+        /* ANDÉN */
+        #platform {
+            position: absolute; bottom: 0; width: 100%; height: 25%;
+            background: #ecf0f1; border-top: 6px solid #bdc3c7;
+            display: flex; justify-content: center; align-items: center; gap: 8px;
+            z-index: 20; padding: 10px; box-sizing: border-box; flex-wrap: wrap;
+        }
+
+        .word-card {
+            background: white; padding: 8px 16px; /* Padding reducido */
+            border-radius: 8px; border-bottom: 4px solid #95a5a6;
+            font-family: 'Fredoka One'; 
+            font-size: 1.1rem; /* Reducido */
+            color: #2c3e50;
+            cursor: pointer; transition: transform 0.1s;
+            box-shadow: 0 3px 4px rgba(0,0,0,0.1);
+        }
+        .word-card:active { transform: translateY(4px); border-bottom: 0; margin-top: 4px;}
+
+        /* BOTÓN */
+        #action-btn {
+            position: absolute; bottom: 30%; right: 25px;
+            background: #2ecc71; color: white;
+            border: none; border-radius: 50px;
+            padding: 12px 25px; /* Reducido */
+            font-family: 'Fredoka One'; 
+            font-size: 1.1rem; /* Reducido */
+            cursor: pointer; box-shadow: 0 4px 0 #27ae60;
+            z-index: 30; transition: all 0.2s;
+        }
+        #action-btn:active { transform: translateY(4px); box-shadow: none; }
+        #action-btn:disabled { background: #bdc3c7; box-shadow: none; cursor: not-allowed; }
+
+        /* MODALES */
+        .modal-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(44, 62, 80, 0.95); z-index: 100;
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            text-align: center; color: white;
+        }
+        .modal-btn {
+            padding: 12px 25px; font-size: 1.3rem; background: #f1c40f; color: #2c3e50;
+            border: none; border-radius: 50px; cursor: pointer; font-family: 'Fredoka One';
+            margin-top: 20px; box-shadow: 0 4px 0 #d35400;
+        }
+        .modal-btn:hover { transform: scale(1.05); }
+
+        /* ANIMACIONES */
+        .train-exit { animation: exitRight 2s ease-in forwards; }
+        @keyframes exitRight {
+            0% { transform: translateX(0); }
+            20% { transform: translateX(-30px); }
+            100% { transform: translateX(1500px); }
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .shake { animation: shake 0.4s; }
+        @keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-10px);} 75%{transform:translateX(10px);} }
+
+    </style>
+</head>
+<body>
+
+    <div class="watermark">Creado por el Prof. Gastón</div>
+
+    <div id="game-frame">
+        <div class="sun"></div>
+        <div class="cloud" style="width:100px; height:50px; top:40px; left:10%"></div>
+        <div class="cloud" style="width:140px; height:70px; top:80px; left:60%; animation-delay:-5s;"></div>
+
+        <header>
+            <h1>🚂 El Tren de las Palabras</h1>
+            <div id="level-info">
+                <span>Nivel: <span id="display-level">1</span></span>
+                <span>Ronda: <span id="display-round">1</span>/10</span>
+            </div>
+        </header>
+
+        <div class="track-container">
+            <div class="rail"></div>
+            <div class="ties"></div>
+        </div>
+
+        <div id="train-container">
+            </div>
+
+        <button id="action-btn" onclick="checkSentence()">ARRANCAR 📢</button>
+
+        <div id="platform">
+            </div>
+
+        <div id="level-modal" class="modal-overlay">
+            <h1 style="font-size: 2.5rem;">🌟 ¡Nivel Completado! 🌟</h1>
+            <p style="font-size: 1.2rem;">¡Excelente trabajo!</p>
+            <button class="modal-btn" onclick="nextLevel()">Siguiente Nivel ➡️</button>
+        </div>
+
+        <div id="victory-modal" class="modal-overlay">
+            <h1 style="font-size: 2.5rem; color:#f1c40f">🏆 ¡GANASTE! 🏆</h1>
+            <p style="font-size: 1.2rem;">Eres un experto en oraciones.</p>
+            <button class="modal-btn" onclick="location.reload()">Jugar de nuevo 🔄</button>
+        </div>
+    </div>
+
+<script>
+    // --- BASE DE DATOS ---
+    const gameData = {
+        1: [ // 3 Palabras
+            "El sol brilla", "Ana lee mucho", "El pez nada", "Soy muy feliz", 
+            "La flor crece", "El tren corre", "Leo un libro", "Veo un oso", 
+            "El cielo azul", "Veo la luna"
+        ],
+        2: [ // 4 Palabras
+            "La vaca come pasto", "Mi auto es rojo", "El niño juega feliz", 
+            "La abuela cocina rico", "El pájaro vuela alto", "Me gusta jugar mucho", 
+            "El sapo salta lejos", "La mesa es marrón", "Tengo un perro fiel", 
+            "El agua está fría"
+        ],
+        3: [ // 5 Palabras
+            "El auto rojo es nuevo", "Los niños juegan en plaza", "La lluvia moja el suelo", 
+            "Mi amigo tiene un juguete", "El sol sale por mañana", "Me gusta comer frutas ricas", 
+            "El barco navega en mar", "La escuela es muy grande", "Los patos nadan en lago", 
+            "El león ruge muy fuerte"
+        ]
+    };
+
+    // VARIABLES DE ESTADO
+    let currentDifficulty = 1; 
+    let currentRound = 0;      
+    let targetSentence = [];
+    let placedWords = [];
+    let isAnimating = false;
+
+    // COLORES
+    const trainColors = ['t-red', 't-blue', 't-green', 't-yellow', 't-purple', 't-orange'];
+    
+    function getRandomColor(excludeColor) {
+        let newColor;
+        do {
+            newColor = trainColors[Math.floor(Math.random() * trainColors.length)];
+        } while (newColor === excludeColor);
+        return newColor;
+    }
+
+    // AUDIO
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSound(type) {
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+
+        if(type === 'click') {
+            osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime+0.1);
+            osc.start(); osc.stop(audioCtx.currentTime+0.1);
+        } else if (type === 'whistle') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+            osc.frequency.setValueAtTime(400, audioCtx.currentTime+0.2);
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime+1);
+            osc.start(); osc.stop(audioCtx.currentTime+1);
+        } else if (type === 'error') {
+            osc.type = 'sawtooth'; osc.frequency.value = 100;
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime+0.3);
+            osc.start(); osc.stop(audioCtx.currentTime+0.3);
+        } else if (type === 'levelup') {
+            osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+            osc.frequency.linearRampToValueAtTime(800, audioCtx.currentTime+0.3);
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime+0.5);
+            osc.start(); osc.stop(audioCtx.currentTime+0.5);
+        }
+    }
+
+    function initGame() {
+        currentDifficulty = 1;
+        currentRound = 0;
+        loadRound();
+    }
+
+    function loadRound() {
+        isAnimating = false;
+        
+        document.getElementById('display-level').innerText = currentDifficulty;
+        document.getElementById('display-round').innerText = currentRound + 1;
+        document.getElementById('action-btn').innerText = "ARRANCAR 📢";
+        document.getElementById('action-btn').disabled = false;
+        document.getElementById('action-btn').style.background = "#2ecc71";
+        
+        const sentenceStr = gameData[currentDifficulty][currentRound];
+        targetSentence = sentenceStr.split(" ");
+        placedWords = new Array(targetSentence.length).fill(null);
+
+        const trainContainer = document.getElementById('train-container');
+        trainContainer.classList.remove('train-exit');
+        trainContainer.style.transition = 'none';
+        trainContainer.style.transform = 'translateX(-150%)'; 
+
+        buildTrain();
+        buildPlatform();
+
+        setTimeout(() => {
+            trainContainer.style.transition = 'transform 1s cubic-bezier(0.25, 1, 0.5, 1)';
+            trainContainer.style.transform = 'translateX(0)';
+        }, 100);
+    }
+
+    function buildTrain() {
+        const container = document.getElementById('train-container');
+        container.innerHTML = '';
+
+        let lastColor = getRandomColor(null);
+        
+        // Locomotora (Ajuste de ruedas para ancho reducido 108px)
+        const loco = document.createElement('div');
+        loco.className = `locomotive ${lastColor}`;
+        loco.innerHTML = `
+            <div class="chimney"><div class="smoke" style="animation-delay:0s"></div><div class="smoke" style="animation-delay:1s"></div></div>
+            <div class="cabin-window"></div>
+            <div class="wheel" style="left: 8px; width: 26px; height: 26px; bottom: -13px;"></div>
+            <div class="wheel" style="left: 42px;"></div>
+            <div class="wheel" style="left: 72px;"></div>
+        `;
+        container.appendChild(loco);
+
+        // Vagones
+        targetSentence.forEach((_, index) => {
+            const wagonColor = getRandomColor(lastColor);
+            lastColor = wagonColor; 
+
+            const wagon = document.createElement('div');
+            wagon.className = `wagon ${wagonColor}`;
+            wagon.onclick = () => returnWordToPlatform(index);
+            
+            const w1 = document.createElement('div'); w1.className = 'wheel'; w1.style.left = '12px';
+            const w2 = document.createElement('div'); w2.className = 'wheel'; w2.style.right = '12px';
+            
+            wagon.appendChild(w1); wagon.appendChild(w2);
+            container.appendChild(wagon);
+        });
+    }
+
+    function buildPlatform() {
+        const platform = document.getElementById('platform');
+        platform.innerHTML = '';
+        
+        let words = targetSentence.map((w, i) => ({ text: w, id: i }));
+        words.sort(() => Math.random() - 0.5);
+
+        words.forEach(wObj => {
+            const card = document.createElement('div');
+            card.className = 'word-card';
+            card.innerText = wObj.text;
+            card.dataset.id = wObj.id;
+            card.onclick = function() { placeWordInTrain(this, wObj.text, wObj.id); };
+            platform.appendChild(card);
+        });
+    }
+
+    function placeWordInTrain(cardElement, text, id) {
+        if(isAnimating) return;
+
+        const emptyIndex = placedWords.indexOf(null);
+        if(emptyIndex === -1) return;
+
+        playSound('click');
+        placedWords[emptyIndex] = { text: text, id: id };
+
+        const wagons = document.querySelectorAll('.wagon');
+        const span = document.createElement('span');
+        span.className = 'wagon-word';
+        span.innerText = text;
+        wagons[emptyIndex].appendChild(span);
+
+        cardElement.style.display = 'none';
+    }
+
+    function returnWordToPlatform(index) {
+        if(isAnimating) return;
+        if(placedWords[index] === null) return;
+
+        playSound('click');
+        const wordObj = placedWords[index];
+        placedWords[index] = null;
+
+        const wagons = document.querySelectorAll('.wagon');
+        const span = wagons[index].querySelector('.wagon-word');
+        if(span) span.remove();
+
+        const platformCards = document.querySelectorAll('.word-card');
+        platformCards.forEach(card => {
+            if(card.dataset.id == wordObj.id) card.style.display = 'block';
+        });
+    }
+
+    function checkSentence() {
+        if(isAnimating) return;
+
+        if(placedWords.includes(null)) {
+            const btn = document.getElementById('action-btn');
+            const originalText = btn.innerText;
+            btn.innerText = "¡Faltan palabras!";
+            btn.style.background = "#e74c3c";
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.style.background = "#2ecc71";
+            }, 1000);
+            return;
+        }
+
+        const userSentence = placedWords.map(w => w.text).join(" ");
+        const correctSentence = targetSentence.join(" ");
+
+        if(userSentence === correctSentence) {
+            handleSuccess();
+        } else {
+            handleError();
+        }
+    }
+
+    function handleSuccess() {
+        isAnimating = true;
+        playSound('whistle');
+        document.getElementById('action-btn').innerText = "¡CORRECTO!";
+        document.getElementById('action-btn').disabled = true;
+
+        const wheels = document.querySelectorAll('.wheel');
+        wheels.forEach(w => w.style.animationPlayState = 'running');
+
+        const container = document.getElementById('train-container');
+        container.classList.add('train-exit');
+
+        setTimeout(() => {
+            advanceProgress();
+        }, 2000);
+    }
+
+    function handleError() {
+        playSound('error');
+        const container = document.getElementById('train-container');
+        container.classList.add('shake');
+        setTimeout(() => container.classList.remove('shake'), 500);
+        document.getElementById('action-btn').innerText = "Intenta de nuevo...";
+        setTimeout(() => document.getElementById('action-btn').innerText = "ARRANCAR 📢", 1000);
+    }
+
+    function advanceProgress() {
+        currentRound++;
+        if(currentRound >= 10) {
+            playSound('levelup');
+            if(currentDifficulty >= 3) {
+                document.getElementById('victory-modal').style.display = 'flex';
+            } else {
+                document.getElementById('level-modal').style.display = 'flex';
+            }
+        } else {
+            loadRound();
+        }
+    }
+
+    function nextLevel() {
+        document.getElementById('level-modal').style.display = 'none';
+        currentDifficulty++;
+        currentRound = 0;
+        loadRound();
+    }
+
+    initGame();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Math Invaders - Prof. Gastón</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        :root {
+            --neon-pink: #ff007f;
+            --neon-cyan: #00ffff;
+            --neon-green: #39ff14;
+            --neon-yellow: #ffea00;
+        }
+
+        body {
+            background-color: #050505;
+            color: var(--neon-cyan);
+            font-family: 'Press Start 2P', cursive;
+            margin: 0; padding: 0;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            height: 100vh; overflow: hidden;
+            user-select: none; touch-action: none;
+        }
+
+        .watermark {
+            position: fixed; bottom: 10px; right: 15px;
+            color: rgba(0, 255, 255, 0.3); font-size: 0.7rem;
+            pointer-events: none; z-index: 999;
+            text-shadow: 0 0 5px rgba(0, 255, 255, 0.2);
+        }
+
+        #game-wrapper {
+            position: relative;
+            width: 100%; max-width: 600px;
+            display: flex; flex-direction: column;
+            align-items: center;
+            box-shadow: 0 0 50px rgba(0, 255, 255, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .crt::before {
+            content: " ";
+            display: block; position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 5; background-size: 100% 3px, 3px 100%;
+            pointer-events: none;
+        }
+
+        canvas {
+            background: linear-gradient(180deg, #020024 0%, #090930 100%);
+            border: 4px solid var(--neon-cyan);
+            border-radius: 10px;
+            width: 100%; max-width: 600px;
+            height: auto;
+            image-rendering: pixelated;
+        }
+
+        #mobile-controls {
+            display: flex; justify-content: space-between;
+            width: 100%; max-width: 600px; padding: 15px 10px;
+            box-sizing: border-box; background: #0a0a0a;
+            border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;
+            border: 4px solid var(--neon-cyan); border-top: none;
+        }
+
+        .d-pad { display: flex; gap: 15px; }
+        
+        .btn {
+            background: rgba(0, 255, 255, 0.1); border: 2px solid var(--neon-cyan);
+            color: var(--neon-cyan); font-family: 'Press Start 2P', cursive;
+            font-size: 1.5rem; width: 65px; height: 65px; border-radius: 15px;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; transition: 0.1s; box-shadow: 0 0 10px rgba(0,255,255,0.3);
+        }
+        .btn:active { background: var(--neon-cyan); color: #000; box-shadow: 0 0 20px var(--neon-cyan); }
+        
+        .btn-fire { 
+            width: 110px; border-color: var(--neon-pink); color: var(--neon-pink); 
+            box-shadow: 0 0 10px rgba(255,0,127,0.3); background: rgba(255,0,127,0.1);
+        }
+        .btn-fire:active { background: var(--neon-pink); color: #000; box-shadow: 0 0 20px var(--neon-pink); }
+
+        .overlay {
+            position: absolute; inset: 0;
+            background: rgba(0, 0, 5, 0.95);
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center; text-align: center;
+            z-index: 10; border-radius: 10px;
+        }
+
+        .overlay h1 { color: var(--neon-cyan); font-size: 2.2rem; text-shadow: 0 0 15px var(--neon-cyan), 3px 3px 0 var(--neon-pink); line-height: 1.5; margin-bottom: 10px;}
+        .overlay p { color: #fff; font-size: 1rem; margin-bottom: 15px; line-height: 2;}
+        .overlay button {
+            background: transparent; border: 3px solid var(--neon-green); color: var(--neon-green);
+            font-family: 'Press Start 2P', cursive; padding: 15px 30px; border-radius: 5px;
+            font-size: 1rem; cursor: pointer; transition: 0.2s;
+            box-shadow: 0 0 15px rgba(57, 255, 20, 0.4), inset 0 0 10px rgba(57, 255, 20, 0.2);
+            margin-top: 15px;
+        }
+        .overlay button:active { background: var(--neon-green); color: #000; box-shadow: 0 0 30px var(--neon-green); }
+
+        .hidden { display: none !important; }
+        .highlight { color: var(--neon-yellow); text-shadow: 0 0 8px var(--neon-yellow); }
+
+        /* --- SCOREBOARD STYLES --- */
+        #name-input-section { margin-top: 10px; width: 90%; }
+        #name-input-section input {
+            background: rgba(0,0,0,0.8);
+            border: 2px solid var(--neon-yellow);
+            color: var(--neon-yellow);
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1.5rem;
+            width: 80%; max-width: 300px;
+            text-align: center;
+            text-transform: uppercase;
+            padding: 10px;
+            margin-bottom: 15px;
+            outline: none;
+            box-shadow: 0 0 15px rgba(255, 234, 0, 0.3);
+        }
+        #name-input-section p { color: var(--neon-yellow); font-size: 1rem; margin-bottom: 10px; text-shadow: 0 0 10px var(--neon-yellow); }
+        
+        #scoreboard-section {
+            width: 90%; max-width: 380px;
+            margin: 10px 0;
+            background: rgba(0, 0, 20, 0.6);
+            border: 2px solid var(--neon-cyan);
+            border-radius: 5px; padding: 15px;
+            box-shadow: inset 0 0 15px rgba(0, 255, 255, 0.2);
+        }
+        #scoreboard-section h2 { color: var(--neon-cyan); font-size: 1.2rem; margin-top: 0; margin-bottom: 15px; text-shadow: 0 0 5px var(--neon-cyan); }
+        
+        #score-list {
+            list-style: none; padding: 0; margin: 0;
+            font-size: 0.8rem; text-align: left;
+        }
+        #score-list li {
+            display: flex; justify-content: space-between;
+            margin-bottom: 12px; border-bottom: 1px dashed #333;
+            padding-bottom: 5px;
+        }
+        .rank { color: var(--neon-pink); width: 10%; }
+        .name { color: #fff; width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .score-val { color: var(--neon-green); width: 30%; text-align: right; }
+
+        @media (min-width: 800px) {
+            #mobile-controls { display: none; }
+            canvas { border-radius: 10px; border-bottom: 4px solid var(--neon-cyan); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="watermark">Creado por el Prof. Gastón</div>
+
+    <div id="game-wrapper" class="crt">
+        <canvas id="gameCanvas" width="600" height="700"></canvas>
+        
+        <div id="mobile-controls">
+            <div class="d-pad">
+                <div class="btn" id="btn-left">◀</div>
+                <div class="btn" id="btn-right">▶</div>
+            </div>
+            <div class="btn btn-fire" id="btn-fire">FIRE</div>
+        </div>
+
+        <div id="start-screen" class="overlay">
+            <h1>MATH<br>INVADERS</h1>
+            <p>Correcta: <span style="color:var(--neon-green)">+100 pts</span><br>Incorrecta: <span style="color:var(--neon-pink)">-1 Vida</span></p>
+            <button onclick="startGame()">INICIAR MISIÓN</button>
+        </div>
+
+        <div id="game-over-screen" class="overlay hidden">
+            <h1 style="color:var(--neon-pink); text-shadow: 0 0 15px var(--neon-pink), 3px 3px 0 #fff;">GAME OVER</h1>
+            <p style="font-size: 1.2rem; margin-bottom: 10px;">PUNTAJE: <span id="final-score" class="highlight">0</span></p>
+            
+            <div id="name-input-section">
+                <p>Ingresa tu nombre:</p>
+                <input type="text" id="player-name" maxlength="15" placeholder="TU NOMBRE" autocomplete="off">
+                <br>
+                <button onclick="saveScore()">GUARDAR PUNTAJE</button>
+            </div>
+
+            <div id="scoreboard-section" class="hidden">
+                <h2>TOP 5 CLASE</h2>
+                <ul id="score-list"></ul>
+                <button id="retry-btn" onclick="startGame()">REINTENTAR</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- SPRITES (Pixel Art) ---
+    const alienFrame1 = [
+        [0,0,1,0,0,0,0,0,1,0,0], [0,0,0,1,0,0,0,1,0,0,0],
+        [0,0,1,1,1,1,1,1,1,0,0], [0,1,1,0,1,1,1,0,1,1,0],
+        [1,1,1,1,1,1,1,1,1,1,1], [1,0,1,1,1,1,1,1,1,0,1],
+        [1,0,1,0,0,0,0,0,1,0,1], [0,0,0,1,1,0,1,1,0,0,0]
+    ];
+    const alienFrame2 = [
+        [0,0,1,0,0,0,0,0,1,0,0], [1,0,0,1,0,0,0,1,0,0,1],
+        [1,0,1,1,1,1,1,1,1,0,1], [1,1,1,0,1,1,1,0,1,1,1],
+        [1,1,1,1,1,1,1,1,1,1,1], [0,1,1,1,1,1,1,1,1,1,0],
+        [0,0,1,0,0,0,0,0,1,0,0], [0,1,0,0,0,0,0,0,0,1,0]
+    ];
+    const shipArt = [
+        [0,0,0,0,0,1,0,0,0,0,0], [0,0,0,0,1,1,1,0,0,0,0],
+        [0,0,0,0,1,1,1,0,0,0,0], [0,1,1,1,1,1,1,1,1,1,0],
+        [1,1,1,1,1,1,1,1,1,1,1], [1,1,1,1,1,1,1,1,1,1,1],
+        [1,1,0,0,0,0,0,0,0,1,1]
+    ];
+
+    // --- VARIABLES GLOBALES ---
+    let score = 0, lives = 3, wave = 1;
+    let gameState = 'START'; 
+    let lastTime = 0;
+
+    let currentProblem = "";
+    let correctAnswer = 0;
+    let targetAlien = null;
+
+    const player = { x: 280, y: 620, w: 44, h: 28, speed: 350, dx: 0, color: '#00ffff' };
+    let playerBullet = null; 
+    let aliens = [], alienBullets = [], particles = [], stars = [], shields = [];
+    
+    let alienDirection = 1, alienMoveTimer = 0, alienMoveInterval = 800, alienAnimFrame = 0;
+
+    // Teclas: Solo flechas y espacio
+    const keys = { left: false, right: false, fire: false };
+    
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function beep(freq, type, dur) {
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+        osc.frequency.value = freq; osc.type = type;
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + dur);
+        osc.stop(audioCtx.currentTime + dur);
+    }
+
+    // --- SISTEMA DE SCOREBOARD (RÉCORDS) ---
+    function getScores() {
+        let scores = localStorage.getItem('mathInvadersScoresProfGaston');
+        return scores ? JSON.parse(scores) : [];
+    }
+
+    function renderScoreboard() {
+        const scores = getScores();
+        const list = document.getElementById('score-list');
+        list.innerHTML = '';
+        
+        if (scores.length === 0) {
+            list.innerHTML = '<li><span class="name" style="color:var(--neon-yellow); width:100%; text-align:center;">¡Aún no hay récords!</span></li>';
+        } else {
+            scores.forEach((s, index) => {
+                let li = document.createElement('li');
+                li.innerHTML = `<span class="rank">#${index+1}</span> <span class="name">${s.name}</span> <span class="score-val">${s.score}</span>`;
+                list.appendChild(li);
+            });
+        }
+    }
+
+    function saveScore() {
+        let inputVal = document.getElementById('player-name').value.toUpperCase().trim();
+        let name = inputVal;
+        if(name.length === 0) name = "ANÓNIMO"; 
+
+        let scores = getScores();
+        scores.push({name: name, score: score});
+        
+        // Ordenar de mayor a menor puntaje
+        scores.sort((a, b) => b.score - a.score);
+        // Mantener solo el Top 5
+        scores = scores.slice(0, 5);
+        
+        localStorage.setItem('mathInvadersScoresProfGaston', JSON.stringify(scores));
+
+        // Cambiar la vista
+        document.getElementById('name-input-section').classList.add('hidden');
+        document.getElementById('scoreboard-section').classList.remove('hidden');
+        renderScoreboard();
+    }
+
+    // --- SISTEMAS VISUALES ---
+    function initStars() {
+        stars = [];
+        for(let i=0; i<100; i++) {
+            stars.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, size: Math.random() * 2, speed: Math.random() * 3 + 1 });
+        }
+    }
+
+    function createExplosion(x, y, color) {
+        for(let i=0; i<25; i++) {
+            particles.push({ x: x, y: y, vx: (Math.random() - 0.5) * 250, vy: (Math.random() - 0.5) * 250, life: 1.0, color: color, size: Math.random() * 4 + 2 });
+        }
+    }
+
+    function drawPixelArt(art, x, y, scale, color) {
+        ctx.fillStyle = color;
+        for (let r = 0; r < art.length; r++) {
+            for (let c = 0; c < art[r].length; c++) {
+                if (art[r][c]) ctx.fillRect(x + c * scale, y + r * scale, scale, scale);
+            }
+        }
+    }
+
+    // --- INICIALIZACIÓN JUEGO ---
+    function initShields() {
+        shields = [];
+        for (let i = 0; i < 4; i++) {
+            let sx = 65 + i * 135, sy = 520;
+            for(let r=0; r<6; r++){
+                for(let c=0; c<8; c++){
+                    if(r===0 && (c===0 || c===7)) continue;
+                    if(r===5 && c>2 && c<5) continue;
+                    shields.push({ x: sx + c*6, y: sy + r*6, w: 6, h: 6, active: true });
+                }
+            }
+        }
+    }
+
+    function initAliens() {
+        aliens = [];
+        let rows = 4, cols = 4, startX = 145, startY = 120; 
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                aliens.push({ x: startX + c * 80, y: startY + r * 65, w: 33, h: 24, r: r, c: c, alive: true, number: 0 });
+            }
+        }
+        alienDirection = 1;
+        alienMoveInterval = Math.max(200, 800 - (wave * 50));
+        generateMathProblem();
+    }
+
+    function generateMathProblem() {
+        const aliveAliens = aliens.filter(a => a.alive);
+        if(aliveAliens.length === 0) return;
+
+        const maxR = Math.max(...aliveAliens.map(a => a.r));
+        const frontRowAliens = aliveAliens.filter(a => a.r === maxR);
+
+        targetAlien = frontRowAliens[Math.floor(Math.random() * frontRowAliens.length)];
+
+        const isAddition = Math.random() > 0.5;
+        let a, b;
+        if (isAddition) {
+            correctAnswer = Math.floor(Math.random() * 31); 
+            a = Math.floor(Math.random() * (correctAnswer + 1)); b = correctAnswer - a;
+            currentProblem = `${a} + ${b}`;
+        } else {
+            correctAnswer = Math.floor(Math.random() * 31);
+            b = Math.floor(Math.random() * (31 - correctAnswer)); a = correctAnswer + b;
+            currentProblem = `${a} - ${b}`;
+        }
+
+        aliveAliens.forEach(alien => {
+            if (alien === targetAlien) { alien.number = correctAnswer; } else {
+                let wrong; do { wrong = Math.floor(Math.random() * 31); } while (wrong === correctAnswer);
+                alien.number = wrong;
+            }
+        });
+    }
+
+    function startGame() {
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('game-over-screen').classList.add('hidden');
+        score = 0; lives = 3; wave = 1;
+        player.x = 280; playerBullet = null; alienBullets = []; particles = [];
+        keys.left = false; keys.right = false; keys.fire = false;
+        initStars(); initShields(); initAliens();
+        gameState = 'PLAYING';
+        lastTime = performance.now();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function handleGameOver() {
+        gameState = 'GAMEOVER';
+        document.getElementById('final-score').innerText = score;
+        document.getElementById('game-over-screen').classList.remove('hidden');
+
+        document.getElementById('name-input-section').classList.remove('hidden');
+        document.getElementById('scoreboard-section').classList.add('hidden');
+        document.getElementById('player-name').value = '';
+        setTimeout(() => document.getElementById('player-name').focus(), 100);
+    }
+
+    // --- LÓGICA DE ACTUALIZACIÓN ---
+    function update(dt) {
+        if(gameState !== 'PLAYING') return;
+
+        stars.forEach(s => { s.y += s.speed * dt * 60; if(s.y > canvas.height) { s.y = 0; s.x = Math.random() * canvas.width; } });
+        particles.forEach(p => { p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt * 2; });
+        particles = particles.filter(p => p.life > 0);
+
+        // Movimiento con las teclas direccionales (flechas) o controles móviles
+        if (keys.left || player.dx < 0) player.x -= player.speed * dt;
+        if (keys.right || player.dx > 0) player.x += player.speed * dt;
+        player.x = Math.max(10, Math.min(canvas.width - player.w - 10, player.x));
+
+        // Disparo
+        if (keys.fire && !playerBullet) {
+            playerBullet = { x: player.x + player.w/2 - 2, y: player.y, w: 4, h: 20, speed: 800 };
+            beep(600, 'square', 0.1); 
+            keys.fire = false;
+        }
+
+        if (playerBullet) { playerBullet.y -= playerBullet.speed * dt; if (playerBullet.y < 0) playerBullet = null; }
+
+        for (let i = alienBullets.length - 1; i >= 0; i--) {
+            let b = alienBullets[i]; b.y += b.speed * dt; if (b.y > canvas.height) alienBullets.splice(i, 1);
+        }
+
+        alienMoveTimer += dt * 1000;
+        const aliveAliens = aliens.filter(a => a.alive);
+        
+        if (aliveAliens.length > 0 && alienMoveTimer > alienMoveInterval) {
+            alienMoveTimer = 0; alienAnimFrame = 1 - alienAnimFrame; beep(100 + (alienAnimFrame * 20), 'sawtooth', 0.05); 
+            
+            let minX = Math.min(...aliveAliens.map(a => a.x)), maxX = Math.max(...aliveAliens.map(a => a.x + a.w));
+            if (maxX > canvas.width - 20 && alienDirection === 1) { alienDirection = -1; aliveAliens.forEach(a => a.y += 25); } 
+            else if (minX < 20 && alienDirection === -1) { alienDirection = 1; aliveAliens.forEach(a => a.y += 25); } 
+            else { aliveAliens.forEach(a => a.x += 18 * alienDirection); }
+
+            if (Math.random() < 0.3 + (wave * 0.05)) {
+                let shooter = aliveAliens[Math.floor(Math.random() * aliveAliens.length)];
+                alienBullets.push({ x: shooter.x + shooter.w/2 - 2, y: shooter.y + shooter.h, w: 4, h: 15, speed: 350 + (wave*20) });
+            }
+
+            alienMoveInterval = Math.max(60, 800 - (wave * 50) - ((16 - aliveAliens.length) * 30));
+            if (aliveAliens.some(a => a.y + a.h >= 520)) handleGameOver();
+        }
+
+        if (aliveAliens.length === 0) { wave++; playerBullet = null; alienBullets = []; initShields(); initAliens(); beep(800, 'sine', 0.5); return; }
+        checkCollisions();
+    }
+
+    function checkCollisions() {
+        if (playerBullet) {
+            for (let alien of aliens) {
+                if (alien.alive && rectIntersect(playerBullet, alien)) {
+                    alien.alive = false; playerBullet = null;
+                    createExplosion(alien.x + alien.w/2, alien.y + alien.h/2, '#ff007f');
+                    
+                    if (alien.number === correctAnswer) {
+                        score += 100; beep(1000, 'square', 0.1); setTimeout(() => beep(1200, 'square', 0.2), 100);
+                        generateMathProblem(); 
+                    } else {
+                        lives--; beep(150, 'sawtooth', 0.5); 
+                        if (lives <= 0) handleGameOver();
+                    }
+                    break;
+                }
+            }
+        }
+
+        if (playerBullet) {
+            for (let s of shields) {
+                if (s.active && rectIntersect(playerBullet, s)) {
+                    s.active = false; playerBullet = null; createExplosion(s.x, s.y, '#39ff14'); break;
+                }
+            }
+        }
+
+        for (let i = alienBullets.length - 1; i >= 0; i--) {
+            let b = alienBullets[i]; let hit = false;
+            for (let s of shields) {
+                if (s.active && rectIntersect(b, s)) { s.active = false; hit = true; createExplosion(s.x, s.y, '#39ff14'); break; }
+            }
+            if (!hit && rectIntersect(b, player)) {
+                lives--; hit = true; createExplosion(player.x + player.w/2, player.y, '#00ffff'); beep(100, 'sawtooth', 0.5); 
+                if (lives <= 0) handleGameOver();
+            }
+            if (hit) alienBullets.splice(i, 1);
+        }
+    }
+
+    function rectIntersect(r1, r2) { return !(r2.x > r1.x + r1.w || r2.x + r2.w < r1.x || r2.y > r1.y + r1.h || r2.y + r2.h < r1.y); }
+
+    // --- DIBUJADO ---
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#ffffff';
+        stars.forEach(s => { ctx.globalAlpha = s.speed / 4; ctx.fillRect(s.x, s.y, s.size, s.size); });
+        ctx.globalAlpha = 1.0;
+
+        if (gameState !== 'PLAYING') return;
+
+        ctx.shadowBlur = 10; ctx.shadowColor = '#00ffff'; ctx.fillStyle = '#00ffff'; ctx.font = '18px "Press Start 2P"';
+        ctx.textAlign = 'left'; ctx.fillText(`SCR:${score.toString().padStart(4, '0')}`, 20, 35);
+        ctx.shadowColor = '#ff007f'; ctx.fillStyle = '#ff007f';
+        ctx.textAlign = 'right'; ctx.fillText(`LVS:${lives}`, canvas.width - 20, 35);
+        
+        ctx.shadowColor = '#ffea00'; ctx.fillStyle = '#ffea00'; ctx.textAlign = 'center'; ctx.font = '26px "Press Start 2P"';
+        ctx.fillText(`Misión: ${currentProblem} = ?`, canvas.width/2, 80); ctx.shadowBlur = 0; 
+
+        ctx.fillStyle = 'rgba(0, 255, 255, 0.3)'; ctx.fillRect(0, canvas.height - 5, canvas.width, 5);
+
+        ctx.fillStyle = '#39ff14'; ctx.shadowBlur = 8; ctx.shadowColor = '#39ff14';
+        shields.forEach(s => { if(s.active) ctx.fillRect(s.x, s.y, s.w, s.h); }); ctx.shadowBlur = 0;
+
+        ctx.shadowBlur = 15; ctx.shadowColor = '#00ffff';
+        drawPixelArt(shipArt, player.x, player.y, 4, player.color);
+        if(Math.random() > 0.3) { ctx.fillStyle = '#ffea00'; ctx.fillRect(player.x + 16, player.y + 28, 12, Math.random() * 10 + 5); }
+
+        if (playerBullet) {
+            ctx.fillStyle = '#00ffff'; ctx.shadowColor = '#00ffff'; ctx.shadowBlur = 10;
+            ctx.fillRect(playerBullet.x, playerBullet.y, playerBullet.w, playerBullet.h);
+        }
+        ctx.fillStyle = '#ff007f'; ctx.shadowColor = '#ff007f';
+        alienBullets.forEach(b => ctx.fillRect(b.x, b.y, b.w, b.h)); ctx.shadowBlur = 0;
+
+        ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.font = '14px "Press Start 2P"';
+        let currentArt = alienAnimFrame === 0 ? alienFrame1 : alienFrame2;
+        
+        ctx.shadowBlur = 10; ctx.shadowColor = '#ff007f';
+        aliens.forEach(a => {
+            if (a.alive) {
+                drawPixelArt(currentArt, a.x, a.y, 3, '#ff007f');
+                ctx.fillStyle = '#ffffff'; ctx.shadowColor = '#ffffff';
+                ctx.fillText(a.number, a.x + a.w/2, a.y + a.h + 5);
+            }
+        }); ctx.shadowBlur = 0;
+
+        particles.forEach(p => {
+            ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.shadowBlur = 10; ctx.shadowColor = p.color;
+            ctx.fillRect(p.x, p.y, p.size, p.size);
+        });
+        ctx.globalAlpha = 1.0; ctx.shadowBlur = 0;
+    }
+
+    function gameLoop(timestamp) {
+        let dt = (timestamp - lastTime) / 1000; lastTime = timestamp;
+        if (dt > 0.1) dt = 0.1; 
+        update(dt); draw();
+        if (gameState === 'PLAYING') requestAnimationFrame(gameLoop);
+    }
+
+    // --- MANEJO DE TECLAS SIN A Y D ---
+    window.addEventListener('keydown', e => {
+        const key = e.key.toLowerCase();
+        
+        if (e.code === 'ArrowLeft') { keys.left = true; e.preventDefault(); }
+        if (e.code === 'ArrowRight') { keys.right = true; e.preventDefault(); }
+        if (e.code === 'Space' || key === ' ') { 
+            if(gameState === 'PLAYING') keys.fire = true; 
+            e.preventDefault(); 
+        }
+
+        // Permitir que "Enter" guarde el puntaje si la caja de texto está visible
+        if(e.code === 'Enter' && !document.getElementById('name-input-section').classList.contains('hidden')) {
+            saveScore();
+        }
+    });
+
+    window.addEventListener('keyup', e => {
+        const key = e.key.toLowerCase();
+        
+        if (e.code === 'ArrowLeft') keys.left = false;
+        if (e.code === 'ArrowRight') keys.right = false;
+        if (e.code === 'Space' || key === ' ') keys.fire = false;
+    });
+
+    // --- CONTROLES MÓVILES ---
+    const btnL = document.getElementById('btn-left'), btnR = document.getElementById('btn-right'), btnF = document.getElementById('btn-fire');
+    const handleTouchStart = (btn, action) => { btn.addEventListener('touchstart', e => { e.preventDefault(); action(true); }); btn.addEventListener('mousedown', e => { e.preventDefault(); action(true); }); };
+    const handleTouchEnd = (btn, action) => { btn.addEventListener('touchend', e => { e.preventDefault(); action(false); }); btn.addEventListener('mouseup', e => { e.preventDefault(); action(false); }); btn.addEventListener('mouseleave', e => { e.preventDefault(); action(false); }); };
+
+    handleTouchStart(btnL, val => player.dx = val ? -1 : 0); handleTouchEnd(btnL, val => player.dx = 0);
+    handleTouchStart(btnR, val => player.dx = val ? 1 : 0); handleTouchEnd(btnR, val => player.dx = 0);
+    handleTouchStart(btnF, val => {
+        if(val && !playerBullet && gameState === 'PLAYING') {
+            playerBullet = { x: player.x + player.w/2 - 2, y: player.y, w: 4, h: 20, speed: 800 }; beep(600, 'square', 0.1);
+        }
+    });
+
+    document.fonts.ready.then(() => { initStars(); draw(); });
+</script>
+</body>
+</html>

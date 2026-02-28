@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal de Juegos - Prof. Gastón</title>
+    <style>
+        :root {
+            --animales: #2ecc71;
+            --vegetales: #f39c12;
+            --transportes: #3498db;
+            --oficios: #e67e22;
+            --sonidos: #9b59b6;
+            --memoria: #6c5ce7;
+            --pescador: #e84393;
+            --pacman: #f1c40f;
+            --letras: #00d2d3;
+            --constructor: #ff9f43;
+            --text-dark: #2c3e50;
+            --robot: #4834d4; 
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            color: var(--text-dark);
+            overflow-x: hidden;
+            padding-bottom: 50px;
+        }
+
+        /* --- FONDO ANIMADO GRADIENTE --- */
+        #background-layer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; 
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* --- EMOJIS FLOTANTES --- */
+        .floating-emoji {
+            position: absolute; bottom: -50px; 
+            pointer-events: none; opacity: 0.7; z-index: 0; 
+            will-change: transform; animation: floatUp linear forwards;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0) rotate(0deg); opacity: 0.7; }
+            100% { transform: translateY(-120vh) rotate(720deg); opacity: 0; }
+        }
+
+        /* --- CONTENEDOR PRINCIPAL --- */
+        .main-wrapper {
+            max-width: 1200px; margin: 0 auto; padding: 20px;
+            position: relative; z-index: 10; 
+        }
+
+        h1 {
+            font-size: 3rem; text-align: center; color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3); margin: 30px 0 50px 0;
+        }
+
+        /* --- SECCIONES DE CATEGORÍA --- */
+        .category-section {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(8px);
+            border-radius: 20px; padding: 30px 30px 70px 30px;
+            margin-bottom: 80px; border: 1px solid rgba(255,255,255,0.4);
+            animation: slideIn 0.8s ease-out;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .category-title {
+            font-size: 1.8rem; color: white; margin-bottom: 25px;
+            border-bottom: 2px solid rgba(255,255,255,0.6);
+            padding-bottom: 10px; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+            font-weight: bold;
+        }
+
+        /* --- GRILLA DE TARJETAS --- */
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            column-gap: 25px; row-gap: 80px;   
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px; padding: 20px 15px;
+            text-align: center; text-decoration: none; color: var(--text-dark);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            border-bottom: 5px solid transparent;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            height: 100%; min-height: 140px; position: relative; z-index: 1;
+        }
+
+        .card:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0,0,0,0.2); z-index: 100; }
+
+        .icon { font-size: 3rem; margin-bottom: 10px; }
+        .card-title { font-size: 1.1rem; font-weight: bold; margin-bottom: 5px; line-height: 1.2; }
+        .card p { font-size: 0.85rem; color: #666; margin: 0; }
+
+        /* BORDES DE COLORES */
+        .card-animales:hover { border-color: var(--animales); color: var(--animales); }
+        .card-vegetales:hover { border-color: var(--vegetales); color: var(--vegetales); }
+        .card-transportes:hover { border-color: var(--transportes); color: var(--transportes); }
+        .card-oficios:hover { border-color: var(--oficios); color: var(--oficios); }
+        .card-sonidos:hover { border-color: var(--sonidos); color: var(--sonidos); }
+        .card-memoria:hover { border-color: var(--memoria); color: var(--memoria); }
+        .card-pescador:hover { border-color: var(--pescador); color: var(--pescador); }
+        .card-pacman:hover { border-color: var(--pacman); color: var(--pacman); }
+        .card-letras:hover { border-color: var(--letras); color: var(--letras); }
+        .card-constructor:hover { border-color: var(--constructor); color: var(--constructor); }
+        .card-robot:hover { border-color: var(--robot); color: var(--robot); }
+
+        .footer {
+            text-align: center; color: rgba(255,255,255,0.8);
+            margin-top: 40px; font-size: 0.9rem;
+        }
+
+        .master-btn {
+            position: fixed; bottom: 20px; right: 20px;
+            padding: 10px 20px; background: #f1c40f; color: #d35400;
+            border: none; border-radius: 50px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="background-layer"></div>
+
+    <div class="main-wrapper">
+        <h1>🚀 Portal de Juegos Educativos</h1>
+
+        <div class="category-section">
+            <div class="category-title">⌨️ Mecanografía y Lengua</div>
+            <div class="game-grid">
+                <a href="Lluvia de letras.html" class="card card-letras">
+                    <div class="icon">⌨️</div>
+                    <div class="card-title">Lluvia de Letras</div>
+                    <p>Velocidad de teclado</p>
+                </a>
+                <a href="Constructor de palabras.html" class="card card-constructor">
+                    <div class="icon">🧩</div>
+                    <div class="card-title">Constructor</div>
+                    <p>Ordena y escribe</p>
+                </a>
+                <a href="Tren de oraciones.html" class="card card-transportes">
+                    <div class="icon">🚂</div>
+                    <div class="card-title">Tren de Oraciones</div>
+                    <p>Ordena las palabras</p>
+                </a>
+            </div>
+        </div>
+
+        <div class="category-section">
+            <div class="category-title">💻 Programación</div>
+            <div class="game-grid">
+                <a href="Robot explorador.html" class="card card-robot">
+                    <div class="icon">🤖</div>
+                    <div class="card-title">Robot Explorador</div>
+                    <p>¡Aprende a programar!</p>
+                </a>
+            </div>
+        </div>
+
+        <div class="category-section">
+            <div class="category-title">🧠 Lógica, Memoria y Habilidad</div>
+            <div class="game-grid">
+                <a href="Rompe-cabezas.html" class="card card-memoria">
+                    <div class="icon">🎮</div>
+                    <div class="card-title">Memoria Gamer</div>
+                    <p>Encuentra los pares</p>
+                </a>
+                <a href="Pesca maritima.html" class="card card-pescador">
+                    <div class="icon">🎣</div>
+                    <div class="card-title">Pesca Marítima</div>
+                    <p>Atrapa el pez correcto</p>
+                </a>
+                <a href="Juego de sonidos animales.html" class="card card-sonidos">
+                    <div class="icon">👂</div>
+                    <div class="card-title">¿Quién suena?</div>
+                    <p>Escucha y adivina</p>
+                </a>
+                <a href="Juego de oficios.html" class="card card-oficios">
+                    <div class="icon">👨‍🔧</div>
+                    <div class="card-title">Conectando Oficios</div>
+                    <p>Asocia trabajadores</p>
+                </a>
+                
+                <a href="Explosion de burbujas.html" class="card card-pescador">
+                    <div class="icon">🔵</div> 
+                    <div class="card-title">Explosión de Burbujas</div>
+                    <p>¡Explota las correctas!</p>
+                </a>
+
+                <a href="Reciclaje.html" class="card card-animales">
+                    <div class="icon">♻️</div>
+                    <div class="card-title">Héroe del Reciclaje</div>
+                    <p>Clasifica los residuos</p>
+                </a>
+                <a href="Simon dice.html" class="card card-memoria">
+                    <div class="icon">🔔</div>
+                    <div class="card-title">Simón Dice</div>
+                    <p>Sigue la secuencia</p>
+                </a>
+                <a href="Supermercado.html" class="card card-oficios">
+                    <div class="icon">🛒</div>
+                    <div class="card-title">Supermercado</div>
+                    <p>Compras y cálculo</p>
+                </a>
+                <a href="Cuerpo humano.html" class="card card-constructor">
+                    <div class="icon">🦴</div>
+                    <div class="card-title">Cuerpo Humano</div>
+                    <p>Arma el esqueleto</p>
+                </a>
+                <a href="Desafio saludable.html" class="card card-vegetales">
+                    <div class="icon">🍎</div>
+                    <div class="card-title">Desafío Saludable</div>
+                    <p>Elige bien qué comer</p>
+                </a>
+            </div>
+        </div>
+
+        <div class="category-section">
+            <div class="category-title">🔢 Matemática y Números</div>
+            <div class="game-grid">
+                <a href="Juego de conteo del 1 al 20 animales.html" class="card card-animales">
+                    <div class="icon">🐾</div>
+                    <div class="card-title">Safari Numérico</div>
+                    <p>Conteo 1-20</p>
+                </a>
+                <a href="Juego de conteo del 1 al 20 vegetales.html" class="card card-vegetales">
+                    <div class="icon">🍎</div>
+                    <div class="card-title">La Huerta</div>
+                    <p>Conteo 1-20</p>
+                </a>
+                <a href="Juego de conteo del 1 al 20 transportes.html" class="card card-transportes">
+                    <div class="icon">🚂</div>
+                    <div class="card-title">Estación Numérica</div>
+                    <p>Conteo 1-20</p>
+                </a>
+                <a href="Pacman de sumas.html" class="card card-pacman">
+                    <div class="icon">👻</div>
+                    <div class="card-title">Pac-Mates</div>
+                    <p>Sumas Básicas</p>
+                </a>
+            </div>
+        </div>
+
+        <div class="footer">Creado con cariño por el Prof. Gastón</div>
+    </div>
+
+    <script>
+        // 1. Fondo Animado
+        const emojis = ['⭐', '📚', '✏️', '🎨', '🧠', '🎈', '🎮', '🍎', '🐱', '👻', '🍒', '⌨️', '🧩', '🔢', '♻️', '🐟', '🤖', '🛒', '🚂', '🔔'];
+        const bgLayer = document.getElementById('background-layer');
+
+        function createParticle() {
+            const particle = document.createElement('div');
+            particle.classList.add('floating-emoji');
+            particle.innerText = emojis[Math.floor(Math.random() * emojis.length)];
+            particle.style.left = Math.random() * 100 + 'vw';
+            const size = Math.random() * 30 + 20; 
+            particle.style.fontSize = size + 'px';
+            const duration = Math.random() * 10 + 10; 
+            particle.style.animationDuration = duration + 's';
+            bgLayer.appendChild(particle);
+            setTimeout(() => { particle.remove(); }, duration * 1000);
+        }
+        setInterval(createParticle, 800);
+
+        // 2. Sistema de Códigos Secretos
+        let secretBuffer = "";
+        
+        window.addEventListener('keydown', (e) => {
+            // Guardamos las últimas 10 teclas presionadas
+            secretBuffer += e.key.toLowerCase();
+            if (secretBuffer.length > 10) {
+                secretBuffer = secretBuffer.substring(secretBuffer.length - 10);
+            }
+
+            // COMANDO 1: "gaston" -> Modo Admin
+            if (secretBuffer.includes("gaston")) {
+                activarModoMaestro();
+                secretBuffer = "";
+            }
+
+            // COMANDO 2: "666" -> Video Secreto
+            if (secretBuffer.includes("666")) {
+                ejecutarVideoReze();
+                secretBuffer = "";
+            }
+        });
+
+        function activarModoMaestro() {
+            if (document.getElementById('secret-btn')) return;
+            const btn = document.createElement('button');
+            btn.id = 'secret-btn';
+            btn.className = 'master-btn';
+            btn.innerHTML = "👑 Admin";
+            btn.onclick = () => {
+                alert("Panel de Profesor Activado");
+                btn.remove();
+            };
+            document.body.appendChild(btn);
+        }
+
+        function ejecutarVideoReze() {
+            // Crear overlay negro
+            const overlay = document.createElement('div');
+            overlay.style.position = 'fixed';
+            overlay.style.top = '0';
+            overlay.style.left = '0';
+            overlay.style.width = '100%';
+            overlay.style.height = '100%';
+            overlay.style.backgroundColor = 'black';
+            overlay.style.zIndex = '9999';
+            overlay.style.display = 'flex';
+            overlay.style.justifyContent = 'center';
+            overlay.style.alignItems = 'center';
+
+            // Crear video
+            const video = document.createElement('video');
+            video.src = 'reze.mp4'; 
+            video.style.width = '100%';
+            video.style.height = '100%';
+            video.style.objectFit = 'contain';
+            video.autoplay = true;
+            video.controls = false;
+
+            // Al terminar, cerrar
+            video.onended = () => { overlay.remove(); };
+            
+            // Cerrar con click por si acaso
+            overlay.onclick = () => { overlay.remove(); };
+
+            overlay.appendChild(video);
+            document.body.appendChild(overlay);
+        }
+    </script>
+</body>
+</html>

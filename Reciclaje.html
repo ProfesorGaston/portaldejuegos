@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>El Héroe del Reciclaje - Prof. Gastón</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap');
+
+        :root {
+            --bg-color: #a8e6cf;
+            --panel: #ffffff;
+            --text-dark: #2d3436;
+            --paper-blue: #3498db;
+            --plastic-yellow: #f1c40f;
+            --organic-green: #2ecc71;
+            --wrong: #e84118;
+        }
+
+        body {
+            background: linear-gradient(135deg, #a8e6cf 0%, #dcedc1 100%);
+            font-family: 'Fredoka One', cursive;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            touch-action: none; 
+            user-select: none;
+        }
+
+        #game-container {
+            background: rgba(255, 255, 255, 0.9);
+            width: 95%;
+            max-width: 900px;
+            height: 92vh;
+            border-radius: 30px;
+            border: 8px solid white;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- UI SUPERIOR --- */
+        #ui-layer {
+            height: 80px;
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 5px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            z-index: 10;
+            border-bottom: 4px solid #bdc3c7;
+            font-size: 1.2rem; 
+            color: var(--text-dark);
+        }
+
+        .stat-box { display: flex; align-items: center; gap: 5px; }
+
+        /* --- ÁREA DE JUEGO --- */
+        #game-area {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            position: relative;
+        }
+
+        #waste-source-container {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        #waste-label {
+            font-size: 1.2rem; color: #7f8c8d; margin-bottom: 10px;
+        }
+
+        #current-waste {
+            font-size: 6rem;
+            cursor: grab;
+            filter: drop-shadow(0 5px 10px rgba(0,0,0,0.2));
+            transition: transform 0.1s;
+            touch-action: none; 
+            position: relative;
+            z-index: 5;
+        }
+        #current-waste:active { cursor: grabbing; transform: scale(1.1); }
+
+        /* Contenedores */
+        #bins-container {
+            display: flex;
+            justify-content: space-around;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .bin {
+            width: 30%;
+            max-width: 200px;
+            aspect-ratio: 1 / 1.2;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            padding-bottom: 20px;
+            border-bottom: 8px solid rgba(0,0,0,0.2);
+            box-shadow: inset 0 -10px 20px rgba(0,0,0,0.1);
+            position: relative;
+            transition: transform 0.2s;
+        }
+
+        .bin-icon { font-size: 3rem; margin-bottom: 10px; }
+        .bin-label { font-size: 1rem; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); }
+        
+        .bin.drag-over { transform: scale(1.05); }
+
+        #bin-paper { background-color: var(--paper-blue); }
+        #bin-plastic { background-color: var(--plastic-yellow); }
+        #bin-organic { background-color: var(--organic-green); }
+
+        /* Feedback */
+        .feedback-icon {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            font-size: 4rem;
+            opacity: 0;
+            z-index: 20;
+            pointer-events: none;
+        }
+        @keyframes feedbackPop {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+        }
+
+        /* --- PANTALLAS --- */
+        #menu, #overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(46, 204, 113, 0.95); 
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            z-index: 30; text-align: center;
+            color: white;
+            padding: 20px;
+        }
+
+        h1 { font-size: 2.5rem; margin-bottom: 10px; text-shadow: 2px 2px 0 #27ae60; }
+        p { font-size: 1.2rem; margin-bottom: 30px; }
+
+        .btn {
+            padding: 15px 40px; font-size: 1.5rem; font-weight: bold;
+            background: white; color: var(--organic-green);
+            border: none; border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #bdc3c7;
+            transition: transform 0.1s;
+            font-family: inherit;
+        }
+        .btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #bdc3c7; }
+
+        #watermark {
+            position: absolute; bottom: 10px; right: 20px;
+            font-size: 14px; color: rgba(0,0,0,0.4); z-index: 40; font-family: sans-serif;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .shake { animation: shake 0.3s; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="ui-layer">
+        <div class="stat-box">🚩 Nivel <span id="level">1</span></div>
+        <div class="stat-box">⭐ <span id="score">0</span></div>
+        <div class="stat-box">❤️ <span id="lives">3</span></div>
+        <div class="stat-box">⏱️ <span id="time">45</span></div>
+    </div>
+
+    <div id="game-area">
+        <div id="waste-source-container">
+            <div id="waste-label">Arrastra el residuo:</div>
+            <div id="current-waste" draggable="true">❓</div>
+            <div style="margin-top:10px; font-size: 14px; color: #999;">
+                Restantes en nivel: <span id="items-left">12</span>
+            </div>
+        </div>
+
+        <div id="bins-container">
+            <div id="bin-paper" class="bin" data-type="paper">
+                <div class="bin-icon">♻️</div>
+                <div class="bin-label">PAPEL</div>
+                <div class="feedback-icon" id="fb-paper"></div>
+            </div>
+            <div id="bin-plastic" class="bin" data-type="plastic">
+                <div class="bin-icon">🥤</div>
+                <div class="bin-label">PLÁSTICO</div>
+                <div class="feedback-icon" id="fb-plastic"></div>
+            </div>
+            <div id="bin-organic" class="bin" data-type="organic">
+                <div class="bin-icon">🦴</div>
+                <div class="bin-label">ORGÁNICO</div>
+                <div class="feedback-icon" id="fb-organic"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="menu">
+        <h1>♻️ HÉROE DEL RECICLAJE</h1>
+        <p>¡Ayuda a limpiar el planeta!</p>
+        <button class="btn" onclick="initGame()">¡Empezar!</button>
+    </div>
+
+    <div id="overlay" style="display: none;">
+        <h1 id="overlay-title">NIVEL COMPLETADO</h1>
+        <div id="overlay-emoji" style="font-size: 80px; margin: 20px;">🏆</div>
+        <p id="overlay-msg">¡Excelente trabajo!</p>
+        <button class="btn" id="overlay-btn" onclick="">Siguiente Nivel</button>
+    </div>
+
+    <div id="watermark">Creado por el Prof. Gastón</div>
+</div>
+
+<script>
+    // --- BASE DE DATOS MAESTRA (50 Items únicos) ---
+    const fullWasteData = [
+        // --- PAPEL Y CARTÓN (17) ---
+        { icon: "📰", type: "paper" }, { icon: "📦", type: "paper" },
+        { icon: "📜", type: "paper" }, { icon: "🛍️", type: "paper" },
+        { icon: "📘", type: "paper" }, { icon: "✉️", type: "paper" },
+        { icon: "🥡", type: "paper" }, { icon: "🧻", type: "paper" },
+        { icon: "🎫", type: "paper" }, { icon: "📉", type: "paper" },
+        { icon: "🗒️", type: "paper" }, { icon: "🔖", type: "paper" },
+        { icon: "🏷️", type: "paper" }, { icon: "📆", type: "paper" },
+        { icon: "📋", type: "paper" }, { icon: "📨", type: "paper" },
+        { icon: "📇", type: "paper" },
+
+        // --- PLÁSTICO Y ENVASES (17) ---
+        { icon: "🥤", type: "plastic" }, { icon: "🧃", type: "plastic" },
+        { icon: "🧴", type: "plastic" }, { icon: "🥣", type: "plastic" },
+        { icon: "💿", type: "plastic" }, { icon: "💳", type: "plastic" },
+        { icon: "🕶️", type: "plastic" }, { icon: "🖊️", type: "plastic" },
+        { icon: "🍬", type: "plastic" }, { icon: "🍼", type: "plastic" },
+        { icon: "🪣", type: "plastic" }, { icon: "📏", type: "plastic" },
+        { icon: "🕹️", type: "plastic" }, { icon: "📼", type: "plastic" },
+        { icon: "💾", type: "plastic" }, { icon: "🖱️", type: "plastic" },
+        { icon: "🎈", type: "plastic" },
+
+        // --- ORGÁNICO (16) ---
+        { icon: "🍌", type: "organic" }, { icon: "🦴", type: "organic" },
+        { icon: "🍎", type: "organic" }, { icon: "🍕", type: "organic" },
+        { icon: "🍂", type: "organic" }, { icon: "🥕", type: "organic" },
+        { icon: "🥚", type: "organic" }, { icon: "🍗", type: "organic" },
+        { icon: "🌷", type: "organic" }, { icon: "🥦", type: "organic" },
+        { icon: "🍉", type: "organic" }, { icon: "🍇", type: "organic" },
+        { icon: "🍒", type: "organic" }, { icon: "🍞", type: "organic" },
+        { icon: "🌽", type: "organic" }, { icon: "🥑", type: "organic" }
+    ];
+
+    // Variables de Estado
+    let globalDeck = []; 
+    let currentLevelDeck = []; 
+    let currentLevel = 1;
+    const itemsPerLevel = 12; 
+    
+    let score = 0;
+    let lives = 3;
+    let timeLeft = 45; 
+    let gameInterval;
+    let gameActive = false;
+    let currentItem = null;
+
+    // Elementos DOM
+    const currentWasteEl = document.getElementById('current-waste');
+    const bins = document.querySelectorAll('.bin');
+    const itemsLeftEl = document.getElementById('items-left');
+
+    // Audio Context
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSound(type) {
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+
+        if (type === 'pop') {
+            osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+        } else if (type === 'wrong') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+        } else if (type === 'win') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(523, audioCtx.currentTime); 
+            osc.frequency.setValueAtTime(659, audioCtx.currentTime + 0.2); 
+            osc.frequency.setValueAtTime(784, audioCtx.currentTime + 0.4); 
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.8);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.8);
+        }
+    }
+
+    // --- LÓGICA DEL JUEGO ---
+
+    function initGame() {
+        document.getElementById('menu').style.display = 'none';
+        document.getElementById('overlay').style.display = 'none';
+
+        // Mezclar mazo global
+        globalDeck = [...fullWasteData].sort(() => Math.random() - 0.5);
+
+        score = 0;
+        lives = 3;
+        currentLevel = 1;
+        
+        startLevel();
+    }
+
+    function startLevel() {
+        if (globalDeck.length < itemsPerLevel) {
+            gameWin(); 
+            return;
+        }
+
+        // Tomar items del mazo global
+        currentLevelDeck = globalDeck.splice(0, itemsPerLevel);
+
+        gameActive = true;
+        timeLeft = 45; 
+        document.getElementById('overlay').style.display = 'none';
+        
+        updateUI();
+        
+        clearInterval(gameInterval);
+        gameInterval = setInterval(() => {
+            if(!gameActive) return;
+            timeLeft--;
+            updateUI();
+            if(timeLeft <= 0) gameOver("time");
+        }, 1000);
+
+        spawnWaste();
+    }
+
+    function updateUI() {
+        document.getElementById('score').innerText = score;
+        document.getElementById('lives').innerText = lives;
+        document.getElementById('time').innerText = timeLeft;
+        document.getElementById('level').innerText = currentLevel;
+        document.getElementById('items-left').innerText = currentLevelDeck.length + (currentItem ? 1 : 0);
+    }
+
+    function spawnWaste() {
+        if(!gameActive) return;
+
+        if (currentLevelDeck.length === 0) {
+            levelWin();
+            return;
+        }
+
+        currentItem = currentLevelDeck.pop();
+        
+        currentWasteEl.innerText = currentItem.icon;
+        
+        currentWasteEl.style.transform = 'translate(0px, 0px) scale(0.5)';
+        currentWasteEl.style.opacity = '0';
+        setTimeout(() => {
+            currentWasteEl.style.transform = 'translate(0px, 0px) scale(1)';
+            currentWasteEl.style.opacity = '1';
+        }, 50);
+
+        updateUI();
+    }
+
+    // --- ARRASTRAR Y SOLTAR ---
+    currentWasteEl.addEventListener('dragstart', (e) => {
+        e.dataTransfer.setData('text/plain', currentItem.type);
+        setTimeout(() => e.target.style.opacity = '0.5', 0);
+    });
+
+    currentWasteEl.addEventListener('dragend', (e) => {
+         e.target.style.opacity = '1';
+    });
+
+    bins.forEach(bin => {
+        bin.addEventListener('dragover', (e) => {
+            e.preventDefault(); 
+            bin.classList.add('drag-over');
+        });
+        bin.addEventListener('dragleave', () => {
+            bin.classList.remove('drag-over');
+        });
+        bin.addEventListener('drop', (e) => {
+            e.preventDefault();
+            bin.classList.remove('drag-over');
+            const droppedType = e.dataTransfer.getData('text/plain');
+            checkSort(bin, droppedType);
+        });
+    });
+
+    // Táctil
+    let touchStartX, touchStartY, initialElX, initialElY;
+
+    currentWasteEl.addEventListener('touchstart', (e) => {
+        if(!gameActive) return;
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        const transform = window.getComputedStyle(currentWasteEl).transform;
+        const matrix = new DOMMatrix(transform);
+        initialElX = matrix.m41;
+        initialElY = matrix.m42;
+        currentWasteEl.style.zIndex = 100;
+    }, { passive: false });
+
+    currentWasteEl.addEventListener('touchmove', (e) => {
+        if(!gameActive) return;
+        e.preventDefault(); 
+        const deltaX = e.touches[0].clientX - touchStartX;
+        const deltaY = e.touches[0].clientY - touchStartY;
+        currentWasteEl.style.transform = `translate(${initialElX + deltaX}px, ${initialElY + deltaY}px)`;
+    }, { passive: false });
+
+    currentWasteEl.addEventListener('touchend', (e) => {
+        if(!gameActive) return;
+        currentWasteEl.style.zIndex = 5;
+        const wasteRect = currentWasteEl.getBoundingClientRect();
+        const wasteCenter = { x: wasteRect.left + wasteRect.width/2, y: wasteRect.top + wasteRect.height/2 };
+
+        let droppedBin = null;
+        bins.forEach(bin => {
+            const binRect = bin.getBoundingClientRect();
+            if (wasteCenter.x >= binRect.left && wasteCenter.x <= binRect.right &&
+                wasteCenter.y >= binRect.top && wasteCenter.y <= binRect.bottom) {
+                droppedBin = bin;
+            }
+        });
+
+        if (droppedBin) checkSort(droppedBin, currentItem.type);
+        else currentWasteEl.style.transform = 'translate(0px, 0px)';
+    });
+
+    function checkSort(binElement, draggedType) {
+        const binType = binElement.dataset.type;
+        const feedbackEl = binElement.querySelector('.feedback-icon');
+
+        if (draggedType === binType) {
+            score += 10;
+            playSound('pop');
+            feedbackEl.innerText = "✅";
+            feedbackEl.style.animation = 'feedbackPop 0.6s forwards';
+            spawnWaste(); 
+        } else {
+            lives--;
+            playSound('wrong');
+            feedbackEl.innerText = "❌";
+            feedbackEl.style.animation = 'feedbackPop 0.6s forwards';
+            document.getElementById('game-container').classList.add('shake');
+            setTimeout(() => document.getElementById('game-container').classList.remove('shake'), 300);
+            
+            if(lives <= 0) gameOver("lives");
+            else {
+                currentWasteEl.style.transform = 'translate(0px, 0px)';
+            }
+        }
+        updateUI();
+        setTimeout(() => { feedbackEl.style.animation = 'none'; }, 600);
+    }
+
+    // --- ESTADOS DE JUEGO ---
+
+    function levelWin() {
+        gameActive = false;
+        clearInterval(gameInterval);
+        playSound('win');
+        
+        currentLevel++; 
+        
+        const btn = document.getElementById('overlay-btn');
+        document.getElementById('overlay-title').innerText = "¡NIVEL COMPLETADO!";
+        document.getElementById('overlay-msg').innerText = "Has limpiado esta zona.";
+        document.getElementById('overlay-emoji').innerText = "✨";
+        btn.innerText = "Siguiente Nivel";
+        btn.onclick = startLevel; 
+        
+        document.getElementById('overlay').style.display = 'flex';
+    }
+
+    function gameWin() {
+        gameActive = false;
+        clearInterval(gameInterval);
+        playSound('win');
+        
+        const btn = document.getElementById('overlay-btn');
+        document.getElementById('overlay-title').innerText = "¡HÉROE SUPREMO!";
+        document.getElementById('overlay-msg').innerText = "¡Has reciclado TODOS los objetos!";
+        document.getElementById('overlay-emoji').innerText = "🌍";
+        btn.innerText = "Jugar Todo de Nuevo";
+        btn.onclick = initGame; 
+        
+        document.getElementById('overlay').style.display = 'flex';
+    }
+
+    function gameOver(reason) {
+        gameActive = false;
+        clearInterval(gameInterval);
+        let msg = reason === "lives" ? "¡Demasiados errores!" : "¡Se acabó el tiempo!";
+        
+        const btn = document.getElementById('overlay-btn');
+        document.getElementById('overlay-title').innerText = "FIN DEL JUEGO";
+        document.getElementById('overlay-msg').innerText = msg;
+        document.getElementById('overlay-emoji').innerText = "😢";
+        
+        btn.innerText = "Reintentar Juego";
+        btn.onclick = initGame; 
+        
+        document.getElementById('overlay').style.display = 'flex';
+    }
+
+</script>
+</body>
+</html>

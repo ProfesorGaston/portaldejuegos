@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Lluvia de Letras - Mecanografía</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap');
+        
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #87CEEB; 
+            font-family: 'Fredoka One', cursive;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: white;
+        }
+
+        #game-container {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            border: 8px solid #fff;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            background: linear-gradient(to bottom, #2980b9, #6dd5fa, #ffffff);
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        /* Nubes de fondo decorativas */
+        .cloud {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            z-index: 1;
+        }
+        
+        @keyframes driftUp {
+            from { transform: translateY(600px); opacity: 0; }
+            50% { opacity: 0.8; }
+            to { transform: translateY(-200px); opacity: 0; }
+        }
+
+        canvas { 
+            display: block; 
+            position: relative; 
+            z-index: 5; 
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0; left: 0; width: 100%;
+            padding: 20px 30px;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: space-between;
+            font-size: 24px;
+            text-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+            z-index: 10;
+            color: #fff;
+        }
+
+        .stat-box { display: flex; align-items: center; gap: 10px; }
+
+        #overlay {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(41, 128, 185, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            color: #fff;
+            text-shadow: 3px 3px 0px #3498db;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+
+        p { font-size: 1.4rem; color: #dff9fb; margin-bottom: 30px; }
+
+        button {
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            font-family: inherit;
+            color: #2980b9;
+            background: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 0px #bdc3c7;
+            transition: transform 0.1s;
+        }
+        button:hover { transform: translateY(-2px); }
+        button:active { transform: translateY(2px); box-shadow: 0 2px 0 #bdc3c7; }
+
+        #watermark {
+            position: absolute; 
+            bottom: 10px; 
+            right: 15px;
+            font-size: 16px; 
+            /* CAMBIO: Color azul fuerte para que se vea sobre el blanco */
+            color: #2980b9; 
+            opacity: 0.8;
+            pointer-events: none;
+            z-index: 15;
+            font-family: sans-serif;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="clouds-layer"></div>
+
+    <div id="ui-layer">
+        <div class="stat-box">PUNTOS: <span id="score">0</span></div>
+        <div class="stat-box"><span id="lives">❤️❤️❤️</span></div>
+    </div>
+    
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="overlay">
+        <h1 id="title">CAÍDA DEL CIELO</h1>
+        <p>Presiona las letras (Lento: cada 3 seg)</p>
+        <button onclick="startGame()">SALTAR</button>
+    </div>
+    
+    <div id="watermark">Creado por el Prof. Gastón</div>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    canvas.width = 800;
+    canvas.height = 600;
+
+    let gameActive = false;
+    let score = 0;
+    let lives = 3;
+    
+    // --- CAMBIOS DE VELOCIDAD ---
+    // 1. Velocidad de caída: 0.3 (Antes 0.6) -> Doble de lento
+    let baseSpeed = 0.3; 
+    
+    // 2. SpawnRate: 180 cuadros = 3 Segundos exactos (60fps * 3)
+    let spawnRate = 180;  
+    
+    let frameCount = 0;
+    const MAX_LETTERS_ON_SCREEN = 4;
+
+    let letters = [];
+    let particles = [];
+    let animationId;
+
+    // Generador de Nubes
+    function createClouds() {
+        const layer = document.getElementById('clouds-layer');
+        layer.innerHTML = ''; 
+        for(let i=0; i<10; i++) {
+            let c = document.createElement('div');
+            c.className = 'cloud';
+            let size = Math.random() * 100 + 50;
+            c.style.width = size + 'px';
+            c.style.height = size + 'px';
+            c.style.left = Math.random() * 800 + 'px';
+            c.style.top = Math.random() * 600 + 'px';
+            c.style.animation = `driftUp ${Math.random() * 10 + 10}s linear infinite`;
+            layer.appendChild(c);
+        }
+    }
+    createClouds();
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSound(type) {
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'hit') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.2);
+        } else if (type === 'miss') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+            osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.3);
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.3);
+        }
+    }
+
+    class Letter {
+        constructor() {
+            this.char = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+            this.x = Math.random() * (canvas.width - 60) + 30;
+            this.y = -50;
+            // Velocidad base muy lenta + incremento mínimo
+            this.speed = baseSpeed + (score * 0.002); 
+        }
+
+        draw() {
+            ctx.font = "bold 50px 'Fredoka One'";
+            ctx.textAlign = "center";
+            
+            // Sombra
+            ctx.fillStyle = "rgba(0,0,0,0.1)";
+            ctx.fillText(this.char, this.x + 3, this.y + 3);
+
+            // Borde
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = "#2980b9";
+            ctx.strokeText(this.char, this.x, this.y);
+
+            // Relleno
+            ctx.fillStyle = "#fff";
+            ctx.fillText(this.char, this.x, this.y);
+        }
+
+        update(time) {
+            this.y += this.speed;
+        }
+    }
+
+    class Particle {
+        constructor(x, y) {
+            this.x = x; this.y = y;
+            this.size = Math.random() * 8 + 4;
+            this.speedX = (Math.random() - 0.5) * 4;
+            this.speedY = (Math.random() - 0.5) * 4;
+            this.life = 1; 
+        }
+        update() {
+            this.x += this.speedX;
+            this.y += this.speedY;
+            this.life -= 0.03;
+            this.size *= 0.95; 
+        }
+        draw() {
+            ctx.globalAlpha = this.life;
+            ctx.fillStyle = "#fff"; 
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+        }
+    }
+
+    function startGame() {
+        document.getElementById('overlay').style.display = 'none';
+        score = 0;
+        lives = 3;
+        letters = [];
+        particles = [];
+        frameCount = 0;
+        gameActive = true;
+        updateUI();
+        if (animationId) cancelAnimationFrame(animationId);
+        gameLoop();
+    }
+
+    function gameOver() {
+        gameActive = false;
+        document.getElementById('title').innerText = "¡FIN DEL VIAJE!";
+        document.querySelector('#overlay p').innerText = `Puntaje Final: ${score}`;
+        document.querySelector('#overlay button').innerText = "VOLVER A SALTAR";
+        document.getElementById('overlay').style.display = 'flex';
+    }
+
+    function createExplosion(x, y) {
+        for(let i=0; i<15; i++) {
+            particles.push(new Particle(x, y));
+        }
+    }
+
+    function updateUI() {
+        document.getElementById('score').innerText = score;
+        let hearts = "";
+        for(let i=0; i<lives; i++) hearts += "❤️";
+        document.getElementById('lives').innerText = hearts;
+    }
+
+    function gameLoop(time) {
+        if (!gameActive) return;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height); 
+
+        frameCount++;
+        
+        // delay 3 segs, aceleración muy lenta
+        let currentRate = Math.max(60, spawnRate - Math.floor(score / 50));
+        
+        if (frameCount % currentRate === 0) {
+            if (letters.length < MAX_LETTERS_ON_SCREEN) {
+                letters.push(new Letter());
+            }
+        }
+
+        for (let i = letters.length - 1; i >= 0; i--) {
+            let l = letters[i];
+            l.update(time);
+            l.draw();
+
+            if (l.y > canvas.height + 20) {
+                lives--;
+                playSound('miss');
+                letters.splice(i, 1);
+                updateUI();
+                if (lives <= 0) gameOver();
+            }
+        }
+
+        for (let i = particles.length - 1; i >= 0; i--) {
+            let p = particles[i];
+            p.update();
+            p.draw();
+            if (p.life <= 0) particles.splice(i, 1);
+        }
+
+        animationId = requestAnimationFrame(gameLoop);
+    }
+
+    window.addEventListener('keydown', e => {
+        if (!gameActive) return;
+
+        const pressedKey = e.key.toUpperCase();
+        let hitIndex = -1;
+        let lowestY = -1; 
+
+        for (let i = 0; i < letters.length; i++) {
+            if (letters[i].char === pressedKey) {
+                if (letters[i].y > lowestY) {
+                    lowestY = letters[i].y;
+                    hitIndex = i;
+                }
+            }
+        }
+
+        if (hitIndex !== -1) {
+            let l = letters[hitIndex];
+            createExplosion(l.x, l.y - 10);
+            score += 10;
+            playSound('hit');
+            letters.splice(hitIndex, 1);
+            updateUI();
+        }
+    });
+
+</script>
+</body>
+</html>
