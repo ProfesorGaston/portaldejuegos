@@ -53,6 +53,257 @@
         /* --- HERO SECTION --- */
         .hero-section { 
             position: relative; width: 100%; 
+            height: 30vh; 
+            display: flex; align-items: flex-end; justify-content: flex-end; 
+            padding-bottom: 2vh; 
+            z-index: 30; 
+        }
+        .hero-content { 
+            width: 45%; padding-right: 5vw; text-align: right; 
+            display: flex; flex-direction: column; align-items: flex-end; 
+        }
+        .hero-category { color: var(--accent-color); font-weight: 800; text-transform: uppercase; font-size: 1.2vw; letter-spacing: 2px; margin-bottom: 10px; }
+        
+        .hero-logo { font-family: 'Bebas Neue', cursive; font-size: 3.5vw; line-height: 1; margin-bottom: 15px; text-shadow: 2px 2px 10px rgba(0,0,0,0.5); }
+        
+        .hero-desc { font-size: 1.1vw; color: #ccc; max-width: 90%; line-height: 1.5; font-weight: 400; }
+
+        /* --- FILAS DE JUEGOS --- */
+        .rows-viewport { 
+            position: absolute; bottom: 0; left: 0; width: 100%; 
+            height: 70vh; 
+            z-index: 20; 
+            overflow: hidden; 
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 100%);
+            mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 100%);
+        }
+        .rows-container { 
+            display: flex; flex-direction: column; gap: 5vh; 
+            padding-top: 8vh; 
+            transition: transform 0.5s cubic-bezier(0.2, 1, 0.3, 1); 
+            will-change: transform; transform: translateZ(0); 
+        }
+        .row { display: flex; flex-direction: column; gap: 15px; }
+        .row-title { font-size: 1vw; font-weight: 600; color: rgba(255,255,255,0.4); padding-left: 5vw; text-transform: uppercase; letter-spacing: 1px; }
+        .row.active-row .row-title { color: #fff; }
+        .row-cards { display: flex; gap: var(--card-gap); padding-left: 5vw; align-items: center; }
+
+        /* --- TARJETAS --- */
+        .card {
+            flex: 0 0 var(--card-width); aspect-ratio: 16 / 9;
+            border-radius: 6px; 
+            display: flex; justify-content: center; align-items: center; flex-direction: column;
+            cursor: pointer; border: 2px solid transparent;
+            transition: transform 0.3s ease, background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+            transform: translateZ(0);
+        }
+        
+        .card-icon { font-size: 3vw; margin-bottom: 8px; transition: transform 0.3s; }
+        .card-title { font-size: 0.85vw; font-weight: 600; color: #ccc; text-align: center; }
+
+        .card.active {
+            transform: scale(1.1) translateZ(0);
+            z-index: 50;
+        }
+        .card.active .card-icon { transform: scale(1.2); }
+        .card.active .card-title { color: #fff; font-weight: 800; }
+    </style>
+</head>
+<body>
+
+    <div id="loader-overlay">
+        <div class="netflix-spinner"></div>
+        <div id="loading-msg" style="margin-top:15px; font-family:'Bebas Neue'; color:#e50914; letter-spacing:2px; font-size: 1.5rem;">INICIANDO...</div>
+    </div>
+
+    <div class="bg-fixed"></div>
+
+    <div class="top-header">
+        <div class="brand" id="brand-logo">PORTAL DE JUEGOS</div>
+        <div style="font-size: 0.9rem; font-weight: 600; opacity: 0.8;">👨‍🏫 PROF. GASTÓN</div>
+    </div>
+
+    <div class="hero-section">
+        <div class="hero-content">
+            <div class="hero-category" id="hero-cat">CATEGORÍA</div>
+            <h1 class="hero-logo" id="hero-title">TÍTULO DEL JUEGO</h1>
+            <p class="hero-desc" id="hero-desc">Descripción...</p>
+        </div>
+    </div>
+
+    <div class="rows-viewport">
+        <div class="rows-container" id="rows-container"></div>
+    </div>
+
+<script>
+    // --- FIX: Ocultar el loader al volver atrás en el navegador ---
+    window.addEventListener('pageshow', function(event) {
+        const loader = document.getElementById('loader-overlay');
+        if (loader) {
+            loader.style.display = 'none';
+        }
+    });
+    // --------------------------------------------------------------
+
+    const data = [
+        {
+            category: "Lengua y Mecanografía", color: "#e50914",
+            games: [
+                { title: 'Lluvia de Letras', desc: 'Escribe rápido y destruye las letras.', icon: '⌨️', url: 'Lluvia de letras.html' },
+                { title: 'Constructor de Palabras', desc: 'Une las piezas correctamente.', icon: '🧩', url: 'Constructor de palabras.html' },
+                { title: 'Tren de Oraciones', desc: 'Ordena los vagones.', icon: '🚂', url: 'Tren de oraciones.html' }
+            ]
+        },
+        {
+            category: "Lógica, Habilidad y Memoria", color: "#f5b041",
+            games: [
+                { title: 'La Hormiga', desc: 'Guía a la hormiga por el túnel.', icon: '🐜', url: 'La hormiga.html' },
+                { title: 'Memoria Gamer', desc: 'Encuentra las parejas.', icon: '🎮', url: 'Rompe-cabezas.html' },
+                { title: 'Pesca Marítima', desc: 'Atrapa los peces indicados.', icon: '🎣', url: 'Pesca maritima.html' },
+                { title: '¿Quién suena?', desc: 'Descubre qué animal se oculta.', icon: '👂', url: 'Juego de sonidos animales.html' },
+                { title: 'Conectando Oficios', desc: 'Relaciona a los profesionales.', icon: '👨‍🔧', url: 'Juego de oficios.html' },
+                { title: 'Explosión de Burbujas', desc: 'Revienta las burbujas.', icon: '🔵', url: 'Explosion de burbujas.html' },
+                { title: 'Héroe del Reciclaje', desc: 'Aprende a cuidar el planeta.', icon: '♻️', url: 'Reciclaje.html' },
+                { title: 'Simón Dice', desc: 'Repite la secuencia.', icon: '🔔', url: 'Simon dice.html' },
+                { title: 'Supermercado', desc: 'Administra tu dinero.', icon: '🛒', url: 'Supermercado.html' },
+                { title: 'Cuerpo Humano', desc: 'Ubica los huesos y órganos.', icon: '🦴', url: 'Cuerpo humano.html' },
+                { title: 'Desafío Saludable', desc: 'Alimentos nutritivos vs chatarra.', icon: '🍎', url: 'Desafio saludable.html' },
+                { title: '¿Qué hora es?', desc: 'Aprende a leer relojes.', icon: '⏰', url: 'La hora.html' }
+            ]
+        },
+        {
+            category: "Matemática Numérica", color: "#3498db",
+            games: [
+                { title: 'Math Invaders', desc: 'Resuelve operaciones rápidas.', icon: '👾', url: 'Math Invaders.html' },
+                { title: 'Pac-Mates', desc: 'Recorre el laberinto.', icon: '👻', url: 'Pacman de sumas.html' },
+                { title: 'Safari Numérico', desc: 'Cuenta animales.', icon: '🐾', url: 'Juego de conteo del 1 al 20 animales.html' },
+                { title: 'La Huerta', desc: 'Cosecha vegetales.', icon: '🥦', url: 'Juego de conteo del 1 al 20 vegetales.html' },
+                { title: 'Estación Numérica', desc: 'Cuenta transportes.', icon: '🚢', url: 'Juego de conteo del 1 al 20 transportes.html' }
+            ]
+        },
+        {
+            category: "Programación", color: "#2ecc71",
+            games: [ { title: 'Robot Explorador', desc: 'Utiliza bloques lógicos.', icon: '🤖', url: 'Robot explorador.html' } ]
+        }
+    ];
+
+    const processedRows = [];
+    data.forEach(item => {
+        for (let i = 0; i < item.games.length; i += 4) {
+            processedRows.push({ displayTitle: i === 0 ? item.category : "", realCategory: item.category, color: item.color, games: item.games.slice(i, i + 4) });
+        }
+    });
+
+    let currentRow = 0, currentCol = 0;
+    const container = document.getElementById('rows-container');
+
+    function launchGame(url, title) {
+        const loader = document.getElementById('loader-overlay');
+        document.getElementById('loading-msg').innerText = title.toUpperCase();
+        loader.style.display = 'flex';
+        setTimeout(() => { window.location.href = url; }, 1000); 
+    }
+
+    function init() {
+        processedRows.forEach((row, rIdx) => {
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'row'; rowDiv.id = `row-${rIdx}`;
+            rowDiv.innerHTML = `<div class="row-title">${row.displayTitle}</div><div class="row-cards" id="cards-${rIdx}"></div>`;
+            container.appendChild(rowDiv);
+            
+            row.games.forEach((game, cIdx) => {
+                const card = document.createElement('div');
+                card.className = 'card'; card.id = `card-${rIdx}-${cIdx}`;
+                card.innerHTML = `<div class="card-icon">${game.icon}</div><div class="card-title">${game.title}</div>`;
+                
+                card.dataset.baseBg = row.color + '15'; 
+                card.dataset.baseBorder = row.color + '40'; 
+                card.style.backgroundColor = card.dataset.baseBg;
+                card.style.borderColor = card.dataset.baseBorder;
+
+                card.onclick = () => { 
+                    if(currentRow === rIdx && currentCol === cIdx) {
+                        launchGame(game.url, game.title); 
+                    } else { 
+                        currentRow = rIdx; currentCol = cIdx; render(); 
+                    } 
+                };
+                document.getElementById(`cards-${rIdx}`).appendChild(card);
+            });
+        });
+        render();
+    }
+
+    function render() {
+        document.querySelectorAll('.card').forEach(c => {
+            c.classList.remove('active');
+            c.style.backgroundColor = c.dataset.baseBg;
+            c.style.borderColor = c.dataset.baseBorder;
+            c.style.boxShadow = 'none'; 
+        });
+        
+        document.querySelectorAll('.row').forEach(r => r.classList.remove('active-row'));
+
+        const color = processedRows[currentRow].color;
+        const currentCard = document.getElementById(`card-${currentRow}-${currentCol}`);
+        
+        if(currentCard) {
+            currentCard.classList.add('active');
+            currentCard.style.backgroundColor = color + '35'; 
+            currentCard.style.borderColor = color; 
+            currentCard.style.boxShadow = `0 0 20px ${color}60`; 
+            document.getElementById(`row-${currentRow}`).classList.add('active-row');
+        }
+
+        const rowHeight = document.querySelector('.row').offsetHeight + (window.innerHeight * 0.05);
+        container.style.transform = `translate3d(0, -${currentRow * rowHeight}px, 0)`;
+
+        const game = processedRows[currentRow].games[currentCol];
+
+        document.getElementById('hero-title').innerText = game.title;
+        document.getElementById('hero-desc').innerText = game.desc;
+        document.getElementById('hero-cat').innerText = processedRows[currentRow].realCategory;
+        document.getElementById('hero-cat').style.color = color;
+        document.getElementById('brand-logo').style.color = color;
+    }
+
+    window.addEventListener('keydown', e => {
+        if(e.key === 'ArrowUp' && currentRow > 0) currentRow--;
+        else if(e.key === 'ArrowDown' && currentRow < processedRows.length - 1) { currentRow++; currentCol = 0; }
+        else if(e.key === 'ArrowLeft' && currentCol > 0) currentCol--;
+        else if(e.key === 'ArrowRight' && currentCol < processedRows[currentRow].games.length - 1) currentCol++;
+        else if(e.key === 'Enter') launchGame(processedRows[currentRow].games[currentCol].url, processedRows[currentRow].games[currentCol].title);
+        render();
+    });
+
+    window.addEventListener('wheel', e => {
+        if (e.deltaY > 0 && currentRow < processedRows.length - 1) { currentRow++; currentCol = 0; }
+        else if (e.deltaY < 0 && currentRow > 0) { currentRow--; currentCol = 0; }
+        render();
+    }, { passive: true });
+
+    init();
+</script>
+</body>
+</html>            flex-direction: column; z-index: 10000;
+        }
+        .netflix-spinner {
+            width: 50px; height: 50px; border: 4px solid rgba(229, 9, 20, 0.2);
+            border-top: 4px solid var(--accent-color); border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* --- HEADER --- */
+        .top-header {
+            position: absolute; top: 0; left: 0; width: 100%;
+            padding: 4vh 5vw; display: flex; justify-content: space-between; align-items: center; z-index: 100;
+        }
+        .brand { font-family: 'Bebas Neue', cursive; color: var(--accent-color); font-size: 2.5rem; letter-spacing: 3px; }
+
+        /* --- HERO SECTION --- */
+        .hero-section { 
+            position: relative; width: 100%; 
             height: 30vh; /* Subimos el texto bien arriba */
             display: flex; align-items: flex-end; justify-content: flex-end; 
             padding-bottom: 2vh; 
@@ -278,3 +529,4 @@
 </script>
 </body>
 </html>
+
