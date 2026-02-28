@@ -24,9 +24,9 @@
             height: 100vh; overflow: hidden;
         }
 
-        /* --- CONTENEDOR DIORAMA --- */
+        /* --- CONTENEDOR DIORAMA (+30% DE TAMAÑO) --- */
         #game-container {
-            position: relative; width: 660px; height: 495px;
+            position: relative; width: 858px; height: 644px;
             background-color: #27ae60;
             background-image: url('https://media.istockphoto.com/id/486620678/es/vector/fondo-de-hierba.jpg?s=612x612&w=0&k=20&c=J20Yff_T3pgJsCCLBC4hteRsbXibP0cpwkomouKvMF0=');
             background-size: cover; background-position: center;
@@ -94,7 +94,7 @@
         #records-table tr:last-child td { border-bottom: none; }
 
         #watermark { margin-top: 15px; font-size: 12px; font-weight: 800; color: rgba(255,255,255,0.2); }
-        @media (max-width: 680px) { #game-container { width: 95vw; height: 90vh; } }
+        @media (max-width: 880px) { #game-container { width: 95vw; height: 90vh; } }
     </style>
 </head>
 <body>
@@ -144,6 +144,51 @@
     <div id="watermark">Creado por el Prof. Gastón</div>
 
 <script>
+    // --- MOTOR DE AUDIO SINTÉTICO (SIN ARCHIVOS) ---
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const audioCtx = new AudioContext();
+
+    function playTone(freq, type, duration, vol = 0.1) {
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+    }
+
+    const sfx = {
+        eat: () => {
+            playTone(800, 'sine', 0.1, 0.1);
+            setTimeout(() => playTone(1200, 'sine', 0.15, 0.1), 50);
+        },
+        deposit: () => {
+            playTone(440, 'square', 0.1, 0.05);
+            setTimeout(() => playTone(554, 'square', 0.1, 0.05), 100);
+            setTimeout(() => playTone(659, 'square', 0.2, 0.05), 200);
+        },
+        hit: () => {
+            playTone(150, 'sawtooth', 0.3, 0.2);
+            setTimeout(() => playTone(100, 'sawtooth', 0.4, 0.2), 100);
+        },
+        start: () => {
+            playTone(300, 'sine', 0.2, 0.1);
+            setTimeout(() => playTone(400, 'sine', 0.2, 0.1), 150);
+            setTimeout(() => playTone(500, 'sine', 0.4, 0.1), 300);
+        },
+        gameover: () => {
+            playTone(300, 'sawtooth', 0.4, 0.1);
+            setTimeout(() => playTone(250, 'sawtooth', 0.4, 0.1), 300);
+            setTimeout(() => playTone(200, 'sawtooth', 0.6, 0.15), 600);
+        }
+    };
+    // -----------------------------------------------
+
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const bgCanvas = document.getElementById('bgCanvas');
@@ -168,33 +213,23 @@
         wanderTimer: 0
     };
 
-    const nest = { x: 330, y: 247.5, radius: 35 };
+    // Nido ajustado al tamaño de 858x644 (+30%)
+    const nest = { x: 429, y: 322, radius: 35 };
     
-    // --- LÓGICA DE IMAGEN A PRUEBA DE FALLOS ---
     const nestImg = new Image();
     nestImg.src = "Hormi.png";
     let imgSuccess = false;
 
     function init() {
-        w = canvas.width = bgCanvas.width = 660;
-        h = canvas.height = bgCanvas.height = 495;
+        w = canvas.width = bgCanvas.width = 858;
+        h = canvas.height = bgCanvas.height = 644;
         
-        nestImg.onload = () => {
-            imgSuccess = true;
-            drawEnvironment();
-        };
-        
-        nestImg.onerror = () => {
-            console.warn("⚠️ No se pudo cargar Hormi.png. Usando gráfico de respaldo.");
-            imgSuccess = false;
-            drawEnvironment(); 
-        };
+        nestImg.onload = () => { imgSuccess = true; drawEnvironment(); };
+        nestImg.onerror = () => { imgSuccess = false; drawEnvironment(); };
 
-        if(nestImg.complete && nestImg.naturalWidth !== 0) {
-            imgSuccess = true;
+        if(nestImg.complete) {
+            imgSuccess = (nestImg.naturalWidth !== 0);
             drawEnvironment();
-        } else if (nestImg.complete && nestImg.naturalWidth === 0) {
-            drawEnvironment(); 
         }
         
         initFireflies();
@@ -211,10 +246,8 @@
 
         bgCtx.save();
         if(imgSuccess) {
-            // Si carga la imagen, la usamos
             bgCtx.drawImage(nestImg, nest.x - 50, nest.y - 35, 100, 75);
         } else {
-            // Si la imagen falla (Ej: error 404 en Github), dibuja este respaldo
             bgCtx.fillStyle = '#5c3a21'; 
             bgCtx.beginPath();
             bgCtx.ellipse(nest.x, nest.y, nest.radius, nest.radius * 0.7, 0, 0, Math.PI * 2);
@@ -222,11 +255,9 @@
         }
         bgCtx.restore();
 
-        // Agujero central oscuro
         bgCtx.fillStyle = 'rgba(10, 5, 3, 0.8)';
         bgCtx.beginPath(); bgCtx.ellipse(nest.x, nest.y - 10, 10, 4, 0, 0, Math.PI*2); bgCtx.fill();
         
-        // Viñeteado
         const vigGrad = bgCtx.createRadialGradient(w/2, h/2, h/3, w/2, h/2, w/1.2);
         vigGrad.addColorStop(0, 'rgba(0,0,0,0)'); vigGrad.addColorStop(1, 'rgba(0,0,0,0.6)');
         bgCtx.fillStyle = vigGrad; bgCtx.fillRect(0,0,w,h);
@@ -239,6 +270,9 @@
     }
 
     function startGame() {
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        sfx.start(); // Sonido de inicio
+        
         document.getElementById('start-screen').style.display = 'none';
         gameActive = true; score = 0; spawnCrumbs(5); requestAnimationFrame(update);
         
@@ -311,6 +345,7 @@
         
         if(distToPlayer < 35 && isInvulnerable <= 0) {
             isInvulnerable = 90; 
+            sfx.hit(); // Sonido de daño
             createParticles(ant.x, ant.y, '#e74c3c', 15); 
             
             ant.x -= Math.cos(redAnt.angle) * 45;
@@ -327,12 +362,14 @@
         crumbs.forEach((c, i) => {
             if(Math.hypot(c.x - ant.x, c.y - ant.y) < 22 && !ant.hasFood) {
                 ant.hasFood = true; crumbs.splice(i, 1);
+                sfx.eat(); // Sonido al agarrar la baya
                 createParticles(ant.x, ant.y, '#ff4757', 12); spawnCrumbs(1);
             }
         });
 
         if(Math.hypot(nest.x - ant.x, nest.y - ant.y) < nest.radius - 10 && ant.hasFood) {
             ant.hasFood = false; score += 1; document.getElementById('score-val').innerText = score;
+            sfx.deposit(); // Sonido feliz al dejar la baya en el nido
             createParticles(nest.x, nest.y, '#ffd32a', 15); 
             const scoreEl = document.getElementById('score-val');
             scoreEl.style.transform = 'scale(1.5)'; setTimeout(() => scoreEl.style.transform = 'scale(1)', 200);
@@ -439,6 +476,7 @@
 
     function endGame(reason) {
         gameActive = false; 
+        sfx.gameover(); // Sonido triste al terminar
         document.getElementById('end-screen').style.display = 'flex';
         document.getElementById('end-title').innerText = reason;
         document.getElementById('end-msg').innerHTML = `Llevaste <b style="color:var(--gold); font-size:1.2rem;">${score} bayas</b> al nido.`;
