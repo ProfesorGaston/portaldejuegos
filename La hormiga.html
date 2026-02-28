@@ -24,9 +24,9 @@
             height: 100vh; overflow: hidden;
         }
 
-        /* --- CONTENEDOR DIORAMA (+30% DE TAMAÑO) --- */
+        /* --- CONTENEDOR DIORAMA --- */
         #game-container {
-            position: relative; width: 858px; height: 644px;
+            position: relative; width: 660px; height: 495px;
             background-color: #27ae60;
             background-image: url('https://media.istockphoto.com/id/486620678/es/vector/fondo-de-hierba.jpg?s=612x612&w=0&k=20&c=J20Yff_T3pgJsCCLBC4hteRsbXibP0cpwkomouKvMF0=');
             background-size: cover; background-position: center;
@@ -94,7 +94,7 @@
         #records-table tr:last-child td { border-bottom: none; }
 
         #watermark { margin-top: 15px; font-size: 12px; font-weight: 800; color: rgba(255,255,255,0.2); }
-        @media (max-width: 880px) { #game-container { width: 95vw; height: 90vh; } }
+        @media (max-width: 680px) { #game-container { width: 95vw; height: 90vh; } }
     </style>
 </head>
 <body>
@@ -151,39 +151,51 @@
 
     let w, h;
     let score = 0;
-    let timeLeft = 150; // 2 minutos y 30 segundos
+    let timeLeft = 150; 
     let gameActive = false;
     let particles = [], crumbs = [], fireflies = [];
     
-    // --- VARIABLES DE VIDA ---
     let playerLives = 3; 
     let isInvulnerable = 0; 
     
     const ant = { x: 400, y: 300, targetX: 400, targetY: 300, angle: 0, speed: 0, maxSpeed: 4, accel: 0.3, hasFood: false };
     
-    // --- HORMIGA ROJA ---
     const redAnt = { 
         x: 100, y: 100, targetX: 100, targetY: 100, angle: 0, speed: 0, 
-        maxSpeed: 2.3, // Velocidad ligeramente aumentada para mayor desafío
-        accel: 0.18,   // Aceleración ligeramente mejorada
+        maxSpeed: 2.3, 
+        accel: 0.18,   
         state: 'wander',
         wanderTimer: 0
     };
 
-    // Nido ajustado al nuevo centro de la pantalla (+30%)
-    const nest = { x: 429, y: 322, radius: 35 };
+    const nest = { x: 330, y: 247.5, radius: 35 };
     
-    // Imagen del montículo cargada localmente
+    // --- LÓGICA DE IMAGEN A PRUEBA DE FALLOS ---
     const nestImg = new Image();
     nestImg.src = "Hormi.png";
+    let imgSuccess = false;
 
     function init() {
-        // Lienzo +30% de tamaño
-        w = canvas.width = bgCanvas.width = 858;
-        h = canvas.height = bgCanvas.height = 644;
+        w = canvas.width = bgCanvas.width = 660;
+        h = canvas.height = bgCanvas.height = 495;
         
-        if(nestImg.complete) drawEnvironment();
-        else nestImg.onload = drawEnvironment;
+        nestImg.onload = () => {
+            imgSuccess = true;
+            drawEnvironment();
+        };
+        
+        nestImg.onerror = () => {
+            console.warn("⚠️ No se pudo cargar Hormi.png. Usando gráfico de respaldo.");
+            imgSuccess = false;
+            drawEnvironment(); 
+        };
+
+        if(nestImg.complete && nestImg.naturalWidth !== 0) {
+            imgSuccess = true;
+            drawEnvironment();
+        } else if (nestImg.complete && nestImg.naturalWidth === 0) {
+            drawEnvironment(); 
+        }
         
         initFireflies();
     }
@@ -197,12 +209,20 @@
         bgCtx.fillStyle = rayGrad;
         bgCtx.beginPath(); bgCtx.moveTo(0,0); bgCtx.lineTo(w/2, 0); bgCtx.lineTo(w, h); bgCtx.lineTo(w/2, h); bgCtx.fill();
 
-        // Dibujar el hormiguero
         bgCtx.save();
-        bgCtx.drawImage(nestImg, nest.x - 50, nest.y - 35, 100, 75);
+        if(imgSuccess) {
+            // Si carga la imagen, la usamos
+            bgCtx.drawImage(nestImg, nest.x - 50, nest.y - 35, 100, 75);
+        } else {
+            // Si la imagen falla (Ej: error 404 en Github), dibuja este respaldo
+            bgCtx.fillStyle = '#5c3a21'; 
+            bgCtx.beginPath();
+            bgCtx.ellipse(nest.x, nest.y, nest.radius, nest.radius * 0.7, 0, 0, Math.PI * 2);
+            bgCtx.fill();
+        }
         bgCtx.restore();
 
-        // Agujero central oscuro (entrada del nido)
+        // Agujero central oscuro
         bgCtx.fillStyle = 'rgba(10, 5, 3, 0.8)';
         bgCtx.beginPath(); bgCtx.ellipse(nest.x, nest.y - 10, 10, 4, 0, 0, Math.PI*2); bgCtx.fill();
         
@@ -243,7 +263,6 @@
     function update() {
         if(!gameActive) return;
 
-        // --- MOVIMIENTO JUGADOR ---
         const dx = ant.targetX - ant.x; const dy = ant.targetY - ant.y; const dist = Math.hypot(dx, dy);
         if(dist > 5) {
             let diff = Math.atan2(dy, dx) - ant.angle;
@@ -254,10 +273,8 @@
         } else { ant.speed *= 0.7; }
         ant.x = Math.max(15, Math.min(w - 15, ant.x)); ant.y = Math.max(15, Math.min(h - 15, ant.y));
 
-        // --- I.A. HORMIGA ROJA MEJORADA ---
         const distToPlayer = Math.hypot(ant.x - redAnt.x, ant.y - redAnt.y);
         
-        // Detección (37px)
         if(distToPlayer < 37) {
             redAnt.state = 'chase';
             redAnt.targetX = ant.x; redAnt.targetY = ant.y;
@@ -265,25 +282,18 @@
             redAnt.state = 'wander';
             redAnt.wanderTimer--;
             
-            // Lógica de patrullaje inteligente actualizada
             if(redAnt.wanderTimer <= 0) {
                 let strategy = Math.random();
-                
                 if (strategy < 0.6) {
-                    // 60% de probabilidad: Merodear cerca del jugador (acecho)
                     redAnt.targetX = Math.max(30, Math.min(w-30, ant.x + (Math.random()-0.5)*150));
                     redAnt.targetY = Math.max(30, Math.min(h-30, ant.y + (Math.random()-0.5)*150));
                 } else if (strategy < 0.8) {
-                    // 20% de probabilidad: Patrullar alrededor del nido (defensa)
                     redAnt.targetX = nest.x + (Math.random()-0.5)*120;
                     redAnt.targetY = nest.y + (Math.random()-0.5)*120;
                 } else {
-                    // 20% de probabilidad: Caminar a un lugar aleatorio
                     redAnt.targetX = 30 + Math.random()*(w-60); 
                     redAnt.targetY = 30 + Math.random()*(h-60);
                 }
-                
-                // Cambia de dirección frecuentemente para verse más activa
                 redAnt.wanderTimer = 40 + Math.random()*50; 
             }
         }
@@ -297,19 +307,16 @@
             redAnt.x += Math.cos(redAnt.angle) * redAnt.speed; redAnt.y += Math.sin(redAnt.angle) * redAnt.speed;
         }
 
-        // --- COLISIÓN DE DAÑO (1/3 de vida) ---
         if(isInvulnerable > 0) isInvulnerable--;
         
         if(distToPlayer < 35 && isInvulnerable <= 0) {
             isInvulnerable = 90; 
             createParticles(ant.x, ant.y, '#e74c3c', 15); 
             
-            // Fuerte empujón al jugador
             ant.x -= Math.cos(redAnt.angle) * 45;
             ant.y -= Math.sin(redAnt.angle) * 45;
             ant.targetX = ant.x; ant.targetY = ant.y; 
 
-            // Se pierde 1 de 3
             playerLives--;
             document.getElementById('hp-' + (playerLives + 1)).classList.add('hp-lost');
             document.getElementById('hp-text').innerText = playerLives + '/3';
@@ -317,7 +324,6 @@
             if(playerLives <= 0) endGame("¡La hormiga roja te ha devorado!");
         }
 
-        // --- COLISIONES COMIDA Y NIDO ---
         crumbs.forEach((c, i) => {
             if(Math.hypot(c.x - ant.x, c.y - ant.y) < 22 && !ant.hasFood) {
                 ant.hasFood = true; crumbs.splice(i, 1);
@@ -363,13 +369,83 @@
             ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1;
         });
 
-        // JUGADOR (Parpadeo al recibir daño)
         if(isInvulnerable === 0 || Math.floor(Date.now() / 100) % 2 === 0) drawAnt(ant, '#1e272e', '#111');
         
-        // ENEMIGO
         drawAnt(redAnt, '#c0392b', '#922b21', true);
     }
 
     function drawAnt(entity, bodyColor, legColor, isEnemy = false) {
         ctx.save(); ctx.translate(entity.x, entity.y); ctx.rotate(entity.angle);
-        ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.beginPath(); ctx.ellipse(-2, 4, 18, 10, 0,
+        ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.beginPath(); ctx.ellipse(-2, 4, 18, 10, 0, 0, Math.PI*2); ctx.fill();
+
+        ctx.strokeStyle = legColor; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+        let walk = entity.speed > 0.5 ? Math.sin(Date.now() / 50) * 5 : 0; 
+        ctx.beginPath(); ctx.moveTo(4, 0); ctx.lineTo(10 + walk, -14); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(4, 0); ctx.lineTo(10 - walk, 14); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(-2, 0); ctx.lineTo(-2 - walk, -16); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(-2, 0); ctx.lineTo(-2 + walk, 16); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(-8, 0); ctx.lineTo(-12 + walk, -14); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(-8, 0); ctx.lineTo(-12 - walk, 14); ctx.stroke();
+
+        ctx.fillStyle = bodyColor;
+        ctx.beginPath(); ctx.ellipse(-10, 0, 10, 8, 0, 0, Math.PI*2); ctx.fill(); 
+        ctx.beginPath(); ctx.ellipse(0, 0, 6, 5, 0, 0, Math.PI*2); ctx.fill();  
+        ctx.beginPath(); ctx.ellipse(10, 0, 8, 7, 0, 0, Math.PI*2); ctx.fill();  
+
+        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        ctx.beginPath(); ctx.ellipse(-12, -3, 4, 2, Math.PI/6, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(9, -2, 3, 1.5, Math.PI/6, 0, Math.PI*2); ctx.fill(); 
+
+        ctx.strokeStyle = legColor; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(15, -2); ctx.quadraticCurveTo(22, -10, 24, -5); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(15, 2); ctx.quadraticCurveTo(22, 10, 24, 5); ctx.stroke();
+
+        if(isEnemy) {
+            ctx.fillStyle = '#f1c40f'; 
+            ctx.beginPath(); ctx.arc(11, -3, 1.5, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(11, 3, 1.5, 0, Math.PI*2); ctx.fill();
+        }
+
+        if(entity.hasFood) {
+            ctx.shadowColor = '#ff4757'; ctx.shadowBlur = 10; ctx.fillStyle = '#ff4757';
+            ctx.beginPath(); ctx.arc(19, 0, 7, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
+            ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.beginPath(); ctx.arc(17, -2, 2, 0, Math.PI*2); ctx.fill();
+        }
+        ctx.restore();
+    }
+
+    function createParticles(x, y, color, amount) {
+        for(let i=0; i<amount; i++) {
+            particles.push({ x, y, color, vx: (Math.random()-0.5)*6, vy: (Math.random()-0.5)*6, life: 1, size: 2 + Math.random()*4 });
+        }
+    }
+
+    function saveAndDisplayRecords(currentScore) {
+        let scores = JSON.parse(localStorage.getItem('antRecords')) || [];
+        scores.push(currentScore);
+        scores.sort((a, b) => b - a);
+        scores = scores.slice(0, 5);
+        localStorage.setItem('antRecords', JSON.stringify(scores));
+
+        const tbody = document.getElementById('records-body');
+        tbody.innerHTML = '';
+        scores.forEach((s, index) => {
+            let tr = document.createElement('tr');
+            if(s === currentScore) tr.style.color = '#0be881';
+            tr.innerHTML = `<td>#${index + 1}</td><td>${s} Bayas</td>`;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function endGame(reason) {
+        gameActive = false; 
+        document.getElementById('end-screen').style.display = 'flex';
+        document.getElementById('end-title').innerText = reason;
+        document.getElementById('end-msg').innerHTML = `Llevaste <b style="color:var(--gold); font-size:1.2rem;">${score} bayas</b> al nido.`;
+        saveAndDisplayRecords(score);
+    }
+
+    init();
+</script>
+</body>
+</html>
