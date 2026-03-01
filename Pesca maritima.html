@@ -70,7 +70,7 @@
             border: 3px solid var(--primary);
             font-weight: bold;
             display: flex;
-            flex-direction: column; /* Apilado para que se vea bien */
+            flex-direction: column; 
             align-items: center;
             line-height: 1;
         }
@@ -88,7 +88,7 @@
         #sea-area {
             flex-grow: 1;
             position: relative;
-            cursor: none; /* Ocultamos cursor */
+            cursor: none; 
             background-image: radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.1) 100%);
         }
 
@@ -100,7 +100,7 @@
             border: 2px solid rgba(255,255,255,0.6);
             border-radius: 50%;
             display: flex; justify-content: center; align-items: center;
-            font-size: 3rem; /* Emojis grandes */
+            font-size: 3rem; 
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
             animation: wobble 3s ease-in-out infinite;
             user-select: none;
@@ -111,14 +111,14 @@
             50% { transform: translateX(10px) rotate(5deg); }
         }
 
-        /* Anzuelo */
+        /* Anzuelo cambiado por Ancla */
         #hook-line {
             position: absolute; top: 0; width: 3px; background: #2c2c54;
             transform-origin: top center; pointer-events: none;
         }
         #hook {
             position: absolute; width: 40px; height: 40px;
-            font-size: 45px; 
+            font-size: 40px; /* Tamaño ajustado para el ancla */
             transform: translate(-50%, 0);
             pointer-events: none;
             filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.3));
@@ -240,20 +240,20 @@
         const gain = audioCtx.createGain();
         osc.connect(gain); gain.connect(audioCtx.destination);
 
-        if (type === 'pop') { // Burbuja correcta (sonido agudo y corto)
+        if (type === 'pop') { 
             osc.frequency.setValueAtTime(600, audioCtx.currentTime);
             osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
             gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
             gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
             osc.start(); osc.stop(audioCtx.currentTime + 0.1);
-        } else if (type === 'wrong') { // Error (sonido grave)
+        } else if (type === 'wrong') { 
             osc.type = 'sawtooth';
             osc.frequency.setValueAtTime(150, audioCtx.currentTime);
             osc.frequency.linearRampToValueAtTime(50, audioCtx.currentTime + 0.3);
             gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
             gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
             osc.start(); osc.stop(audioCtx.currentTime + 0.3);
-        } else if (type === 'win') { // Victoria
+        } else if (type === 'win') { 
             osc.type = 'triangle';
             osc.frequency.setValueAtTime(523, audioCtx.currentTime); 
             osc.frequency.setValueAtTime(659, audioCtx.currentTime + 0.2); 
@@ -272,13 +272,11 @@
         if (diff === 'hard') { difficultySpeed = 4; spawnRate = 700; }
 
         currentLevel = 0;
-        // Mezclamos el orden de los animales para que no sea siempre igual
         seaCreatures.sort(() => Math.random() - 0.5);
         startLevel();
     }
 
     function startLevel() {
-        // Reset de estado
         score = 0;
         timeLeft = 60;
         lives = 3; 
@@ -286,18 +284,15 @@
         gameActive = true;
         document.getElementById('bubbles-container').innerHTML = '';
         
-        // Configurar UI con el animal objetivo actual
         const target = seaCreatures[currentLevel];
         document.getElementById('target-icon').innerText = target.icon;
         document.getElementById('target-name').innerText = target.name;
         
         updateUI();
 
-        // Limpieza de intervalos previos
         clearInterval(gameInterval);
         clearInterval(bubbleInterval);
         
-        // Iniciar loops
         gameInterval = setInterval(updateGame, 20);
         bubbleInterval = setInterval(createBubble, spawnRate);
     }
@@ -312,11 +307,9 @@
     seaArea.addEventListener('mousemove', (e) => {
         const rect = seaArea.getBoundingClientRect();
         hookX = e.clientX - rect.left;
-        // Límites laterales
         if (hookX < 20) hookX = 20;
         if (hookX > rect.width - 20) hookX = rect.width - 20;
 
-        // Actualizar visual
         hook.style.left = hookX + 'px';
         hook.style.top = '100px'; 
         hookLine.style.left = hookX + 'px';
@@ -329,14 +322,10 @@
         const b = document.createElement('div');
         b.className = 'bubble';
         
-        // LÓGICA DE APARICIÓN:
-        // 40% probabilidad de que sea el animal correcto
-        // 60% probabilidad de distracción (otro animal)
         let creature;
         if (Math.random() < 0.4) {
             creature = seaCreatures[currentLevel];
         } else {
-            // Elegir uno random que NO sea el actual
             let randomIdx;
             do {
                 randomIdx = Math.floor(Math.random() * seaCreatures.length);
@@ -346,7 +335,6 @@
         
         b.innerText = creature.icon;
         
-        // Posición X aleatoria
         const startX = Math.random() * (seaArea.offsetWidth - 70);
         b.style.left = startX + 'px';
         b.style.bottom = '-80px'; 
@@ -357,22 +345,20 @@
             el: b,
             x: startX,
             y: -80,
-            speed: difficultySpeed + Math.random(), // Variación de velocidad
-            icon: creature.icon // Guardamos qué icono es para comparar después
+            speed: difficultySpeed + Math.random(), 
+            icon: creature.icon 
         });
     }
 
     function updateGame() {
         if (!gameActive) return;
 
-        // Timer simplificado
         if (Math.random() < 0.02) { 
             timeLeft--;
             updateUI();
             if (timeLeft <= 0) gameOver("time");
         }
 
-        // Mover burbujas y chequear colisiones
         for (let i = bubbles.length - 1; i >= 0; i--) {
             let bubble = bubbles[i];
             bubble.y += bubble.speed;
@@ -381,7 +367,6 @@
             const hookRect = hook.getBoundingClientRect();
             const bubbleRect = bubble.el.getBoundingClientRect();
 
-            // Colisión simple AABB
             if (
                 hookRect.left < bubbleRect.right &&
                 hookRect.right > bubbleRect.left &&
@@ -391,7 +376,6 @@
                 checkCatch(bubble, i);
             }
 
-            // Eliminar si sale por arriba
             if (bubble.y > seaArea.offsetHeight + 60) {
                 bubble.el.remove();
                 bubbles.splice(i, 1);
@@ -402,27 +386,22 @@
     function checkCatch(bubble, index) {
         const targetIcon = seaCreatures[currentLevel].icon;
         
-        // Efecto visual: eliminar burbuja
         bubble.el.remove();
         bubbles.splice(index, 1);
 
         if (bubble.icon === targetIcon) {
-            // --- CORRECTO ---
             score += 10;
             playSound('pop');
             updateUI();
             
-            // Meta: 10 capturas (100 puntos) para pasar de nivel
             if (score >= 100) {
                 levelWin();
             }
         } else {
-            // --- INCORRECTO ---
             lives--;
             playSound('wrong');
             updateUI();
 
-            // Feedback visual de error (borde rojo)
             document.getElementById('game-container').style.borderColor = '#e84118';
             setTimeout(() => {
                 document.getElementById('game-container').style.borderColor = 'white';
@@ -494,5 +473,4 @@
 
 </script>
 </body>
-
 </html>
