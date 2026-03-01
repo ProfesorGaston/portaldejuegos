@@ -33,9 +33,9 @@
             touch-action: none;
         }
 
-        /* --- NUEVO CONTENEDOR ESCALADO AL 70% (-30%) --- */
+        /* --- CONTENEDOR ESCALADO AL 75% (+5% respecto al anterior) --- */
         #game-wrapper {
-            transform: scale(0.7);
+            transform: scale(0.75);
             transform-origin: center;
             display: flex;
             flex-direction: column;
@@ -84,7 +84,6 @@
             font-size: 1.8rem; width: 100%; height: 100%; position: relative;
         }
 
-        /* Estilo para el contenedor del robot */
         .robot-sprite {
             display: inline-block;
             transition: transform 0.3s;
@@ -197,7 +196,9 @@
             <p id="modal-msg" style="font-size: 1.3rem;">Camino completado.</p>
             <button onclick="nextLevel()" id="modal-btn">Siguiente Nivel</button>
         </div>
-    </div> <script>
+    </div>
+
+<script>
     // --- NIVELES ---
     const levels = [
         { start:[0,2], end:[4,2], walls:[] },
