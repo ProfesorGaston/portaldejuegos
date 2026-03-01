@@ -188,18 +188,31 @@
 </div>
 
 <script>
+    // --- DICCIONARIO AMPLIADO ---
     const dictionary = [
-        { letter: 'A', items: [{w:'Árbol', e:'🌳'}, {w:'Avión', e:'✈️'}, {w:'Abeja', e:'🐝'}, {w:'Auto', e:'🚗'}, {w:'Anillo', e:'💍'}, {w:'Araña', e:'🕷️'}, {w:'Arcoiris', e:'🌈'}] },
-        { letter: 'E', items: [{w:'Elefante', e:'🐘'}, {w:'Escuela', e:'🏫'}, {w:'Estrella', e:'⭐'}, {w:'Erizo', e:'🦔'}, {w:'Escoba', e:'🧹'}, {w:'Espejo', e:'🪞'}, {w:'Escudo', e:'🛡️'}] },
-        { letter: 'I', items: [{w:'Iglú', e:'🛖'}, {w:'Isla', e:'🏝️'}, {w:'Imán', e:'🧲'}, {w:'Indio', e:'🏹'}, {w:'Insecto', e:'🐞'}, {w:'Iglesia', e:'⛪'}, {w:'Idea', e:'💡'}] },
-        { letter: 'O', items: [{w:'Oso', e:'🐻'}, {w:'Ojo', e:'👁️'}, {w:'Ola', e:'🌊'}, {w:'Oveja', e:'🐑'}, {w:'Olla', e:'🍲'}, {w:'Oreja', e:'👂'}, {w:'Ocho', e:'8️⃣'}] },
-        { letter: 'U', items: [{w:'Uva', e:'🍇'}, {w:'Uno', e:'1️⃣'}, {w:'Uña', e:'💅'}, {w:'Unicornio', e:'🦄'}, {w:'Universo', e:'🌌'}, {w:'Urna', e:'🗳️'}, {w:'Uslero', e:'🥖'}] },
-        { letter: 'C', items: [{w:'Casa', e:'🏠'}, {w:'Cebra', e:'🦓'}, {w:'Cama', e:'🛏️'}, {w:'Copa', e:'🏆'}, {w:'Cuchara', e:'🥄'}, {w:'Conejo', e:'🐰'}, {w:'Cero', e:'0️⃣'}] },
-        { letter: 'D', items: [{w:'Dado', e:'🎲'}, {w:'Dedo', e:'☝️'}, {w:'Dinosaurio', e:'🦖'}, {w:'Diente', e:'🦷'}, {w:'Dulce', e:'🍭'}, {w:'Dardo', e:'🎯'}, {w:'Delfín', e:'🐬'}] },
-        { letter: 'M', items: [{w:'Mono', e:'🐒'}, {w:'Mano', e:'✋'}, {w:'Mesa', e:'🪑'}, {w:'Manzana', e:'🍎'}, {w:'Martillo', e:'🔨'}, {w:'Mochila', e:'🎒'}, {w:'Miel', e:'🍯'}] },
-        { letter: 'N', items: [{w:'Nido', e:'🪹'}, {w:'Nube', e:'☁️'}, {w:'Nene', e:'👦'}, {w:'Nueve', e:'9️⃣'}, {w:'Nota', e:'🎵'}, {w:'Nariz', e:'👃'}, {w:'Naranja', e:'🍊'}] },
-        { letter: 'P', items: [{w:'Pato', e:'🦆'}, {w:'Pelota', e:'⚽'}, {w:'Perro', e:'🐶'}, {w:'Pez', e:'🐟'}, {w:'Puerta', e:'🚪'}, {w:'Pala', e:'🧹'}, {w:'Payaso', e:'🤡'}] }
+        { letter: 'A', items: [{w:'Árbol', e:'🌳'}, {w:'Avión', e:'✈️'}, {w:'Abeja', e:'🐝'}, {w:'Auto', e:'🚗'}, {w:'Anillo', e:'💍'}, {w:'Araña', e:'🕷️'}, {w:'Arcoiris', e:'🌈'}, {w:'Ancla', e:'⚓'}, {w:'Ángel', e:'👼'}, {w:'Ambulancia', e:'🚑'}, {w:'Ardilla', e:'🐿️'}, {w:'Arpa', e:'🪕'}] },
+        { letter: 'E', items: [{w:'Elefante', e:'🐘'}, {w:'Escuela', e:'🏫'}, {w:'Estrella', e:'⭐'}, {w:'Erizo', e:'🦔'}, {w:'Escoba', e:'🧹'}, {w:'Espejo', e:'🪞'}, {w:'Escudo', e:'🛡️'}, {w:'Ensalada', e:'🥗'}, {w:'Enfermera', e:'👩‍⚕️'}, {w:'Espada', e:'⚔️'}, {w:'Estatua', e:'🗽'}, {w:'Extraterrestre', e:'👽'}] },
+        { letter: 'I', items: [{w:'Iglú', e:'🛖'}, {w:'Isla', e:'🏝️'}, {w:'Imán', e:'🧲'}, {w:'Indio', e:'🏹'}, {w:'Insecto', e:'🐞'}, {w:'Iglesia', e:'⛪'}, {w:'Idea', e:'💡'}, {w:'Iguana', e:'🦎'}, {w:'Invierno', e:'❄️'}, {w:'Incendio', e:'🔥'}, {w:'Imperdible', e:'🧷'}, {w:'Inodoro', e:'🚽'}] },
+        { letter: 'O', items: [{w:'Oso', e:'🐻'}, {w:'Ojo', e:'👁️'}, {w:'Ola', e:'🌊'}, {w:'Oveja', e:'🐑'}, {w:'Olla', e:'🍲'}, {w:'Oreja', e:'👂'}, {w:'Ocho', e:'8️⃣'}, {w:'Ogro', e:'👹'}, {w:'Oruga', e:'🐛'}, {w:'Oro', e:'🥇'}, {w:'Ostra', e:'🦪'}] },
+        { letter: 'U', items: [{w:'Uva', e:'🍇'}, {w:'Uno', e:'1️⃣'}, {w:'Uña', e:'💅'}, {w:'Unicornio', e:'🦄'}, {w:'Universo', e:'🌌'}, {w:'Urna', e:'🗳️'}, {w:'Uslero', e:'🥖'}, {w:'Uniforme', e:'🥋'}, {w:'Urano', e:'🪐'}, {w:'Ubicación', e:'📍'}] },
+        { letter: 'C', items: [{w:'Casa', e:'🏠'}, {w:'Cebra', e:'🦓'}, {w:'Cama', e:'🛏️'}, {w:'Copa', e:'🏆'}, {w:'Cuchara', e:'🥄'}, {w:'Conejo', e:'🐰'}, {w:'Cero', e:'0️⃣'}, {w:'Caballo', e:'🐴'}, {w:'Coche', e:'🚙'}, {w:'Cerdo', e:'🐷'}, {w:'Castillo', e:'🏰'}, {w:'Corona', e:'👑'}] },
+        { letter: 'D', items: [{w:'Dado', e:'🎲'}, {w:'Dedo', e:'☝️'}, {w:'Dinosaurio', e:'🦖'}, {w:'Diente', e:'🦷'}, {w:'Dulce', e:'🍭'}, {w:'Dardo', e:'🎯'}, {w:'Delfín', e:'🐬'}, {w:'Doctor', e:'👨‍⚕️'}, {w:'Dragón', e:'🐉'}, {w:'Durazno', e:'🍑'}, {w:'Diamante', e:'💎'}] },
+        { letter: 'M', items: [{w:'Mono', e:'🐒'}, {w:'Mano', e:'✋'}, {w:'Mesa', e:'🪑'}, {w:'Manzana', e:'🍎'}, {w:'Martillo', e:'🔨'}, {w:'Mochila', e:'🎒'}, {w:'Miel', e:'🍯'}, {w:'Mariposa', e:'🦋'}, {w:'Murciélago', e:'🦇'}, {w:'Moto', e:'🏍️'}, {w:'Mapa', e:'🗺️'}] },
+        { letter: 'N', items: [{w:'Nido', e:'🪹'}, {w:'Nube', e:'☁️'}, {w:'Nene', e:'👦'}, {w:'Nueve', e:'9️⃣'}, {w:'Nota', e:'🎵'}, {w:'Nariz', e:'👃'}, {w:'Naranja', e:'🍊'}, {w:'Nieve', e:'🌨️'}, {w:'Nave', e:'🚀'}, {w:'Ninja', e:'🥷'}, {w:'Nuez', e:'🌰'}] },
+        { letter: 'P', items: [{w:'Pato', e:'🦆'}, {w:'Pelota', e:'⚽'}, {w:'Perro', e:'🐶'}, {w:'Pez', e:'🐟'}, {w:'Puerta', e:'🚪'}, {w:'Pala', e:'🧹'}, {w:'Payaso', e:'🤡'}, {w:'Pingüino', e:'🐧'}, {w:'Pizza', e:'🍕'}, {w:'Policía', e:'👮'}, {w:'Paraguas', e:'☔'}] }
     ];
+
+    // --- NUEVAS LISTAS DE MENSAJES DINÁMICOS ---
+    const titulosExito = ["¡EXCELENTE!", "¡MUY BIEN!", "¡GENIAL!", "¡FANTÁSTICO!", "¡INCREÍBLE!", "¡SÚPER!", "¡IMPECABLE!"];
+    const emojisExito = ["🌟", "🎉", "🔥", "✨", "🚀", "👏", "😎", "🥳", "🙌"];
+
+    const titulosTiempo = ["¡SE ACABÓ!", "¡AY, CASI!", "¡UFA!", "¡UPS!", "¡INTENTEMOS DE NUEVO!", "¡TIEMPO!"];
+    const emojisTiempo = ["⏰", "😅", "⏳", "🙈", "💪", "🐢", "💨"];
+
+    function alAzar(lista) {
+        return lista[Math.floor(Math.random() * lista.length)];
+    }
+    // ------------------------------------------
 
     let currentLevel = 0;
     let score = 0;
@@ -312,7 +325,7 @@
     function winLevel() {
         clearInterval(gameInterval); clearInterval(bubbleInterval);
         if (currentLevel < dictionary.length - 1) {
-            showOverlay("¡EXCELENTE!", "¡Lograste los 12 puntos con la " + dictionary[currentLevel].letter + "!", "🌟", true);
+            showOverlay(alAzar(titulosExito), "¡Lograste los 12 puntos con la " + dictionary[currentLevel].letter + "!", alAzar(emojisExito), true);
         } else {
             showOverlay("¡FELICIDADES!", "¡Has completado todos los niveles!", "🏆", true);
         }
@@ -320,7 +333,7 @@
 
     function gameOver() {
         clearInterval(gameInterval); clearInterval(bubbleInterval);
-        showOverlay("¡TIEMPO!", "Casi lo logras. ¿Reintentamos?", "⏰", false);
+        showOverlay(alAzar(titulosTiempo), "Casi lo logras. ¿Reintentamos?", alAzar(emojisTiempo), false);
     }
 
     function showOverlay(title, msg, emoji, success) {
@@ -335,9 +348,10 @@
     function closeOverlay() {
         document.getElementById('overlay').style.display = 'none';
         
-        // Si ganó el juego completo o perdió, volver al menú de dificultad
-        if (document.getElementById('overlay-emoji').innerText === "🏆" || 
-            document.getElementById('overlay-emoji').innerText === "⏰") {
+        // FIX: Evaluamos el texto del botón en lugar del emoji, ya que el emoji ahora cambia al azar
+        const btnText = document.querySelector('#overlay button').innerText;
+        
+        if (btnText === "Menú Inicio" || btnText === "Reintentar") {
             currentLevel = 0;
             document.getElementById('menu').style.display = 'flex';
         } else {
