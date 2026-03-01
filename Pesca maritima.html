@@ -8,7 +8,7 @@
         :root {
             --sea-bg: #00a8ff;
             --panel: #ffffff;
-            --primary: #0c2461; /* Azul más oscuro */
+            --primary: #0c2461;
             --correct: #44bd32;
             --wrong: #e84118;
             --highlight: #f6b93b;
@@ -62,7 +62,6 @@
             gap: 8px;
         }
 
-        /* Caja del objetivo central */
         #target-display {
             background: #dff9fb;
             padding: 5px 25px;
@@ -92,7 +91,6 @@
             background-image: radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.1) 100%);
         }
 
-        /* Las burbujas con peces */
         .bubble {
             position: absolute;
             width: 70px; height: 70px;
@@ -111,16 +109,28 @@
             50% { transform: translateX(10px) rotate(5deg); }
         }
 
-        /* Anzuelo/Ancla */
-        #hook-line {
-            position: absolute; top: 0; width: 3px; background: #2c2c54;
-            transform-origin: top center; pointer-events: none;
-        }
-        #hook {
-            position: absolute; width: 40px; height: 40px;
-            font-size: 40px; 
-            transform: translate(-50%, 0); /* Centrado visual clave */
+        /* --- SISTEMA DE PESCA REDISEÑADO --- */
+        #fishing-rig {
+            position: absolute;
+            top: 0;
+            transform: translateX(-50%); /* Centra todo el paquete en la coordenada X */
+            display: flex;
+            flex-direction: column; /* Apila línea arriba, ancla abajo */
+            align-items: center;    /* Centra todo en el medio perfectamente */
             pointer-events: none;
+            z-index: 5;
+        }
+
+        #hook-line {
+            width: 3px; 
+            background: #2c2c54;
+            /* El alto se sigue controlando por JS */
+        }
+
+        #hook {
+            font-size: 38px;
+            line-height: 1; /* Evita que la fuente agregue espacios fantasmas */
+            margin-top: -4px; /* Solapa ligeramente el ancla sobre el hilo */
             filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.3));
         }
 
@@ -173,8 +183,11 @@
     </div>
 
     <div id="sea-area">
-        <div id="hook-line"></div>
-        <div id="hook">⚓</div>
+        <div id="fishing-rig">
+            <div id="hook-line"></div>
+            <div id="hook">⚓</div>
+        </div>
+        
         <div id="bubbles-container"></div>
     </div>
 
@@ -226,16 +239,12 @@
     let difficultySpeed = 2; 
     let spawnRate = 1000;
     
-    // Variables de control del mouse
+    // Variables de control del mouse actualizadas
     const seaArea = document.getElementById('sea-area');
-    const hook = document.getElementById('hook');
+    const rig = document.getElementById('fishing-rig'); // El contenedor principal
     const hookLine = document.getElementById('hook-line');
+    const hook = document.getElementById('hook'); // Lo seguimos necesitando para la colisión
     let hookX = 300;
-
-    // --- AJUSTE FINO DE ALINEACIÓN ---
-    // Cambiar a 1, 2, -1 o -2 si el tipo de letra de emojis de la PC 
-    // no dibuja el ancla exactamente en el centro visual de su caja.
-    const ajusteVisualEmoji = 0; 
 
     // Audio
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -308,7 +317,7 @@
         document.getElementById('lives').innerText = lives;
     }
 
-    // Seguir al mouse con alineación de centros visuales
+    // Seguir al mouse - Ahora movemos solo el contenedor principal
     seaArea.addEventListener('mousemove', (e) => {
         const rect = seaArea.getBoundingClientRect();
         hookX = e.clientX - rect.left;
@@ -317,15 +326,9 @@
         if (hookX < 20) hookX = 20;
         if (hookX > rect.width - 20) hookX = rect.width - 20;
 
-        // --- CÁLCULO DE ALINEACIÓN PERFECTA ---
-        // 1. Centro visual del Ancla: Se alinea en 'hookX' por transform-translate-50% en CSS.
-        hook.style.left = (hookX + ajusteVisualEmoji) + 'px'; 
-        
-        // 2. Centro visual del Hilo: Es una línea de 3px de ancho. Su 'left' se establece 
-        // 1.5px a la izquierda de 'hookX' para que su centro coincida perfectamente.
-        hookLine.style.left = (hookX - 1.5) + 'px';
-
-        hook.style.top = '100px'; 
+        // Movemos el paquete completo
+        rig.style.left = hookX + 'px'; 
+        // Estiramos solo la línea (el ancla baja sola porque está debajo)
         hookLine.style.height = '120px'; 
     });
 
