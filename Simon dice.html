@@ -189,8 +189,10 @@
     let clickable = false;
     let isVictory = false;
 
+    // INICIALIZACIÓN DEL AUDIO SINTÉTICO
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     
+    // FRECUENCIAS CLÁSICAS DEL SIMÓN (Verde=Mi, Rojo=Do, Amarillo=Re, Azul=Sol)
     const tones = {
         green: 329.63, red: 261.63, yellow: 293.66, blue: 196.00,
         error: 150, win: 523.25
@@ -201,6 +203,8 @@
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.type = type;
+        
+        // Asignamos la frecuencia según el color recibido
         osc.frequency.value = tones[color] || tones.error;
         if(color === 'error') osc.type = 'sawtooth';
         
@@ -232,7 +236,8 @@
     function startGame() {
         if(started && !isVictory) return;
         
-        // Inicio del juego
+        if(audioCtx.state === 'suspended') audioCtx.resume(); // Activa el audio al primer clic
+
         started = true;
         isVictory = false;
         level = 0;
@@ -241,7 +246,6 @@
         
         document.body.classList.remove('winner-bg');
         
-        // OCULTAR EL BOTÓN AL EMPEZAR
         const btn = document.getElementById('start-btn');
         btn.style.display = 'none';
 
@@ -280,7 +284,7 @@
         
         let i = 0;
         const interval = setInterval(() => {
-            activateButton(gameSequence[i]);
+            activateButton(gameSequence[i]); // Esto ahora reproduce el sonido correcto
             i++;
             if(i >= gameSequence.length) {
                 clearInterval(interval);
@@ -293,14 +297,14 @@
     function activateButton(color) {
         const btn = document.getElementById(color);
         btn.classList.add('active');
-        playTone(color);
+        playTone(color); // LLAMADA AL SONIDO
         setTimeout(() => btn.classList.remove('active'), 300);
     }
 
     function handlePlayerClick(color) {
         if(!started || !clickable) return;
 
-        activateButton(color);
+        activateButton(color); // Al hacer clic, también reproduce el sonido
         playerSequence.push(color);
 
         const currentStep = playerSequence.length - 1;
@@ -335,7 +339,6 @@
         setMessage("¡COMPLETO!");
         playVictorySound();
         
-        // MOSTRAR BOTÓN DE NUEVO PARA REINICIAR
         const btn = document.getElementById('start-btn');
         btn.style.display = 'inline-block';
         btn.innerText = "Jugar de nuevo";
@@ -362,7 +365,6 @@
         started = false;
         gameSequence = [];
         
-        // MOSTRAR BOTÓN PARA REINTENTAR
         const btn = document.getElementById('start-btn');
         btn.style.display = 'inline-block';
         btn.innerText = "Reintentar";
