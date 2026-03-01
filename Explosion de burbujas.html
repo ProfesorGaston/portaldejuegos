@@ -188,10 +188,10 @@
 </div>
 
 <script>
-    // --- DICCIONARIO AMPLIADO ---
+    // --- DICCIONARIO AMPLIADO Y CORREGIDO ---
     const dictionary = [
-        { letter: 'A', items: [{w:'Árbol', e:'🌳'}, {w:'Avión', e:'✈️'}, {w:'Abeja', e:'🐝'}, {w:'Auto', e:'🚗'}, {w:'Anillo', e:'💍'}, {w:'Araña', e:'🕷️'}, {w:'Arcoiris', e:'🌈'}, {w:'Ancla', e:'⚓'}, {w:'Ángel', e:'👼'}, {w:'Ambulancia', e:'🚑'}, {w:'Ardilla', e:'🐿️'}, {w:'Arpa', e:'🪕'}] },
-        { letter: 'E', items: [{w:'Elefante', e:'🐘'}, {w:'Escuela', e:'🏫'}, {w:'Estrella', e:'⭐'}, {w:'Erizo', e:'🦔'}, {w:'Escoba', e:'🧹'}, {w:'Espejo', e:'🪞'}, {w:'Escudo', e:'🛡️'}, {w:'Ensalada', e:'🥗'}, {w:'Enfermera', e:'👩‍⚕️'}, {w:'Espada', e:'⚔️'}, {w:'Estatua', e:'🗽'}, {w:'Extraterrestre', e:'👽'}] },
+        { letter: 'A', items: [{w:'Árbol', e:'🌳'}, {w:'Avión', e:'✈️'}, {w:'Abeja', e:'🐝'}, {w:'Auto', e:'🚗'}, {w:'Anillo', e:'💍'}, {w:'Araña', e:'🕷️'}, {w:'Arcoiris', e:'🌈'}, {w:'Ancla', e:'⚓'}, {w:'Ángel', e:'👼'}, {w:'Ambulancia', e:'🚑'}, {w:'Ardilla', e:'🐿️'}, {w:'Agua', e:'💧'}] },
+        { letter: 'E', items: [{w:'Elefante', e:'🐘'}, {w:'Escuela', e:'🏫'}, {w:'Estrella', e:'⭐'}, {w:'Erizo', e:'🦔'}, {w:'Escoba', e:'🧹'}, {w:'Esponja', e:'🧽'}, {w:'Escudo', e:'🛡️'}, {w:'Ensalada', e:'🥗'}, {w:'Enfermera', e:'👩‍⚕️'}, {w:'Espada', e:'⚔️'}, {w:'Estatua', e:'🗽'}, {w:'Estadio', e:'🏟️'}] },
         { letter: 'I', items: [{w:'Iglú', e:'🛖'}, {w:'Isla', e:'🏝️'}, {w:'Imán', e:'🧲'}, {w:'Indio', e:'🏹'}, {w:'Insecto', e:'🐞'}, {w:'Iglesia', e:'⛪'}, {w:'Idea', e:'💡'}, {w:'Iguana', e:'🦎'}, {w:'Invierno', e:'❄️'}, {w:'Incendio', e:'🔥'}, {w:'Imperdible', e:'🧷'}, {w:'Inodoro', e:'🚽'}] },
         { letter: 'O', items: [{w:'Oso', e:'🐻'}, {w:'Ojo', e:'👁️'}, {w:'Ola', e:'🌊'}, {w:'Oveja', e:'🐑'}, {w:'Olla', e:'🍲'}, {w:'Oreja', e:'👂'}, {w:'Ocho', e:'8️⃣'}, {w:'Ogro', e:'👹'}, {w:'Oruga', e:'🐛'}, {w:'Oro', e:'🥇'}, {w:'Ostra', e:'🦪'}] },
         { letter: 'U', items: [{w:'Uva', e:'🍇'}, {w:'Uno', e:'1️⃣'}, {w:'Uña', e:'💅'}, {w:'Unicornio', e:'🦄'}, {w:'Universo', e:'🌌'}, {w:'Urna', e:'🗳️'}, {w:'Uslero', e:'🥖'}, {w:'Uniforme', e:'🥋'}, {w:'Urano', e:'🪐'}, {w:'Ubicación', e:'📍'}] },
@@ -348,7 +348,6 @@
     function closeOverlay() {
         document.getElementById('overlay').style.display = 'none';
         
-        // FIX: Evaluamos el texto del botón en lugar del emoji, ya que el emoji ahora cambia al azar
         const btnText = document.querySelector('#overlay button').innerText;
         
         if (btnText === "Menú Inicio" || btnText === "Reintentar") {
