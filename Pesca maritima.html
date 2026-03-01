@@ -111,15 +111,15 @@
             50% { transform: translateX(10px) rotate(5deg); }
         }
 
-        /* Anzuelo cambiado por Ancla */
+        /* Anzuelo/Ancla */
         #hook-line {
             position: absolute; top: 0; width: 3px; background: #2c2c54;
             transform-origin: top center; pointer-events: none;
         }
         #hook {
             position: absolute; width: 40px; height: 40px;
-            font-size: 40px; /* Tamaño ajustado para el ancla */
-            transform: translate(-50%, 0);
+            font-size: 40px; 
+            transform: translate(-50%, 0); /* Centrado visual clave */
             pointer-events: none;
             filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.3));
         }
@@ -232,6 +232,11 @@
     const hookLine = document.getElementById('hook-line');
     let hookX = 300;
 
+    // --- AJUSTE FINO DE ALINEACIÓN ---
+    // Cambiar a 1, 2, -1 o -2 si el tipo de letra de emojis de la PC 
+    // no dibuja el ancla exactamente en el centro visual de su caja.
+    const ajusteVisualEmoji = 0; 
+
     // Audio
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playSound(type) {
@@ -303,16 +308,24 @@
         document.getElementById('lives').innerText = lives;
     }
 
-    // Seguir al mouse
+    // Seguir al mouse con alineación de centros visuales
     seaArea.addEventListener('mousemove', (e) => {
         const rect = seaArea.getBoundingClientRect();
         hookX = e.clientX - rect.left;
+        
+        // Límites laterales
         if (hookX < 20) hookX = 20;
         if (hookX > rect.width - 20) hookX = rect.width - 20;
 
-        hook.style.left = hookX + 'px';
+        // --- CÁLCULO DE ALINEACIÓN PERFECTA ---
+        // 1. Centro visual del Ancla: Se alinea en 'hookX' por transform-translate-50% en CSS.
+        hook.style.left = (hookX + ajusteVisualEmoji) + 'px'; 
+        
+        // 2. Centro visual del Hilo: Es una línea de 3px de ancho. Su 'left' se establece 
+        // 1.5px a la izquierda de 'hookX' para que su centro coincida perfectamente.
+        hookLine.style.left = (hookX - 1.5) + 'px';
+
         hook.style.top = '100px'; 
-        hookLine.style.left = hookX + 'px';
         hookLine.style.height = '120px'; 
     });
 
