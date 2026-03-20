@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Fractions - Prof. Gastón</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        body {
+            margin: 0; padding: 0; 
+            background: radial-gradient(circle at center, #1a252c 0%, #000000 100%);
+            font-family: 'Press Start 2P', cursive;
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; color: white; user-select: none; overflow: hidden;
+        }
+
+        .arcade-machine {
+            background: #222;
+            padding: 40px 30px;
+            border-radius: 20px 20px 10px 10px;
+            box-shadow: 0 0 50px rgba(0,0,0,1), inset 0 5px 15px rgba(255,255,255,0.05);
+            border: 4px solid #111;
+            border-bottom-width: 15px;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        #game-container {
+            position: relative; width: 520px; height: 540px;
+            background-color: #4ec0ca; border: 8px solid #000;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.5), 0 10px 20px rgba(0,0,0,0.8); 
+            overflow: hidden; border-radius: 8px; cursor: pointer;
+        }
+
+        #game-container::after {
+            content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%);
+            background-size: 100% 4px; z-index: 50; pointer-events: none;
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.6);
+        }
+
+        canvas { display: block; width: 100%; height: 100%; }
+
+        .watermark {
+            position: absolute; bottom: 10px; right: 15px;
+            font-size: 9px; color: rgba(255, 255, 255, 0.9);
+            text-shadow: 1px 1px 2px #000; z-index: 60; pointer-events: none;
+        }
+
+        .screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.75); display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 100; text-align: center;
+            backdrop-filter: blur(3px);
+        }
+
+        h1 { font-size: 32px; color: #f1c40f; margin-bottom: 20px; text-shadow: 4px 4px 0 #d35400; line-height: 1.5; }
+        p { font-size: 12px; line-height: 1.8; margin-bottom: 20px; text-shadow: 2px 2px 0 #000; color: #ecf0f1; }
+        
+        .btn {
+            background: linear-gradient(to bottom, #f1c40f, #f39c12); color: #000; font-family: 'Press Start 2P', cursive;
+            font-size: 16px; padding: 15px 25px; margin: 10px; border: 4px solid #fff; border-radius: 8px;
+            cursor: pointer; box-shadow: 0 6px 0 #d35400, 0 10px 10px rgba(0,0,0,0.5); transition: all 0.1s;
+        }
+        .btn:active { transform: translateY(6px); box-shadow: 0 0px 0 #d35400, 0 2px 5px rgba(0,0,0,0.5); }
+        
+        #score-display {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            font-size: 40px; color: white; text-shadow: 4px 4px 0 #000, 0 0 10px rgba(255,255,255,0.5); z-index: 60; pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="arcade-machine">
+    <div id="game-container">
+        <div id="score-display">0</div>
+        <div class="watermark">Prof. Gastón</div>
+        <canvas id="gameCanvas" width="520" height="540"></canvas>
+
+        <div id="menu" class="screen">
+            <h1>FLAPPY<br>FRACCIONES</h1>
+            <p>Toca la pantalla o usa<br>ESPACIO para volar.<br><br>¡Elige la gráfica<br>correcta!</p>
+            <button class="btn" onclick="startGame()">JUGAR</button>
+        </div>
+
+        <div id="game-over" class="screen" style="display: none;">
+            <h1 id="go-title">¡CRASH!</h1>
+            <p id="go-score" style="color: #f1c40f; font-size: 20px; margin-bottom: 30px; text-shadow: 2px 2px 0 #000;"></p>
+            <button class="btn" onclick="location.reload()">REINTENTAR</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Agregada la variable flashAlpha para el destello al resetear el fondo
+    let game = { active: false, score: 0, frames: 0, parallax: 0, flashAlpha: 0 };
+    
+    let bird = { 
+        x: 100, y: 270, r: 14, 
+        vy: 0, gravity: 0.20, jump: -4.5, 
+        rotation: 0, targetRotation: 0, terminalVelocity: 4.5 
+    };
+    
+    let walls = [];
+    const wallWidth = 80;
+    const wallSpeed = 1.25; 
+
+    let particles = [];
+
+    const fractionDB = [
+        {n: 1, d: 2}, {n: 1, d: 3}, {n: 2, d: 3}, 
+        {n: 1, d: 4}, {n: 2, d: 4}, {n: 3, d: 4}, 
+        {n: 1, d: 5}, {n: 2, d: 5}, {n: 3, d: 5}, {n: 4, d: 5},
+        {n: 1, d: 6}, {n: 5, d: 6}, {n: 3, d: 8}, {n: 5, d: 8}
+    ];
+
+    let clouds = [];
+    for(let i=0; i<8; i++) clouds.push({ x: Math.random() * 520, y: Math.random() * 250, s: Math.random() * 0.6 + 0.4 });
+
+    function createParticles(x, y, count, color) {
+        for(let i=0; i<count; i++) {
+            particles.push({
+                x: x, y: y,
+                vx: (Math.random() - 0.5) * 6,
+                vy: (Math.random() - 0.5) * 6,
+                life: 1.0, color: color
+            });
+        }
+    }
+
+    function flap() {
+        if (!game.active) return;
+        bird.vy = bird.jump;
+        createParticles(bird.x - 10, bird.y + 5, 5, "#fff");
+    }
+
+    window.addEventListener('keydown', e => { if (e.code === 'Space') flap(); });
+    document.getElementById('game-container').addEventListener('mousedown', flap);
+    document.getElementById('game-container').addEventListener('touchstart', e => { e.preventDefault(); flap(); }, {passive: false});
+
+    function startGame() {
+        document.getElementById('menu').style.display = 'none';
+        game.active = true; game.score = 0; game.frames = 0; game.parallax = 0; game.flashAlpha = 0;
+        walls = []; particles = [];
+        bird.y = 270; bird.vy = 0; bird.rotation = 0;
+        document.getElementById('score-display').innerText = game.score;
+        requestAnimationFrame(gameLoop);
+    }
+
+    function spawnWall() {
+        let target = fractionDB[Math.floor(Math.random() * fractionDB.length)];
+        let options = [target];
+        while(options.length < 2) {
+            let f = fractionDB[Math.floor(Math.random() * fractionDB.length)];
+            if(!options.find(o => o.n === f.n && o.d === f.d)) options.push(f);
+        }
+        options.sort(() => Math.random() - 0.5);
+        let correctIndex = options.findIndex(o => o.n === target.n && o.d === target.d);
+
+        walls.push({
+            x: canvas.width, w: wallWidth, target: target, options: options,
+            correctIndex: correctIndex, passed: false,
+            scored: false, scoreTextY: 0, scoreTextAlpha: 1 // Nuevas variables para la animación de +1
+        });
+    }
+
+    function drawPie(x, y, radius, num, den, isTarget = false) {
+        ctx.save();
+        ctx.translate(x, y);
+
+        ctx.shadowColor = "rgba(0,0,0,0.5)"; ctx.shadowBlur = 8; ctx.shadowOffsetY = 4;
+        ctx.beginPath(); ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.fillStyle = "#ecf0f1"; ctx.fill();
+        ctx.lineWidth = 4; ctx.strokeStyle = "#2c3e50"; ctx.stroke();
+        ctx.shadowColor = "transparent"; 
+
+        if (num > 0) {
+            ctx.beginPath(); ctx.moveTo(0, 0);
+            ctx.arc(0, 0, radius, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * (num / den)));
+            ctx.lineTo(0, 0);
+            
+            let pGrad = ctx.createRadialGradient(0,0,0, 0,0,radius);
+            pGrad.addColorStop(0, "#e74c3c"); pGrad.addColorStop(1, "#c0392b");
+            ctx.fillStyle = pGrad; ctx.fill(); ctx.stroke();
+        }
+
+        ctx.lineWidth = 2; ctx.strokeStyle = "#34495e";
+        for(let i = 0; i < den; i++) {
+            let angle = -Math.PI / 2 + (Math.PI * 2 * (i / den));
+            ctx.beginPath(); ctx.moveTo(0, 0);
+            ctx.lineTo(Math.cos(angle) * radius, Math.sin(angle) * radius);
+            ctx.stroke();
+        }
+        
+        ctx.beginPath(); ctx.arc(0, 0, radius * 0.8, Math.PI, Math.PI * 1.5);
+        ctx.strokeStyle = "rgba(255,255,255,0.4)"; ctx.lineWidth = 3; ctx.stroke();
+        ctx.restore();
+    }
+
+    function drawBird() {
+        ctx.save();
+        ctx.translate(bird.x, bird.y);
+        
+        bird.targetRotation = Math.min(Math.PI / 3, Math.max(-Math.PI / 4, (bird.vy * 0.15)));
+        bird.rotation += (bird.targetRotation - bird.rotation) * 0.15;
+        ctx.rotate(bird.rotation);
+
+        ctx.shadowColor = "rgba(0,0,0,0.4)"; ctx.shadowBlur = 10; ctx.shadowOffsetY = 5;
+
+        let bGrad = ctx.createRadialGradient(-3, -3, 2, 0, 0, 16);
+        bGrad.addColorStop(0, "#f1c40f"); bGrad.addColorStop(1, "#d35400");
+        
+        ctx.fillStyle = bGrad;
+        ctx.beginPath(); ctx.arc(0, 0, 16, 0, Math.PI*2); ctx.fill();
+        ctx.shadowColor = "transparent";
+        ctx.lineWidth = 2; ctx.strokeStyle = "#000"; ctx.stroke();
+
+        ctx.fillStyle = "white"; ctx.beginPath(); ctx.arc(7, -6, 7, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = "black"; ctx.beginPath(); ctx.arc(9, -6, 2.5, 0, Math.PI*2); ctx.fill();
+
+        ctx.fillStyle = "#e67e22";
+        ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(26, 4); ctx.lineTo(12, 11); ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle = "rgba(255,255,255,0.4)"; ctx.beginPath(); ctx.moveTo(13, 2); ctx.lineTo(22, 4); ctx.lineTo(13, 6); ctx.fill();
+
+        let wingY = bird.vy < 0 ? 6 : -2;
+        ctx.fillStyle = "#f39c12";
+        ctx.beginPath(); ctx.ellipse(-6, wingY, 9, 6, -0.2, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.restore();
+    }
+
+    function drawBackground() {
+        let sky = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        sky.addColorStop(0, "#4ec0ca"); sky.addColorStop(1, "#8be3ec");
+        ctx.fillStyle = sky; ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+        clouds.forEach(c => {
+            c.x -= 0.3 * c.s;
+            if (c.x < -100) c.x = canvas.width + 50;
+            ctx.beginPath();
+            ctx.arc(c.x, c.y, 40 * c.s, 0, Math.PI * 2);
+            ctx.arc(c.x + 30*c.s, c.y - 15*c.s, 45 * c.s, 0, Math.PI * 2);
+            ctx.arc(c.x + 60*c.s, c.y, 35 * c.s, 0, Math.PI * 2); ctx.fill();
+        });
+
+        ctx.fillStyle = "#73bf2e"; 
+        for(let i=0; i<3; i++) {
+            let mx = ((game.parallax * 0.2) % 600) * -1 + (i * 300);
+            ctx.beginPath(); ctx.moveTo(mx, 520); ctx.lineTo(mx + 150, 350); ctx.lineTo(mx + 300, 520); ctx.fill();
+        }
+
+        ctx.fillStyle = "#53a221";
+        for(let i=0; i<6; i++) {
+            let cx = ((game.parallax * 0.5) % 200) * -1 + (i * 120);
+            ctx.fillRect(cx, 400, 60, 120); ctx.fillRect(cx + 60, 430, 60, 90);
+        }
+        game.parallax += wallSpeed;
+
+        // Efecto Flash del reseteo del fondo
+        if (game.flashAlpha > 0) {
+            ctx.fillStyle = `rgba(255, 255, 255, ${game.flashAlpha})`;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            game.flashAlpha -= 0.02; // El flash se desvanece suavemente
+        }
+    }
+
+    function gameLoop() {
+        if (!game.active) return;
+
+        drawBackground();
+
+        bird.vy += bird.gravity;
+        if (bird.vy > bird.terminalVelocity) bird.vy = bird.terminalVelocity;
+        bird.y += bird.vy;
+
+        if (game.frames % 450 === 0) spawnWall();
+        game.frames++;
+
+        let hit = false;
+
+        for (let i = walls.length - 1; i >= 0; i--) {
+            let w = walls[i];
+            w.x -= wallSpeed;
+
+            const blocks = [ { y: 0, h: 105 }, { y: 245, h: 60 }, { y: 445, h: 100 } ];
+            const gaps = [ { top: 105, bottom: 245, centerY: 175 }, { top: 305, bottom: 445, centerY: 375 } ];
+
+            let wGrad = ctx.createLinearGradient(w.x, 0, w.x + w.w, 0);
+            wGrad.addColorStop(0, "#ecf0f1"); wGrad.addColorStop(0.2, "#bdc3c7"); 
+            wGrad.addColorStop(0.8, "#95a5a6"); wGrad.addColorStop(1, "#7f8c8d");
+
+            ctx.lineWidth = 2; ctx.strokeStyle = "#2c3e50";
+            
+            blocks.forEach(b => {
+                ctx.fillStyle = wGrad;
+                ctx.fillRect(w.x, b.y, w.w, b.h); ctx.strokeRect(w.x, b.y, w.w, b.h);
+                ctx.fillStyle = "rgba(0,0,0,0.1)";
+                ctx.fillRect(w.x + 15, b.y, 10, b.h); ctx.fillRect(w.x + 55, b.y, 10, b.h);
+                let capY = b.y === 0 ? b.h - 15 : b.y;
+                ctx.fillStyle = "#bdc3c7";
+                ctx.fillRect(w.x - 6, capY, w.w + 12, 15); ctx.strokeRect(w.x - 6, capY, w.w + 12, 15);
+            });
+
+            // Dibujar fracciones O el texto de "+1 PUNTO"
+            gaps.forEach((gap, index) => {
+                if (w.scored && index === w.correctIndex) {
+                    // Animación de +1 PUNTO
+                    ctx.save();
+                    ctx.fillStyle = `rgba(241, 196, 15, ${Math.max(0, w.scoreTextAlpha)})`;
+                    ctx.font = '16px "Press Start 2P"'; 
+                    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                    ctx.shadowColor = "rgba(0,0,0,0.8)"; ctx.shadowBlur = 4; ctx.shadowOffsetY = 2;
+                    ctx.fillText("+1 PUNTO", w.x + w.w / 2, w.scoreTextY);
+                    ctx.restore();
+                    
+                    w.scoreTextY -= 1; // Sube
+                    w.scoreTextAlpha -= 0.015; // Se desvanece
+                } else {
+                    drawPie(w.x + w.w / 2, gap.centerY, 35, w.options[index].n, w.options[index].d);
+                }
+            });
+
+            ctx.shadowColor = "rgba(0,0,0,0.5)"; ctx.shadowBlur = 5; ctx.shadowOffsetY = 3;
+            ctx.fillStyle = "#d35400"; ctx.fillRect(w.x - 15, 10, w.w + 30, 45);
+            ctx.strokeStyle = "#8e44ad"; ctx.lineWidth = 3; ctx.strokeRect(w.x - 15, 10, w.w + 30, 45);
+            ctx.shadowColor = "transparent";
+
+            ctx.fillStyle = "#000"; ctx.font = '22px "Press Start 2P"'; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.fillText(`${w.target.n}/${w.target.d}`, w.x + w.w / 2 + 2, 35); 
+            ctx.fillStyle = "#f1c40f"; ctx.fillText(`${w.target.n}/${w.target.d}`, w.x + w.w / 2, 33);
+
+            let hitboxR = 10; 
+            if (bird.x + hitboxR > w.x && bird.x - hitboxR < w.x + w.w) {
+                let inGap0 = bird.y - hitboxR > gaps[0].top && bird.y + hitboxR < gaps[0].bottom;
+                let inGap1 = bird.y - hitboxR > gaps[1].top && bird.y + hitboxR < gaps[1].bottom;
+
+                if (inGap0) { if (w.correctIndex !== 0) hit = true; } 
+                else if (inGap1) { if (w.correctIndex !== 1) hit = true; }
+                else { hit = true; } 
+            }
+
+            // NUEVA LÓGICA DE PUNTUACIÓN: Cuando el pájaro toca el centro de la columna (la fracción)
+            let passedPie = bird.x > w.x + w.w / 2 - 10;
+            if (passedPie && !w.passed && !hit) {
+                w.passed = true; 
+                w.scored = true; // Activa la animación del texto
+                w.scoreTextY = gaps[w.correctIndex].centerY; // Posición inicial del texto
+                
+                game.score++;
+                document.getElementById('score-display').innerText = game.score;
+                createParticles(bird.x, bird.y, 20, "#f1c40f"); // Gran explosión dorada
+                
+                // Efecto de reseteo de fondo
+                game.parallax = 0; 
+                game.flashAlpha = 0.4; // Activa el flash blanco
+                clouds.forEach(c => { c.x = Math.random() * canvas.width; }); // Reorganiza las nubes
+            }
+
+            if (w.x + w.w < -30) walls.splice(i, 1);
+        }
+
+        if (bird.y + bird.r >= canvas.height - 25 || bird.y - bird.r <= 0) hit = true;
+
+        drawBird();
+
+        for(let i = particles.length-1; i>=0; i--) {
+            let p = particles[i];
+            p.x += p.vx; p.y += p.vy; p.life -= 0.04;
+            if(p.life <= 0) { particles.splice(i, 1); continue; }
+            ctx.fillStyle = p.color; ctx.globalAlpha = p.life;
+            ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI*2); ctx.fill();
+            ctx.globalAlpha = 1.0;
+        }
+
+        ctx.fillStyle = "#ded895"; ctx.fillRect(0, canvas.height - 25, canvas.width, 25);
+        ctx.fillStyle = "#c5b967"; 
+        for(let x=0; x<canvas.width; x+=20) ctx.fillRect(x - (game.parallax % 20), canvas.height - 20, 10, 5);
+        
+        ctx.fillStyle = "#5c9c1e"; ctx.fillRect(0, canvas.height - 30, canvas.width, 5);
+
+        if (hit) {
+            game.active = false;
+            document.getElementById('go-score').innerText = "PUNTUACIÓN: " + game.score;
+            document.getElementById('game-over').style.display = 'flex';
+        } else {
+            requestAnimationFrame(gameLoop);
+        }
+    }
+</script>
+</body>
+</html>
