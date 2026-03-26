@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sombras Misteriosas - Prof. Gastón</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;800&display=swap');
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-drag: none;
+            touch-action: none;
+        }
+
+        body {
+            margin: 0; padding: 0; 
+            background: linear-gradient(180deg, #74b9ff 0%, #a29bfe 100%);
+            font-family: 'Baloo 2', cursive; display: flex;
+            justify-content: center; align-items: center;
+            height: 100vh; overflow: hidden;
+        }
+
+        /* --- FONDO ANIMADO (PAISAJE PREMIUM) --- */
+        #landscape { position: absolute; width: 100%; height: 100%; z-index: 0; overflow: hidden; pointer-events: none; }
+        .sun {
+            position: absolute; top: 8%; left: 8%; width: 130px; height: 130px;
+            background: #ffeaa7; border-radius: 50%; 
+            box-shadow: 0 0 50px #fdcb6e, 0 0 100px #ffeaa7;
+            animation: pulseSun 4s infinite alternate ease-in-out;
+        }
+        @keyframes pulseSun { 0% { transform: scale(0.95); } 100% { transform: scale(1.05); } }
+        
+        .cloud {
+            position: absolute; background: rgba(255,255,255,0.9); border-radius: 50px;
+            animation: floatCloud linear infinite; filter: drop-shadow(0 8px 10px rgba(0,0,0,0.05));
+        }
+        .cloud::before, .cloud::after { content: ""; position: absolute; background: rgba(255,255,255,0.9); border-radius: 50%; }
+        .c1 { width: 160px; height: 60px; top: 12%; left: -200px; animation-duration: 30s; }
+        .c1::before { width: 80px; height: 80px; top: -40px; left: 20px; }
+        .c1::after { width: 60px; height: 60px; top: -25px; left: 85px; }
+
+        .c2 { width: 220px; height: 70px; top: 25%; left: -300px; animation-duration: 40s; animation-delay: 8s; transform: scale(0.8); }
+        .c2::before { width: 90px; height: 90px; top: -45px; left: 35px; }
+        .c2::after { width: 80px; height: 80px; top: -35px; left: 110px; }
+
+        @keyframes floatCloud { from { transform: translateX(0); } to { transform: translateX(120vw); } }
+
+        .hill { position: absolute; bottom: 0; border-radius: 50% 50% 0 0; }
+        .hill-back { width: 130%; height: 48%; background: #55efc4; left: -15%; z-index: 1; box-shadow: inset 0 20px 0 rgba(255,255,255,0.2); }
+        .hill-front { width: 120%; height: 38%; background: #00b894; right: -10%; z-index: 2; box-shadow: inset 0 20px 0 rgba(255,255,255,0.15); }
+
+        /* --- CONTENEDOR DEL JUEGO --- */
+        #game-area {
+            position: relative; width: 100%; max-width: 900px; height: 100%; max-height: 650px;
+            z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+            padding: 25px;
+        }
+
+        /* --- UI Y MARCADOR --- */
+        .header { width: 100%; display: flex; justify-content: flex-end; align-items: center; }
+        
+        .score-board {
+            background: linear-gradient(135deg, #ffffff, #f1f2f6); 
+            padding: 8px 30px; border-radius: 40px;
+            font-size: 32px; color: #ff6b81; 
+            border: 4px solid #fff;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1), 0 8px 0 #dfe4ea;
+            display: flex; align-items: center; gap: 12px; font-weight: 800;
+        }
+        .score-board span { font-size: 40px; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.1)); }
+
+        /* --- LA MARCA DE AGUA BONITA --- */
+        .watermark-badge {
+            position: absolute;
+            bottom: 20px; right: 20px;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(5px);
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: 800;
+            color: #0984e3;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+            border: 2px solid rgba(255,255,255,0.9);
+            z-index: 50;
+        }
+
+        /* --- TABLERO DE LA SOMBRA (ESTILO BURBUJA) --- */
+        .board-container { flex-grow: 1; display: flex; justify-content: center; align-items: center; width: 100%; }
+        .wooden-board {
+            background: #fffdf5; 
+            border: 12px solid #ffb8b8; 
+            border-radius: 50px;
+            width: 260px; height: 260px; display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 15px 0 #ff9999, inset 0 0 25px rgba(0,0,0,0.05);
+            position: relative;
+            animation: floatBoard 4s infinite ease-in-out;
+        }
+        @keyframes floatBoard {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .shadow-target {
+            font-size: 140px; line-height: 1;
+            filter: brightness(0) opacity(0.35);
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            animation: pulseShadow 2s infinite alternate;
+        }
+        @keyframes pulseShadow { 0% { transform: scale(0.95); } 100% { transform: scale(1.05); } }
+        
+        .shadow-target.revealed {
+            filter: brightness(1) opacity(1) drop-shadow(0 15px 10px rgba(0,0,0,0.25));
+            transform: scale(1.25) !important; animation: none;
+        }
+
+        /* --- MENSAJE "¡MUY BIEN!" --- */
+        #msg-muy-bien {
+            position: absolute; 
+            top: -110px; left: 50%;
+            transform: translate(-50%, 0) scale(0.5) rotate(-10deg);
+            font-size: 55px; color: #ff9f43; 
+            text-shadow: -4px -4px 0 #fff, 4px -4px 0 #fff, -4px 4px 0 #fff, 4px 4px 0 #fff, 0 8px 15px rgba(0,0,0,0.2);
+            pointer-events: none; opacity: 0; 
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 60;
+            text-align: center; line-height: 1; white-space: nowrap;
+        }
+        #msg-muy-bien.show { opacity: 1; transform: translate(-50%, 0) scale(1) rotate(0deg); }
+
+        /* --- ANIMALITOS (OPCIONES TIPO STICKERS) --- */
+        .options-dock {
+            width: 100%; height: 180px; display: flex; justify-content: center; gap: 30px;
+            align-items: flex-end; padding-bottom: 20px; z-index: 20;
+        }
+        .animal-slot {
+            width: 130px; height: 130px; 
+            background: rgba(255,255,255,0.4); 
+            border: 4px dashed rgba(255,255,255,0.8);
+            border-radius: 50%;
+            position: relative; display: flex; justify-content: center; align-items: center;
+            box-shadow: inset 0 5px 15px rgba(0,0,0,0.05);
+        }
+        .animal-draggable {
+            position: absolute; font-size: 95px; line-height: 1;
+            cursor: grab; filter: drop-shadow(0 10px 8px rgba(0,0,0,0.2));
+            transition: transform 0.1s;
+        }
+        .animal-draggable:active { cursor: grabbing; transform: scale(1.15); filter: drop-shadow(0 20px 15px rgba(0,0,0,0.3)); }
+        
+        .animal-draggable.anim-float { animation: floatAnim 3s ease-in-out infinite; }
+        .animal-draggable.anim-float:nth-child(2) { animation-delay: 1s; }
+        .animal-draggable.anim-float:nth-child(3) { animation-delay: 2s; }
+
+        @keyframes floatAnim {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-12px) rotate(6deg); }
+        }
+
+        /* --- PANTALLA DE INICIO --- */
+        #start-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.4); z-index: 100;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            backdrop-filter: blur(8px);
+        }
+        .modal-box {
+            background: linear-gradient(135deg, #fff, #f1f2f6);
+            padding: 50px 40px; border-radius: 40px;
+            text-align: center; border: 8px solid #fff;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            max-width: 90%; width: 500px;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+        h1 { font-size: 50px; color: #ff6b81; margin: 0; text-shadow: 2px 2px 0 #ffeaa7; line-height: 1.1; }
+        .subtitle { font-size: 22px; color: #576574; margin: 15px 0 35px 0; font-weight: 600; }
+        
+        .play-btn {
+            background: linear-gradient(to bottom, #1dd1a1, #10ac84); color: white; border: none; font-family: 'Baloo 2', cursive; font-weight: 800;
+            font-size: 38px; padding: 15px 60px; border-radius: 50px; cursor: pointer; border: 4px solid #fff;
+            box-shadow: 0 10px 0 #0b8766, 0 15px 25px rgba(0,0,0,0.2);
+            transition: transform 0.1s, box-shadow 0.1s;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+        }
+        .play-btn:active { transform: translateY(10px); box-shadow: 0 0px 0 #0b8766, 0 5px 10px rgba(0,0,0,0.2); }
+
+        /* --- PANTALLA DE ALIENTO --- */
+        #cheer-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.92); z-index: 200;
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            backdrop-filter: blur(10px);
+        }
+        .cheer-icon { font-size: 150px; animation: bounceInIcon 1s ease-in-out infinite alternate; filter: drop-shadow(0 15px 15px rgba(0,0,0,0.2)); }
+        .cheer-text { 
+            font-size: 65px; color: #ff4757; text-shadow: 4px 4px 0 #ffeaa7; 
+            margin-top: 20px; text-align: center; line-height: 1.1; 
+        }
+        @keyframes bounceInIcon { 0% { transform: scale(0.8) translateY(20px); } 100% { transform: scale(1.1) translateY(-20px); } }
+
+        /* --- CONFETI CON DESVANECIMIENTO PROGRESIVO --- */
+        .confetti {
+            position: absolute; width: 16px; height: 16px; background-color: #f00; z-index: 250; 
+            animation: fall linear forwards; border-radius: 4px;
+        }
+        @keyframes fall {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            30% { opacity: 1; } 
+            100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="landscape">
+        <div class="sun"></div>
+        <div class="cloud c1"></div>
+        <div class="cloud c2"></div>
+        <div class="hill hill-back"></div>
+        <div class="hill hill-front"></div>
+    </div>
+
+    <div class="watermark-badge">Creado por el Prof. Gastón</div>
+
+    <div id="game-area">
+        <div class="header">
+            <div class="score-board"><span>⭐</span> <div id="score">0</div></div>
+        </div>
+
+        <div class="board-container">
+            <div class="wooden-board" id="board">
+                <div class="shadow-target" id="shadow-target"></div>
+                <div id="msg-muy-bien">¡MUY BIEN!</div>
+            </div>
+        </div>
+
+        <div class="options-dock" id="options-dock"></div>
+    </div>
+
+    <div id="start-screen">
+        <div class="modal-box">
+            <h1>SOMBRAS<br>MISTERIOSAS</h1>
+            <p class="subtitle">¡Arrastra al animalito hasta su sombra correcta!</p>
+            <button class="play-btn" onclick="startGame()">¡JUGAR!</button>
+        </div>
+    </div>
+
+    <div id="cheer-screen">
+        <div class="cheer-icon" id="cheer-icon">🌟</div>
+        <div class="cheer-text" id="cheer-text">¡ERES<br>GENIAL!</div>
+    </div>
+
+<script>
+    const emojis = ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐔','🐧','🐤','🦆','🦉','🐝','🐞','🐢','🐙','🦀','🐠','🐳'];
+
+    let score = 0;
+    let levelsCompleted = 0; 
+    let currentTargetEmoji = "";
+    let draggedElement = null;
+    let offsetX = 0, offsetY = 0;
+    let isLevelActive = false;
+
+    let audioCtx;
+    function initAudio() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function playSound(type) {
+        if (!audioCtx) return;
+        const now = audioCtx.currentTime;
+        
+        if (type === 'win') {
+            const notes = [440, 554.37, 659.25, 880]; 
+            notes.forEach((freq, i) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine'; osc.frequency.value = freq;
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                
+                gain.gain.setValueAtTime(0, now + i*0.1);
+                gain.gain.linearRampToValueAtTime(0.2, now + i*0.1 + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + i*0.1 + 0.5);
+                
+                osc.start(now + i*0.1); osc.stop(now + i*0.1 + 0.5);
+            });
+        } else if (type === 'mega-win') {
+            const notes = [523.25, 659.25, 783.99, 1046.50, 783.99, 1046.50]; 
+            notes.forEach((freq, i) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle'; osc.frequency.value = freq;
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                
+                let delay = i * 0.15;
+                if (i === 5) delay += 0.1; 
+                
+                gain.gain.setValueAtTime(0, now + delay);
+                gain.gain.linearRampToValueAtTime(0.2, now + delay + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + delay + 0.6);
+                
+                osc.start(now + delay); osc.stop(now + delay + 0.6);
+            });
+        } else if (type === 'bounce') {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(200, now);
+            osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
+            osc.frequency.exponentialRampToValueAtTime(100, now + 0.3);
+            
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+            
+            osc.start(now); osc.stop(now + 0.3);
+        } else if (type === 'pop') {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600, now);
+            osc.frequency.exponentialRampToValueAtTime(400, now + 0.1);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            osc.start(now); osc.stop(now + 0.1);
+        }
+    }
+
+    function spawnConfetti(amount = 50) {
+        const colors = ['#fbc531', '#e1b12c', '#4cd137', '#00a8ff', '#9c88ff', '#e84118', '#ff4d4d'];
+        for (let i = 0; i < amount; i++) {
+            let conf = document.createElement('div');
+            conf.className = 'confetti';
+            conf.style.left = Math.random() * 100 + 'vw';
+            
+            conf.style.top = (Math.random() * -10 - 2) + 'vh'; 
+            
+            conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            
+            conf.style.animationDuration = (Math.random() * 2.5 + 3) + 's';
+            conf.style.animationDelay = (Math.random() * 0.5) + 's';
+            document.body.appendChild(conf);
+            
+            setTimeout(() => conf.remove(), 6000);
+        }
+    }
+
+    function triggerCheerScreen() {
+        const cheerScreen = document.getElementById('cheer-screen');
+        const cheerText = document.getElementById('cheer-text');
+        const cheerIcon = document.getElementById('cheer-icon');
+
+        const messages = ["¡ERES<br>GENIAL!", "¡QUÉ<br>INTELIGENTE!", "¡SIGUE<br>ASÍ!", "¡SÚPER<br>ESTRELLA!"];
+        const icons = ["🌟", "🏆", "🚀", "🎉", "👑"];
+
+        cheerText.innerHTML = messages[Math.floor(Math.random() * messages.length)];
+        cheerIcon.innerText = icons[Math.floor(Math.random() * icons.length)];
+
+        cheerScreen.style.display = 'flex';
+        playSound('mega-win');
+        
+        /* AHORA CAEN MENOS PAPELES EN LA GRAN VICTORIA (eran 80, ahora 40) */
+        spawnConfetti(40); 
+
+        setTimeout(() => {
+            cheerScreen.style.display = 'none';
+            loadLevel();
+        }, 3500);
+    }
+
+    function startGame() {
+        initAudio();
+        document.getElementById('start-screen').style.display = 'none';
+        score = 0;
+        levelsCompleted = 0;
+        document.getElementById('score').innerText = score;
+        loadLevel();
+    }
+
+    function loadLevel() {
+        isLevelActive = true;
+        document.getElementById('msg-muy-bien').classList.remove('show');
+        
+        const shadowEl = document.getElementById('shadow-target');
+        shadowEl.classList.remove('revealed');
+        
+        let shuffled = [...emojis].sort(() => 0.5 - Math.random());
+        let levelOptions = shuffled.slice(0, 3);
+        
+        currentTargetEmoji = levelOptions[Math.floor(Math.random() * 3)];
+        shadowEl.innerText = currentTargetEmoji;
+
+        const dock = document.getElementById('options-dock');
+        dock.innerHTML = ''; 
+        
+        levelOptions.forEach((emoji) => {
+            const slot = document.createElement('div');
+            slot.className = 'animal-slot';
+            
+            const animal = document.createElement('div');
+            animal.className = 'animal-draggable anim-float';
+            animal.innerText = emoji;
+            animal.dataset.emoji = emoji;
+            
+            animal.addEventListener('pointerdown', handleDragStart);
+            
+            slot.appendChild(animal);
+            dock.appendChild(slot);
+        });
+    }
+
+    function handleDragStart(e) {
+        if (!isLevelActive) return;
+        
+        draggedElement = e.target;
+        draggedElement.classList.remove('anim-float'); 
+        playSound('pop');
+        
+        draggedElement.style.zIndex = 1000;
+        
+        const rect = draggedElement.getBoundingClientRect();
+        
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
+
+        draggedElement.style.position = 'fixed';
+        draggedElement.style.left = rect.left + 'px';
+        draggedElement.style.top = rect.top + 'px';
+        draggedElement.style.margin = '0';
+
+        draggedElement.setPointerCapture(e.pointerId);
+        
+        draggedElement.addEventListener('pointermove', handleDragMove);
+        draggedElement.addEventListener('pointerup', handleDragEnd);
+    }
+
+    function handleDragMove(e) {
+        if (!draggedElement) return;
+        draggedElement.style.left = (e.clientX - offsetX) + 'px';
+        draggedElement.style.top = (e.clientY - offsetY) + 'px';
+    }
+
+    function handleDragEnd(e) {
+        if (!draggedElement) return;
+        
+        draggedElement.releasePointerCapture(e.pointerId);
+        draggedElement.removeEventListener('pointermove', handleDragMove);
+        draggedElement.removeEventListener('pointerup', handleDragEnd);
+
+        checkCollision(draggedElement);
+        draggedElement = null;
+    }
+
+    function checkCollision(element) {
+        const boardRect = document.getElementById('board').getBoundingClientRect();
+        const elRect = element.getBoundingClientRect();
+
+        const elCenterX = elRect.left + elRect.width / 2;
+        const elCenterY = elRect.top + elRect.height / 2;
+        const boardCenterX = boardRect.left + boardRect.width / 2;
+        const boardCenterY = boardRect.top + boardRect.height / 2;
+
+        const distance = Math.hypot(elCenterX - boardCenterX, elCenterY - boardCenterY);
+
+        if (distance < 100) {
+            if (element.dataset.emoji === currentTargetEmoji) {
+                isLevelActive = false;
+                score++;
+                levelsCompleted++; 
+                document.getElementById('score').innerText = score;
+
+                element.style.display = 'none';
+                document.getElementById('shadow-target').classList.add('revealed');
+                
+                document.querySelectorAll('.animal-draggable').forEach(el => el.classList.remove('anim-float'));
+
+                if (levelsCompleted % 3 === 0) {
+                    setTimeout(triggerCheerScreen, 800); 
+                } else {
+                    playSound('win');
+                    
+                    /* AHORA CAEN MENOS PAPELES EN LA VICTORIA NORMAL (eran 45, ahora 20) */
+                    spawnConfetti(20);
+                    
+                    document.getElementById('msg-muy-bien').classList.add('show');
+                    setTimeout(loadLevel, 2500);
+                }
+                return;
+            }
+        }
+        
+        playSound('bounce');
+        resetElementPosition(element);
+    }
+
+    function resetElementPosition(element) {
+        element.style.transition = 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+        
+        element.style.position = 'absolute';
+        element.style.left = 'auto';
+        element.style.top = 'auto';
+        element.style.zIndex = '10';
+
+        setTimeout(() => {
+            element.style.transition = 'transform 0.1s';
+            element.classList.add('anim-float');
+        }, 400);
+    }
+
+</script>
+</body>
+</html>

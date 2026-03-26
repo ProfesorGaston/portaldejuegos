@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carrera de Teclado Pro - Prof. Gastón</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        body {
+            margin: 0; padding: 0; 
+            background: radial-gradient(circle at center, #1a252c 0%, #000000 100%);
+            font-family: 'Press Start 2P', cursive;
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; color: white; user-select: none; overflow: hidden;
+        }
+
+        .arcade-machine {
+            background: #222;
+            padding: 40px 30px;
+            border-radius: 20px 20px 10px 10px;
+            box-shadow: 0 0 50px rgba(0,0,0,1), inset 0 5px 15px rgba(255,255,255,0.05);
+            border: 4px solid #111;
+            border-bottom-width: 15px;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        #game-container {
+            position: relative; width: 720px; height: 475px;
+            background-color: #87CEEB; border: 8px solid #000;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.5), 0 10px 20px rgba(0,0,0,0.8); 
+            overflow: hidden; border-radius: 8px;
+        }
+
+        #game-container::after {
+            content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%);
+            background-size: 100% 4px; z-index: 50; pointer-events: none;
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.6);
+        }
+
+        canvas { display: block; width: 100%; height: 100%; }
+
+        .watermark {
+            position: absolute; bottom: 10px; right: 15px;
+            font-size: 9px; color: rgba(255, 255, 255, 0.9);
+            text-shadow: 1px 1px 2px #000; z-index: 60; pointer-events: none;
+        }
+
+        .screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.75); display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 100; text-align: center;
+            backdrop-filter: blur(3px);
+        }
+
+        h1 { font-size: 32px; color: #e74c3c; margin-bottom: 20px; text-shadow: 4px 4px 0 #c0392b; line-height: 1.5; }
+        p { font-size: 12px; line-height: 1.8; margin-bottom: 20px; text-shadow: 2px 2px 0 #000; color: #ecf0f1; }
+        
+        .btn {
+            background: linear-gradient(to bottom, #2ecc71, #27ae60); color: #fff; font-family: 'Press Start 2P', cursive;
+            font-size: 16px; padding: 15px 25px; margin: 10px; border: 4px solid #fff; border-radius: 8px;
+            cursor: pointer; box-shadow: 0 6px 0 #1e8449, 0 10px 10px rgba(0,0,0,0.5); transition: all 0.1s;
+        }
+        .btn:active { transform: translateY(6px); box-shadow: 0 0px 0 #1e8449, 0 2px 5px rgba(0,0,0,0.5); }
+        
+        #hud {
+            position: absolute; top: 15px; left: 15px; right: 15px;
+            display: flex; justify-content: space-between;
+            font-size: 12px;
+            color: white; text-shadow: 2px 2px 0 #000; z-index: 60; pointer-events: none;
+        }
+
+        #word-container {
+            position: absolute; top: 110px; left: 50%; transform: translateX(-50%);
+            font-size: 36px; z-index: 60; pointer-events: none;
+            background: rgba(0,0,0,0.5); padding: 15px 25px; border-radius: 10px;
+            border: 2px solid rgba(255,255,255,0.2);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            transition: transform 0.1s;
+        }
+
+        .typed { color: #f1c40f; text-shadow: 3px 3px 0 #d35400; }
+        .untyped { color: #fff; text-shadow: 3px 3px 0 #555; }
+        
+        .error-shake { animation: shake 0.3s; color: #e74c3c !important; text-shadow: 3px 3px 0 #900 !important;}
+
+        @keyframes shake {
+            0% { transform: translateX(-50%) translateX(0); }
+            25% { transform: translateX(-50%) translateX(-15px); }
+            50% { transform: translateX(-50%) translateX(15px); }
+            75% { transform: translateX(-50%) translateX(-15px); }
+            100% { transform: translateX(-50%) translateX(0); }
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="arcade-machine">
+    <div id="game-container">
+        <div id="hud">
+            <div id="lives-container">VIDAS: 🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧</div>
+            <div>PTS: <span id="score-display">0</span></div>
+            <div>TIEMPO: <span id="time-display">120</span>s</div>
+        </div>
+        <div id="word-container" style="display: none;">
+            <span class="typed" id="typed-text"></span><span class="untyped" id="untyped-text"></span>
+        </div>
+        <div class="watermark">Creado por el Prof. Gastón</div>
+        <canvas id="gameCanvas" width="720" height="475"></canvas>
+
+        <div id="menu" class="screen">
+            <h1>CARRERA<br>DE TECLADO</h1>
+            <p>Escribe las palabras lo<br>más rápido que puedas.<br><br>¡Cuidado en las curvas y<br>no rompas el auto!</p>
+            <button class="btn" onclick="startGame()">ARRANCAR</button>
+        </div>
+
+        <div id="game-over" class="screen" style="display: none;">
+            <h1 id="go-title">¡TIEMPO!</h1>
+            <p id="go-score" style="color: #f1c40f; font-size: 20px; margin-bottom: 10px; text-shadow: 2px 2px 0 #000;"></p>
+            <p id="go-wpm" style="color: #2ecc71; font-size: 14px; margin-bottom: 30px; text-shadow: 2px 2px 0 #000;"></p>
+            <button class="btn" onclick="location.reload()">JUGAR OTRA VEZ</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Lista ampliada sin palabras con "Ñ"
+    const wordList = [
+        "COMPUTADORA", "TECLADO", "MONITOR", "PANTALLA", "VELOCIDAD", 
+        "CARRERA", "SISTEMA", "SOFTWARE", "HARDWARE", "INTERNET", 
+        "PROGRAMACION", "CODIGO", "VARIABLE", "FUNCION", "LOGICA",
+        "APRENDER", "ESCUELA", "ESTUDIANTE", "PROFESOR", "EDUCACION",
+        "MATEMATICAS", "LENGUAJE", "CIENCIAS", "HISTORIA", "GEOGRAFIA",
+        "TECNOLOGIA", "ROBOTICA", "FUTURO", "INNOVACION", "DESARROLLO",
+        "ALGORITMO", "NAVEGADOR", "SERVIDOR", "PROYECTO", "ESTUDIO",
+        "UNIVERSO", "GALAXIA", "ASTRONAUTA", "PLANETA", "ESTRELLA",
+        "GRAVEDAD", "OXIGENO", "ENERGIA", "FISICA", "QUIMICA",
+        "BIOLOGIA", "CELULA", "GENETICA", "EVOLUCION", "NATURALEZA",
+        "ECOSISTEMA", "ANIMALES", "VEGETALES", "MINERALES", "OCEANO",
+        "VOLCAN", "DESIERTO", "BOSQUE", "CLIMA", "TEMPERATURA",
+        "VEHICULO", "MOTOR", "GASOLINA", "RUEDA", "VOLANTE",
+        "AVENTURA", "MISTERIO", "FANTASIA", "LEYENDA", "MITOLOGIA",
+        "DICCIONARIO", "BIBLIOTECA", "LITERATURA", "POESIA", "CUENTO"
+    ];
+
+    let availableWords = [];
+
+    let game = { active: false, score: 0, timeLeft: 120, wordsTyped: 0, lives: 10, currentCurve: 0, targetCurve: 0 };
+    let trackOffset = 0;
+    let speed = 0;
+    let maxSpeed = 150;
+    
+    let currentWord = "";
+    let typedIndex = 0;
+    let lastTime = 0;
+    let timerInterval;
+
+    let particles = [];
+    let scraps = []; 
+    let carShakeOffset = { x: 0, y: 0 }; 
+
+    // --- SISTEMA DE AUDIO ---
+    let audioCtx;
+    function initAudio() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function playSound(type) {
+        if (!audioCtx) return;
+        const now = audioCtx.currentTime;
+        
+        if (type === 'type') {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(800, now);
+            osc.frequency.exponentialRampToValueAtTime(1200, now + 0.05);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            gain.gain.setValueAtTime(0.05, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+            osc.start(now); osc.stop(now + 0.05);
+        } else if (type === 'word') {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(440, now);
+            osc.frequency.exponentialRampToValueAtTime(880, now + 0.1);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+            osc.start(now); osc.stop(now + 0.2);
+        } else if (type === 'error') {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(150, now);
+            osc.frequency.exponentialRampToValueAtTime(50, now + 0.3);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+            osc.start(now); osc.stop(now + 0.3);
+        } else if (type === 'gameover') {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(300, now);
+            osc.frequency.exponentialRampToValueAtTime(100, now + 0.8);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.8);
+            osc.start(now); osc.stop(now + 0.8);
+        }
+    }
+    // ------------------------
+
+    function createParticles(x, y, count, color, specialVy = 0) {
+        for(let i=0; i<count; i++) {
+            particles.push({
+                x: x, y: y,
+                vx: (Math.random() - 0.5) * 10,
+                vy: specialVy === 0 ? (Math.random() * 5 + 2) : (Math.random() - 0.5) * specialVy,
+                life: 1.0, color: color
+            });
+        }
+    }
+
+    function createScrap(x, y, count) {
+        const colors = ['#7f8c8d', '#95a5a6', '#bdc3c7', '#555555', '#e74c3c', '#c0392b'];
+        for(let i=0; i<count; i++) {
+            scraps.push({
+                x: x, y: y,
+                vx: (Math.random() - 0.5) * 40, 
+                vy: (Math.random() * -20) - 5, 
+                rot: Math.random() * Math.PI * 2,
+                vrot: (Math.random() - 0.5) * 2.0, 
+                size: Math.random() * 12 + 6, 
+                color: colors[Math.floor(Math.random() * colors.length)],
+                gravity: 0.8,
+                life: 1.5 
+            });
+        }
+    }
+
+    function getNewWord() {
+        if (availableWords.length === 0) {
+            availableWords = [...wordList];
+            availableWords.sort(() => Math.random() - 0.5); 
+        }
+        
+        currentWord = availableWords.pop(); 
+        typedIndex = 0;
+        updateWordDisplay();
+    }
+
+    function updateWordDisplay() {
+        document.getElementById('typed-text').innerText = currentWord.substring(0, typedIndex);
+        document.getElementById('untyped-text').innerText = currentWord.substring(typedIndex);
+    }
+
+    function updateLivesDisplay() {
+        document.getElementById('lives-container').innerText = "VIDAS: " + "🔧".repeat(Math.max(0, game.lives)) + "✖️".repeat(Math.max(0, 10 - game.lives));
+    }
+
+    function handleInputError() {
+        const wc = document.getElementById('word-container');
+        wc.classList.remove('error-shake');
+        void wc.offsetWidth; 
+        wc.classList.add('error-shake');
+        
+        playSound('error'); // Sonido de choque/error
+        
+        game.lives--;
+        updateLivesDisplay();
+        
+        speed = Math.max(0, speed - 50); 
+        carShakeOffset.x = (Math.random() - 0.5) * 140; 
+        
+        createParticles(canvas.width / 2, canvas.height - 80, 50, "#111", 15); 
+        createScrap(canvas.width / 2, canvas.height - 70, 45); 
+        
+        if (game.lives <= 0) {
+            gameOver("¡AUTO DESTRUIDO!");
+        }
+    }
+
+    window.addEventListener('keydown', (e) => {
+        if (!game.active) return;
+        
+        if (e.key.length !== 1 || !/[a-zA-Z]/.test(e.key)) return;
+
+        const typedChar = e.key.toUpperCase();
+        const expectedChar = currentWord[typedIndex].toUpperCase();
+
+        if (typedChar === expectedChar) {
+            typedIndex++;
+            playSound('type'); // Sonido al acertar letra
+            game.score += 5; 
+            speed = Math.min(maxSpeed, speed + 10); 
+            document.getElementById('score-display').innerText = game.score;
+            updateWordDisplay();
+
+            if (typedIndex === currentWord.length) {
+                playSound('word'); // Sonido al completar palabra
+                game.score += 50;
+                game.wordsTyped++;
+                document.getElementById('score-display').innerText = game.score;
+                speed = maxSpeed + 60; 
+                createParticles(canvas.width / 2, canvas.height - 80, 15, "#f1c40f"); 
+                
+                game.targetCurve = (Math.random() - 0.5) * 3.5; 
+
+                getNewWord();
+            }
+        } else {
+            handleInputError();
+        }
+    });
+
+    function startGame() {
+        initAudio(); // Iniciar audio en el primer clic
+        document.getElementById('menu').style.display = 'none';
+        document.getElementById('word-container').style.display = 'block';
+        game.active = true;
+        game.score = 0;
+        game.wordsTyped = 0;
+        game.timeLeft = 120; // TIEMPO ACTUALIZADO A 120
+        game.lives = 10;
+        speed = 20;
+        game.currentCurve = 0; 
+        game.targetCurve = 0;
+        scraps = []; 
+        
+        document.getElementById('score-display').innerText = game.score;
+        document.getElementById('time-display').innerText = game.timeLeft;
+        updateLivesDisplay(); 
+        
+        availableWords = []; 
+        getNewWord();
+        lastTime = performance.now();
+        
+        timerInterval = setInterval(() => {
+            game.timeLeft--;
+            document.getElementById('time-display').innerText = game.timeLeft;
+            if(game.timeLeft <= 0) gameOver("¡TIEMPO!");
+        }, 1000);
+
+        requestAnimationFrame(gameLoop);
+    }
+
+    function gameOver(title) {
+        game.active = false;
+        clearInterval(timerInterval);
+        playSound('gameover'); // Sonido de fin de juego
+        document.getElementById('word-container').style.display = 'none';
+        document.getElementById('go-title').innerText = title;
+        document.getElementById('go-score').innerText = "PUNTOS: " + game.score;
+        document.getElementById('go-wpm').innerText = "PALABRAS COMPLETAS: " + game.wordsTyped;
+        document.getElementById('game-over').style.display = 'flex';
+    }
+
+    function drawBackground() {
+        let sky = ctx.createLinearGradient(0, 0, 0, canvas.height/2);
+        sky.addColorStop(0, "#2c3e50"); sky.addColorStop(1, "#e67e22"); 
+        ctx.fillStyle = sky; ctx.fillRect(0, 0, canvas.width, canvas.height/2);
+
+        ctx.save();
+        ctx.shadowColor = "#f1c40f"; ctx.shadowBlur = 30; ctx.fillStyle = "#f1c40f";
+        ctx.beginPath();
+        ctx.arc(canvas.width/2 + (game.currentCurve * 80), canvas.height/2, 60, Math.PI, 0); 
+        ctx.fill(); ctx.restore();
+
+        ctx.fillStyle = "#111"; ctx.beginPath(); ctx.moveTo(0, canvas.height/2);
+        ctx.lineTo(canvas.width * 0.15, canvas.height/2 - 40); 
+        ctx.lineTo(canvas.width * 0.4, canvas.height/2); 
+        ctx.lineTo(canvas.width * 0.75, canvas.height/2 - 80); 
+        ctx.lineTo(canvas.width, canvas.height/2 - 20); 
+        ctx.lineTo(canvas.width, canvas.height/2);
+        ctx.fill();
+    }
+
+    function drawRoad() {
+        const horizon = canvas.height / 2;
+        
+        for (let y = horizon; y < canvas.height; y++) {
+            let depth = y - horizon; 
+            let perspective = depth / horizon; 
+            
+            let roadWidth = perspective * canvas.width * 1.5; 
+            let lineWidth = perspective * 30;
+
+            let segment = Math.floor((depth * 5 + trackOffset) / 150) % 2 === 0;
+
+            let curveFactor = game.currentCurve * Math.pow(perspective, 2); 
+            let roadCenterShift = curveFactor * 300; 
+            
+            ctx.fillStyle = segment ? "#27ae60" : "#2ecc71";
+            ctx.fillRect(0, y, canvas.width, 1);
+
+            let roadX = (canvas.width - roadWidth) / 2 + roadCenterShift;
+            ctx.fillStyle = segment ? "#555" : "#666";
+            ctx.fillRect(roadX, y, roadWidth, 1);
+
+            if (segment) {
+                let lineX = (canvas.width - lineWidth) / 2 + roadCenterShift;
+                ctx.fillStyle = "#ecf0f1"; ctx.fillRect(lineX, y, lineWidth, 1);
+            }
+            
+            let borderWidth = perspective * 20;
+            ctx.fillStyle = segment ? "#c0392b" : "#ecf0f1"; 
+            ctx.fillRect(roadX - borderWidth, y, borderWidth, 1); ctx.fillRect(roadX + roadWidth, y, borderWidth, 1);
+        }
+    }
+
+    function drawCar() {
+        ctx.save();
+        
+        carShakeOffset.x += (0 - carShakeOffset.x) * 0.1; 
+        
+        let normalShakeX = (Math.random() - 0.5) * (speed / 50);
+        let normalShakeY = (Math.random() - 0.5) * (speed / 50);
+        
+        ctx.translate(canvas.width / 2 + carShakeOffset.x + normalShakeX, canvas.height - 70 + normalShakeY);
+
+        ctx.fillStyle = "rgba(0,0,0,0.5)";
+        ctx.beginPath(); ctx.ellipse(0, 30, 60, 15, 0, 0, Math.PI*2); ctx.fill();
+
+        ctx.fillStyle = '#111'; ctx.fillRect(-55, 5, 20, 25); ctx.fillRect(35, 5, 20, 25);
+
+        ctx.fillStyle = '#c0392b'; ctx.beginPath(); ctx.moveTo(-60, 20); ctx.lineTo(60, 20); ctx.lineTo(50, -5); ctx.lineTo(-50, -5); ctx.fill();
+
+        ctx.fillStyle = '#e74c3c'; ctx.beginPath(); ctx.moveTo(-45, -5); ctx.lineTo(45, -5); ctx.lineTo(30, -35); ctx.lineTo(-30, -35); ctx.fill();
+
+        ctx.fillStyle = '#3498db'; ctx.beginPath(); ctx.moveTo(-35, -5); ctx.lineTo(35, -5); ctx.lineTo(25, -30); ctx.lineTo(-25, -30); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.beginPath(); ctx.moveTo(-20, -10); ctx.lineTo(10, -10); ctx.lineTo(5, -25); ctx.lineTo(-15, -25); ctx.fill();
+
+        ctx.fillStyle = '#f1c40f'; ctx.fillRect(-50, 5, 15, 8); ctx.fillRect(35, 5, 15, 8);
+
+        ctx.fillStyle = '#ecf0f1'; ctx.fillRect(-15, 8, 30, 10);
+        ctx.fillStyle = '#000'; ctx.font = '8px Arial'; ctx.textAlign = 'center'; ctx.fillText('PRO', 0, 16);
+
+        ctx.restore();
+    }
+
+    function gameLoop(timestamp) {
+        if (!game.active) return;
+
+        let dt = timestamp - lastTime;
+        lastTime = timestamp;
+
+        if (speed > 20) speed -= 0.1;
+
+        trackOffset += speed;
+        
+        game.currentCurve += (game.targetCurve - game.currentCurve) * 0.05;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawBackground();
+        drawRoad();
+        
+        for(let i = particles.length-1; i>=0; i--) {
+            let p = particles[i];
+            p.x += p.vx; p.y += p.vy; p.life -= 0.05;
+            if(p.life <= 0) { particles.splice(i, 1); continue; }
+            ctx.fillStyle = p.color; ctx.globalAlpha = p.life;
+            ctx.beginPath(); ctx.arc(p.x, p.y, Math.random()*4+2, 0, Math.PI*2); ctx.fill();
+            ctx.globalAlpha = 1.0;
+        }
+
+        drawCar();
+
+        for(let i = scraps.length-1; i>=0; i--) {
+            let s = scraps[i];
+            s.x += s.vx;
+            s.vy += s.gravity; 
+            s.y += s.vy;
+            s.rot += s.vrot;
+            s.life -= 0.015;
+            
+            if(s.life <= 0 || s.y > canvas.height) { scraps.splice(i, 1); continue; }
+            
+            ctx.save();
+            ctx.translate(s.x, s.y);
+            ctx.rotate(s.rot);
+            ctx.fillStyle = s.color;
+            ctx.globalAlpha = Math.max(0, s.life);
+            ctx.fillRect(-s.size/2, -s.size/2, s.size, s.size);
+            ctx.restore();
+        }
+
+        if (speed > 100) {
+            ctx.strokeStyle = "rgba(255,255,255,0.4)";
+            ctx.lineWidth = 2;
+            for(let i=0; i<5; i++) {
+                let lx = Math.random() * canvas.width;
+                let ly = Math.random() * canvas.height;
+                ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx, ly + 50); ctx.stroke();
+            }
+        }
+
+        requestAnimationFrame(gameLoop);
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>¡Golpea al Topo! - Prof. Gastón</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;800&display=swap');
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-drag: none;
+            touch-action: none;
+            cursor: none !important; /* Ocultamos el puntero real para usar nuestro martillo */
+        }
+
+        body {
+            margin: 0; padding: 0; 
+            /* Fondo de cielo despejado (fuera del área de juego) */
+            background: radial-gradient(circle at center, #87CEEB 0%, #4facfe 100%);
+            font-family: 'Baloo 2', cursive; display: flex;
+            justify-content: center; align-items: center;
+            height: 100vh; overflow: hidden;
+        }
+
+        /* --- MARTILLO ANIMADO --- */
+        #hammer {
+            position: fixed;
+            font-size: 71px; 
+            pointer-events: none; 
+            z-index: 99999;
+            transform-origin: 20% 20%; 
+            transform: translate(-20%, -20%) rotate(25deg);
+            transition: transform 0.08s ease-out;
+            filter: drop-shadow(8px 10px 8px rgba(0,0,0,0.4));
+            display: none; 
+        }
+        
+        #hammer.strike {
+            transform: translate(-20%, -20%) rotate(-45deg) scale(0.9);
+            filter: drop-shadow(2px 5px 2px rgba(0,0,0,0.6));
+        }
+
+        /* --- EFECTO BOOM CÓMIC --- */
+        .boom-text {
+            position: fixed;
+            font-family: 'Baloo 2', cursive;
+            font-size: 60px;
+            font-weight: 900;
+            pointer-events: none;
+            z-index: 99998;
+            transform: translate(-50%, -50%);
+            animation: boomBurst 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes boomBurst {
+            0% { transform: translate(-50%, -50%) scale(0.2) rotate(-15deg); opacity: 1; }
+            50% { transform: translate(-50%, -50%) scale(1.2) rotate(5deg); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1.5) rotate(15deg); opacity: 0; }
+        }
+
+        /* --- CONTENEDOR PRINCIPAL DEL JUEGO (NUEVO FONDO DE IMAGEN) --- */
+        #game-area {
+            position: relative; width: 100%; max-width: 800px; 
+            height: 95vh; max-height: 700px; 
+            
+            /* --- FONDO CAMBIADO AQUÍ --- */
+            background-image: url('Fondo topo.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            
+            border: 10px solid #ffffff; border-radius: 40px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3), inset 0 0 50px rgba(255,255,255,0.4);
+            z-index: 10; display: flex; flex-direction: column; align-items: center;
+            padding: 15px 20px 25px 20px; overflow: hidden;
+        }
+
+        /* --- UI Y MARCADOR (ACHICADOS UN ~7%) --- */
+        .header { width: 100%; display: flex; justify-content: space-between; align-items: center; z-index: 10; margin-bottom: 10px; }
+        
+        .score-board, .lives-board {
+            background: #ffffff; 
+            padding: 6px 18px; /* Márgenes reducidos */
+            border-radius: 40px;
+            font-size: 22px; /* Letra reducida (antes 24px) */
+            font-weight: 800;
+            border: 4px solid #dfe4ea; box-shadow: 0 6px 10px rgba(0,0,0,0.1);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .score-board { color: #1e90ff; }
+        .lives-board { color: #ff4757; letter-spacing: 2px; }
+
+        .instruction {
+            background: #ff4757; color: white; padding: 5px 25px; border-radius: 30px;
+            font-size: 20px; font-weight: 800; border: 4px solid #fff;
+            box-shadow: 0 6px 0 #c0392b; z-index: 10; text-align: center;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.2); margin-bottom: 10px;
+        }
+
+        .watermark-badge {
+            position: fixed; 
+            bottom: 15px; right: 20px;
+            background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(5px);
+            padding: 8px 18px; border-radius: 20px; font-size: 15px; font-weight: 800;
+            color: #2f3542; box-shadow: 0 5px 15px rgba(0,0,0,0.3); border: 2px solid #fff; 
+            z-index: 500;
+        }
+
+        /* --- TABLERO Y AGUJEROS --- */
+        .grid-container {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 20px;
+            width: 100%; max-width: 550px; flex-grow: 1; margin-top: 10px; margin-bottom: 20px; z-index: 10;
+        }
+
+        .hole-container {
+            position: relative; width: 100%; height: 110px;
+            display: flex; justify-content: center; align-items: flex-end;
+        }
+
+        .dirt {
+            position: absolute; bottom: 0; width: 110px; height: 35px;
+            background: #8B4513; border-radius: 50%;
+            border-bottom: 6px solid #5c2c09; box-shadow: inset 0 -5px 10px rgba(0,0,0,0.5); z-index: 5;
+        }
+        
+        .hole-mask {
+            position: absolute; bottom: 10px; width: 90px; height: 100px;
+            overflow: hidden; border-radius: 40px 40px 0 0; z-index: 2;
+            display: flex; justify-content: center; align-items: flex-end;
+        }
+
+        .character {
+            font-size: 70px; line-height: 1; transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform: translateY(120%); filter: drop-shadow(0 5px 5px rgba(0,0,0,0.3));
+        }
+        
+        .character.up { transform: translateY(0); }
+
+        /* --- PANTALLAS MODALES --- */
+        .screen-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6); z-index: 100; display: flex;
+            flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(8px);
+        }
+        
+        .modal-box {
+            background: #ffffff; padding: 40px; border-radius: 40px;
+            text-align: center; border: 8px solid #ff4757;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5); width: 90%; max-width: 500px;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+        h1 { font-size: 45px; color: #ff4757; margin: 0; line-height: 1.1; text-shadow: 2px 2px 0 #ffeaa7; }
+        .subtitle { font-size: 18px; color: #2f3542; margin: 20px 0 30px 0; font-weight: 600; }
+        
+        /* --- BOTÓN DE JUGAR REDONDO Y CENTRADO --- */
+        .play-btn {
+            background: linear-gradient(to bottom, #e74c3c, #c0392b); /* Rojo vibrante */
+            color: white; border: none; font-family: 'Baloo 2', cursive; font-weight: 800;
+            font-size: 28px; 
+            
+            /* HACERLO REDONDO Y CENTRARLO */
+            width: 180px; height: 180px; border-radius: 50%; padding: 0;
+            display: flex; justify-content: center; align-items: center;
+            margin: 0 auto; /* ¡AQUÍ ESTÁ LA MAGIA PARA CENTRARLO! */
+            
+            /* EFECTO RELIEVE ARCADE */
+            border: 8px solid #fff; 
+            box-shadow: 0 15px 0 #801d14, 0 20px 30px rgba(0,0,0,0.3); /* Sombra 3D profunda */
+            
+            transition: all 0.1s ease;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.2);
+        }
+        
+        /* EFECTO AL PRESIONAR: SE HUNDE */
+        .play-btn:active { 
+            transform: translateY(10px); 
+            box-shadow: 0 5px 0 #801d14, 0 8px 15px rgba(0,0,0,0.3); /* Sombra se achica */
+        }
+
+        .shake { animation: shakeError 0.4s; }
+        @keyframes shakeError {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-15px); }
+            40%, 80% { transform: translateX(15px); }
+        }
+
+        .particle { position: absolute; pointer-events: none; z-index: 60; font-size: 24px; animation: popOut 0.8s forwards ease-out; }
+        @keyframes popOut {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="hammer">🔨</div>
+
+    <div class="watermark-badge">Creado por el Prof. Gastón</div>
+
+    <div id="game-area">
+        <div class="header">
+            <div class="lives-board" id="lives-display">❤️❤️❤️❤️❤️</div>
+            <div class="score-board">⭐ <span id="score-display">0</span></div>
+        </div>
+
+        <div class="instruction">Golpea SOLO a los 🐭, 🐹 y 🐰</div>
+
+        <div class="grid-container" id="grid">
+            </div>
+
+        <div id="start-screen" class="screen-overlay">
+            <div class="modal-box">
+                <h1>¡GOLPEA AL<br>TOPO!</h1>
+                <p class="subtitle">Regla: Golpea a los Topos y Conejos (🐭🐹🐰).<br>¡Si golpeas a un animalito de la granja (🐷🐮) pierdes vida!</p>
+                <button class="play-btn" onclick="startGame()">¡JUGAR!</button>
+            </div>
+        </div>
+
+        <div id="game-over-screen" class="screen-overlay" style="display: none;">
+            <div class="modal-box">
+                <h1>¡FIN DEL<br>JUEGO!</h1>
+                <p class="subtitle" id="final-score" style="font-size: 30px; color: #1e90ff;"></p>
+                <button class="play-btn" onclick="startGame()">REINTENTAR</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // --- LÓGICA DEL MARTILLO ---
+    const hammerEl = document.getElementById('hammer');
+    
+    window.addEventListener('pointermove', (e) => {
+        hammerEl.style.display = 'block';
+        hammerEl.style.left = e.clientX + 'px';
+        hammerEl.style.top = e.clientY + 'px';
+    });
+
+    window.addEventListener('pointerdown', (e) => {
+        hammerEl.style.display = 'block';
+        hammerEl.style.left = e.clientX + 'px';
+        hammerEl.style.top = e.clientY + 'px';
+        hammerEl.classList.add('strike');
+    });
+
+    window.addEventListener('pointerup', () => {
+        hammerEl.classList.remove('strike');
+    });
+
+
+    // --- LÓGICA DEL EFECTO BOOM ---
+    function createBoomText(x, y, isTarget) {
+        const boom = document.createElement('div');
+        boom.className = 'boom-text';
+        
+        if (isTarget) {
+            boom.innerText = '¡PUM!💥';
+            boom.style.color = '#ffda79';
+            boom.style.textShadow = '3px 3px 0 #ff5252, -3px -3px 0 #ff5252, 3px -3px 0 #ff5252, -3px 3px 0 #ff5252, 0 10px 20px rgba(0,0,0,0.5)';
+        } else {
+            boom.innerText = '¡OUCH!💢';
+            boom.style.color = '#fff';
+            boom.style.textShadow = '3px 3px 0 #2c3e50, -3px -3px 0 #2c3e50, 3px -3px 0 #2c3e50, -3px 3px 0 #2c3e50, 0 10px 20px rgba(0,0,0,0.5)';
+        }
+
+        boom.style.left = x + 'px';
+        boom.style.top = (y - 30) + 'px'; 
+        
+        document.body.appendChild(boom);
+        
+        setTimeout(() => boom.remove(), 400);
+    }
+
+
+    // --- LÓGICA DEL JUEGO ---
+    // OBJETIVOS: Topos / Roedores
+    const targets = ['🐭', '🐹', '🐰']; 
+    // TRAMPAS: Animales de campo / granja
+    const decoys = ['🐷', '🐮', '🐔', '🐴', '🐑']; 
+
+    let score = 0;
+    let lives = 5;
+    let gameActive = false;
+    
+    let currentSpeed = 2200; 
+    let spawnRate = 1500;    
+    
+    let gameLoopTimeout;
+
+    const grid = document.getElementById('grid');
+    
+    for (let i = 0; i < 9; i++) {
+        const holeContainer = document.createElement('div');
+        holeContainer.className = 'hole-container';
+        
+        const dirt = document.createElement('div');
+        dirt.className = 'dirt';
+        
+        const mask = document.createElement('div');
+        mask.className = 'hole-mask';
+        
+        const char = document.createElement('div');
+        char.className = 'character';
+        char.dataset.id = i;
+        char.dataset.isBusy = "false"; 
+        
+        char.addEventListener('pointerdown', hitCharacter);
+        
+        mask.appendChild(char);
+        holeContainer.appendChild(mask);
+        holeContainer.appendChild(dirt);
+        grid.appendChild(holeContainer);
+    }
+
+    const allCharacters = document.querySelectorAll('.character');
+
+    let audioCtx;
+    function initAudio() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function playSound(type) {
+        if (!audioCtx) return;
+        const now = audioCtx.currentTime;
+        
+        if (type === 'hit') {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(300, now);
+            osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            gain.gain.setValueAtTime(0.5, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            osc.start(now); osc.stop(now + 0.1);
+        } else if (type === 'error') {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(150, now);
+            osc.frequency.exponentialRampToValueAtTime(80, now + 0.3);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+            osc.start(now); osc.stop(now + 0.3);
+        } else if (type === 'gameover') {
+            const notes = [300, 250, 200, 150];
+            notes.forEach((freq, i) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'square'; osc.frequency.value = freq;
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                gain.gain.setValueAtTime(0, now + i*0.3);
+                gain.gain.linearRampToValueAtTime(0.2, now + i*0.3 + 0.1);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + i*0.3 + 0.5);
+                osc.start(now + i*0.3); osc.stop(now + i*0.3 + 0.5);
+            });
+        }
+    }
+
+    function startGame() {
+        initAudio();
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('game-over-screen').style.display = 'none';
+        
+        score = 0;
+        lives = 5;
+        
+        currentSpeed = 2200; 
+        spawnRate = 1500;    
+        
+        gameActive = true;
+        
+        updateUI();
+        clearAllHoles();
+        scheduleNextSpawn();
+    }
+
+    function updateUI() {
+        document.getElementById('score-display').innerText = score;
+        document.getElementById('lives-display').innerText = '❤️'.repeat(lives) + '🖤'.repeat(5 - lives);
+    }
+
+    function clearAllHoles() {
+        allCharacters.forEach(char => {
+            clearTimeout(char.hideTimeout); 
+            char.classList.remove('up');
+            char.dataset.isHit = "false";
+            char.dataset.isBusy = "false";
+        });
+    }
+
+    function scheduleNextSpawn() {
+        if (!gameActive) return;
+        gameLoopTimeout = setTimeout(() => {
+            spawnCharacter();
+            scheduleNextSpawn();
+        }, spawnRate);
+    }
+
+    function spawnCharacter() {
+        if (!gameActive) return;
+
+        const freeHoles = Array.from(allCharacters).filter(c => !c.classList.contains('up') && c.dataset.isBusy === "false");
+        
+        if (freeHoles.length === 0) return; 
+
+        const hole = freeHoles[Math.floor(Math.random() * freeHoles.length)];
+        
+        const isTarget = Math.random() > 0.4;
+        const charEmoji = isTarget ? 
+            targets[Math.floor(Math.random() * targets.length)] : 
+            decoys[Math.floor(Math.random() * decoys.length)];
+
+        hole.dataset.isBusy = "true";
+        hole.innerText = charEmoji;
+        hole.dataset.isTarget = isTarget;
+        hole.dataset.isHit = "false";
+        
+        hole.classList.add('up');
+
+        hole.hideTimeout = setTimeout(() => {
+            if (hole.classList.contains('up') && gameActive) {
+                hole.classList.remove('up');
+                setTimeout(() => { hole.dataset.isBusy = "false"; }, 150);
+            }
+        }, currentSpeed);
+    }
+
+    function hitCharacter(e) {
+        if (!gameActive) return;
+        const char = e.target;
+        
+        if (char.dataset.isHit === "true" || !char.classList.contains('up')) return;
+        
+        clearTimeout(char.hideTimeout);
+        
+        char.dataset.isHit = "true";
+        char.classList.remove('up'); 
+        
+        setTimeout(() => { char.dataset.isBusy = "false"; }, 150);
+        
+        const isTarget = char.dataset.isTarget === "true";
+
+        createBoomText(e.clientX, e.clientY, isTarget);
+
+        if (isTarget) {
+            playSound('hit');
+            score += 10;
+            createParticles(e.clientX, e.clientY, '⭐');
+            
+            if (score % 50 === 0) {
+                currentSpeed = Math.max(800, currentSpeed - 150);
+                spawnRate = Math.max(600, spawnRate - 100);
+            }
+        } else {
+            playSound('error');
+            lives--;
+            document.getElementById('game-area').classList.add('shake');
+            setTimeout(() => document.getElementById('game-area').classList.remove('shake'), 400);
+            createParticles(e.clientX, e.clientY, '❌');
+            
+            if (lives <= 0) {
+                gameOver();
+            }
+        }
+        updateUI();
+    }
+
+    function createParticles(x, y, emoji) {
+        const container = document.getElementById('game-area');
+        const rect = container.getBoundingClientRect();
+        
+        for (let i = 0; i < 5; i++) {
+            let p = document.createElement('div');
+            p.className = 'particle';
+            p.innerText = emoji;
+            p.style.left = (x - rect.left - 10) + 'px';
+            p.style.top = (y - rect.top - 10) + 'px';
+            
+            let tx = (Math.random() - 0.5) * 100;
+            let ty = (Math.random() - 0.5) * 100 - 50; 
+            
+            p.style.setProperty('--tx', tx + 'px');
+            p.style.setProperty('--ty', ty + 'px');
+            
+            container.appendChild(p);
+            setTimeout(() => p.remove(), 800);
+        }
+    }
+
+    function gameOver() {
+        gameActive = false;
+        clearTimeout(gameLoopTimeout);
+        playSound('gameover');
+        clearAllHoles();
+        
+        document.getElementById('final-score').innerText = "PUNTOS: " + score;
+        document.getElementById('game-over-screen').style.display = 'flex';
+    }
+
+</script>
+</body>
+</html>
