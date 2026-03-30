@@ -26,7 +26,7 @@
         }
 
         #game-container {
-            position: relative; width: 520px; height: 540px;
+            position: relative; width: 572px; height: 540px;
             background-color: #4ec0ca; border: 8px solid #000;
             box-shadow: inset 0 0 30px rgba(0,0,0,0.5), 0 10px 20px rgba(0,0,0,0.8); 
             overflow: hidden; border-radius: 8px; cursor: pointer;
@@ -75,8 +75,8 @@
 <div class="arcade-machine">
     <div id="game-container">
         <div id="score-display">0</div>
-        <div class="watermark">Prof. Gastón</div>
-        <canvas id="gameCanvas" width="520" height="540"></canvas>
+        <div class="watermark">Creado por el Prof. Gastón</div>
+        <canvas id="gameCanvas" width="572" height="540"></canvas>
 
         <div id="menu" class="screen">
             <h1>FLAPPY<br>FRACCIONES</h1>
@@ -96,13 +96,34 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     
-    // Agregada la variable flashAlpha para el destello al resetear el fondo
-    let game = { active: false, score: 0, frames: 0, parallax: 0, flashAlpha: 0 };
+    // --- NUEVO SISTEMA DE SONIDO CON ARCHIVOS ORIGINALES ---
+    const sounds = {
+        flap: new Audio('https://raw.githubusercontent.com/samuelcust/flappy-bird-assets/master/audio/wing.wav'),
+        score: new Audio('https://raw.githubusercontent.com/samuelcust/flappy-bird-assets/master/audio/point.wav'),
+        crash: new Audio('https://raw.githubusercontent.com/samuelcust/flappy-bird-assets/master/audio/hit.wav')
+    };
+
+    // Pre-cargar los sonidos
+    Object.values(sounds).forEach(audio => {
+        audio.preload = 'auto';
+        audio.volume = 0.5; // Ajuste de volumen (0.0 a 1.0)
+    });
+
+    function playSound(type) {
+        if (sounds[type]) {
+            // Reinicia el sonido al principio por si se llama varias veces rápido
+            sounds[type].currentTime = 0; 
+            sounds[type].play().catch(e => console.log("Audio interact requires user gesture first."));
+        }
+    }
+
+    let game = { active: false, score: 0, frames: 0, parallax: 0, flashAlpha: 0, shakeTime: 0 };
     
     let bird = { 
         x: 100, y: 270, r: 14, 
         vy: 0, gravity: 0.20, jump: -4.5, 
-        rotation: 0, targetRotation: 0, terminalVelocity: 4.5 
+        rotation: 0, targetRotation: 0, terminalVelocity: 4.5,
+        trail: [] 
     };
     
     let walls = [];
@@ -119,7 +140,7 @@
     ];
 
     let clouds = [];
-    for(let i=0; i<8; i++) clouds.push({ x: Math.random() * 520, y: Math.random() * 250, s: Math.random() * 0.6 + 0.4 });
+    for(let i=0; i<8; i++) clouds.push({ x: Math.random() * 572, y: Math.random() * 250, s: Math.random() * 0.6 + 0.4 });
 
     function createParticles(x, y, count, color) {
         for(let i=0; i<count; i++) {
@@ -135,6 +156,7 @@
     function flap() {
         if (!game.active) return;
         bird.vy = bird.jump;
+        playSound('flap'); // Ejecuta el archivo wing.wav
         createParticles(bird.x - 10, bird.y + 5, 5, "#fff");
     }
 
@@ -143,9 +165,13 @@
     document.getElementById('game-container').addEventListener('touchstart', e => { e.preventDefault(); flap(); }, {passive: false});
 
     function startGame() {
+        // Truco para habilitar el audio en móviles con el primer tap
+        playSound('flap'); 
+        setTimeout(() => { sounds.flap.pause(); sounds.flap.currentTime = 0; }, 10);
+
         document.getElementById('menu').style.display = 'none';
-        game.active = true; game.score = 0; game.frames = 0; game.parallax = 0; game.flashAlpha = 0;
-        walls = []; particles = [];
+        game.active = true; game.score = 0; game.frames = 0; game.parallax = 0; game.flashAlpha = 0; game.shakeTime = 0;
+        walls = []; particles = []; bird.trail = [];
         bird.y = 270; bird.vy = 0; bird.rotation = 0;
         document.getElementById('score-display').innerText = game.score;
         requestAnimationFrame(gameLoop);
@@ -164,7 +190,7 @@
         walls.push({
             x: canvas.width, w: wallWidth, target: target, options: options,
             correctIndex: correctIndex, passed: false,
-            scored: false, scoreTextY: 0, scoreTextAlpha: 1 // Nuevas variables para la animación de +1
+            scored: false, scoreTextY: 0, scoreTextAlpha: 1 
         });
     }
 
@@ -202,6 +228,16 @@
     }
 
     function drawBird() {
+        ctx.fillStyle = "rgba(241, 196, 15, 0.6)";
+        bird.trail.forEach((p, i) => {
+            let alpha = i / bird.trail.length;
+            ctx.globalAlpha = alpha * 0.4;
+            ctx.beginPath(); 
+            ctx.arc(p.x - 5, p.y, 10 * alpha, 0, Math.PI*2); 
+            ctx.fill();
+        });
+        ctx.globalAlpha = 1.0;
+
         ctx.save();
         ctx.translate(bird.x, bird.y);
         
@@ -249,30 +285,40 @@
         });
 
         ctx.fillStyle = "#73bf2e"; 
-        for(let i=0; i<3; i++) {
+        for(let i=0; i<4; i++) {
             let mx = ((game.parallax * 0.2) % 600) * -1 + (i * 300);
             ctx.beginPath(); ctx.moveTo(mx, 520); ctx.lineTo(mx + 150, 350); ctx.lineTo(mx + 300, 520); ctx.fill();
         }
 
         ctx.fillStyle = "#53a221";
-        for(let i=0; i<6; i++) {
+        for(let i=0; i<7; i++) {
             let cx = ((game.parallax * 0.5) % 200) * -1 + (i * 120);
             ctx.fillRect(cx, 400, 60, 120); ctx.fillRect(cx + 60, 430, 60, 90);
         }
         game.parallax += wallSpeed;
 
-        // Efecto Flash del reseteo del fondo
         if (game.flashAlpha > 0) {
             ctx.fillStyle = `rgba(255, 255, 255, ${game.flashAlpha})`;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            game.flashAlpha -= 0.02; // El flash se desvanece suavemente
+            game.flashAlpha -= 0.02; 
         }
     }
 
     function gameLoop() {
         if (!game.active) return;
 
+        ctx.save();
+        if (game.shakeTime > 0) {
+            let dx = (Math.random() - 0.5) * 15;
+            let dy = (Math.random() - 0.5) * 15;
+            ctx.translate(dx, dy);
+            game.shakeTime--;
+        }
+
         drawBackground();
+
+        bird.trail.push({x: bird.x, y: bird.y});
+        if (bird.trail.length > 12) bird.trail.shift();
 
         bird.vy += bird.gravity;
         if (bird.vy > bird.terminalVelocity) bird.vy = bird.terminalVelocity;
@@ -306,10 +352,8 @@
                 ctx.fillRect(w.x - 6, capY, w.w + 12, 15); ctx.strokeRect(w.x - 6, capY, w.w + 12, 15);
             });
 
-            // Dibujar fracciones O el texto de "+1 PUNTO"
             gaps.forEach((gap, index) => {
                 if (w.scored && index === w.correctIndex) {
-                    // Animación de +1 PUNTO
                     ctx.save();
                     ctx.fillStyle = `rgba(241, 196, 15, ${Math.max(0, w.scoreTextAlpha)})`;
                     ctx.font = '16px "Press Start 2P"'; 
@@ -318,8 +362,8 @@
                     ctx.fillText("+1 PUNTO", w.x + w.w / 2, w.scoreTextY);
                     ctx.restore();
                     
-                    w.scoreTextY -= 1; // Sube
-                    w.scoreTextAlpha -= 0.015; // Se desvanece
+                    w.scoreTextY -= 1; 
+                    w.scoreTextAlpha -= 0.015; 
                 } else {
                     drawPie(w.x + w.w / 2, gap.centerY, 35, w.options[index].n, w.options[index].d);
                 }
@@ -344,21 +388,20 @@
                 else { hit = true; } 
             }
 
-            // NUEVA LÓGICA DE PUNTUACIÓN: Cuando el pájaro toca el centro de la columna (la fracción)
             let passedPie = bird.x > w.x + w.w / 2 - 10;
             if (passedPie && !w.passed && !hit) {
                 w.passed = true; 
-                w.scored = true; // Activa la animación del texto
-                w.scoreTextY = gaps[w.correctIndex].centerY; // Posición inicial del texto
+                w.scored = true; 
+                w.scoreTextY = gaps[w.correctIndex].centerY; 
                 
                 game.score++;
                 document.getElementById('score-display').innerText = game.score;
-                createParticles(bird.x, bird.y, 20, "#f1c40f"); // Gran explosión dorada
+                playSound('score'); // Ejecuta el archivo point.wav
+                createParticles(bird.x, bird.y, 20, "#f1c40f"); 
                 
-                // Efecto de reseteo de fondo
                 game.parallax = 0; 
-                game.flashAlpha = 0.4; // Activa el flash blanco
-                clouds.forEach(c => { c.x = Math.random() * canvas.width; }); // Reorganiza las nubes
+                game.flashAlpha = 0.4; 
+                clouds.forEach(c => { c.x = Math.random() * canvas.width; }); 
             }
 
             if (w.x + w.w < -30) walls.splice(i, 1);
@@ -383,10 +426,40 @@
         
         ctx.fillStyle = "#5c9c1e"; ctx.fillRect(0, canvas.height - 30, canvas.width, 5);
 
+        ctx.restore(); 
+
         if (hit) {
             game.active = false;
-            document.getElementById('go-score').innerText = "PUNTUACIÓN: " + game.score;
-            document.getElementById('game-over').style.display = 'flex';
+            playSound('crash'); // Ejecuta el archivo hit.wav
+            
+            ctx.fillStyle = "rgba(231, 76, 60, 0.4)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            createParticles(bird.x, bird.y, 40, "#e74c3c");
+            
+            game.shakeTime = 15; 
+            
+            setTimeout(() => {
+                document.getElementById('go-score').innerText = "PUNTUACIÓN: " + game.score;
+                document.getElementById('game-over').style.display = 'flex';
+            }, 800); 
+            
+            requestAnimationFrame(() => {
+                ctx.save();
+                if (game.shakeTime > 0) {
+                    ctx.translate((Math.random() - 0.5) * 15, (Math.random() - 0.5) * 15);
+                }
+                drawBackground();
+                drawBird();
+                for(let i = particles.length-1; i>=0; i--) {
+                    let p = particles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.04;
+                    if(p.life > 0) {
+                        ctx.fillStyle = p.color; ctx.globalAlpha = p.life;
+                        ctx.beginPath(); ctx.arc(p.x, p.y, 5, 0, Math.PI*2); ctx.fill();
+                    }
+                }
+                ctx.restore();
+            });
+
         } else {
             requestAnimationFrame(gameLoop);
         }
