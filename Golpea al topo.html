@@ -5,33 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>¡Golpea al Topo! - Prof. Gastón</title>
     <style>
-        /* Importamos Noto Color Emoji junto con Baloo 2 */
-        @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;800&family=Noto+Color+Emoji&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;800&display=swap');
 
         * {
             box-sizing: border-box;
             user-select: none;
             -webkit-user-drag: none;
             touch-action: none;
-            cursor: none !important; /* Ocultamos el puntero real para usar nuestro martillo */
+            cursor: none !important; 
         }
 
         body {
             margin: 0; padding: 0; 
-            /* Fondo de cielo despejado (fuera del área de juego) */
             background: radial-gradient(circle at center, #87CEEB 0%, #4facfe 100%);
-            /* Añadimos las fuentes fallback para emojis */
-            font-family: 'Baloo 2', 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', cursive; 
+            font-family: 'Baloo 2', cursive; 
             display: flex;
             justify-content: center; align-items: center;
             height: 100vh; overflow: hidden;
         }
 
-        /* CLASE MÁGICA PARA FORZAR EMOJIS A COLOR EN WINDOWS 11 */
-        .emoji {
-            font-family: 'Noto Color Emoji', 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif !important;
-            font-weight: 400 !important; 
-            color: initial !important; 
+        /* FIX DEFINITIVO: Uso de la palabra clave 'emoji' nativa de CSS */
+        .emoji, .character {
+            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", emoji !important;
+            font-weight: normal !important;
+            font-style: normal !important;
         }
 
         /* --- MARTILLO ANIMADO --- */
@@ -55,7 +52,7 @@
         /* --- EFECTO BOOM CÓMIC --- */
         .boom-text {
             position: fixed;
-            font-family: 'Baloo 2', 'Noto Color Emoji', cursive;
+            font-family: 'Baloo 2', cursive;
             font-size: 60px;
             font-weight: 900;
             pointer-events: none;
@@ -72,8 +69,7 @@
         /* --- CONTENEDOR PRINCIPAL DEL JUEGO --- */
         #game-area {
             position: relative; width: 100%; 
-            /* ENSANCHADO UN 10%: de 800px a 880px */
-            max-width: 880px; 
+            max-width: 880px; /* Ensanchado 10% */
             height: 95vh; max-height: 700px; 
             
             background-image: url('Fondo topo.jpg');
@@ -141,11 +137,7 @@
             display: flex; justify-content: center; align-items: flex-end;
         }
 
-        /* Al personaje se le asigna la fuente de emojis para evitar colores negros */
         .character {
-            font-family: 'Noto Color Emoji', 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif !important;
-            font-weight: 400 !important;
-            color: initial !important;
             font-size: 70px; line-height: 1; transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             transform: translateY(120%); filter: drop-shadow(0 5px 5px rgba(0,0,0,0.3));
         }
@@ -206,17 +198,17 @@
 </head>
 <body>
 
-    <div id="hammer" class="emoji">🔨</div>
+    <div id="hammer" class="emoji">&#x1F528;&#xFE0F;</div>
 
     <div class="watermark-badge">Creado por el Prof. Gastón</div>
 
     <div id="game-area">
         <div class="header">
             <div class="lives-board emoji" id="lives-display">❤️❤️❤️❤️❤️</div>
-            <div class="score-board"><span class="emoji">⭐</span> <span id="score-display">0</span></div>
+            <div class="score-board"><span class="emoji">⭐&#xFE0F;</span> <span id="score-display">0</span></div>
         </div>
 
-        <div class="instruction">Golpea SOLO a los <span class="emoji">🐭, 🐹 y 🐰</span></div>
+        <div class="instruction">Golpea SOLO a los <span class="emoji">🐭&#xFE0F;, 🐹&#xFE0F; y 🐰&#xFE0F;</span></div>
 
         <div class="grid-container" id="grid">
             </div>
@@ -224,7 +216,7 @@
         <div id="start-screen" class="screen-overlay">
             <div class="modal-box">
                 <h1>¡GOLPEA AL<br>TOPO!</h1>
-                <p class="subtitle">Regla: Golpea a los Topos y Conejos (<span class="emoji">🐭🐹🐰</span>).<br>¡Si golpeas a un animalito de la granja (<span class="emoji">🐷🐮</span>) pierdes vida!</p>
+                <p class="subtitle">Regla: Golpea a los Topos y Conejos (<span class="emoji">🐭&#xFE0F;🐹&#xFE0F;🐰&#xFE0F;</span>).<br>¡Si golpeas a un animalito de la granja (<span class="emoji">🐷&#xFE0F;🐮&#xFE0F;</span>) pierdes vida!</p>
                 <button class="play-btn" onclick="startGame()">¡JUGAR!</button>
             </div>
         </div>
@@ -266,11 +258,11 @@
         boom.className = 'boom-text';
         
         if (isTarget) {
-            boom.innerText = '¡PUM!💥';
+            boom.innerText = '¡PUM!💥\uFE0F';
             boom.style.color = '#ffda79';
             boom.style.textShadow = '3px 3px 0 #ff5252, -3px -3px 0 #ff5252, 3px -3px 0 #ff5252, -3px 3px 0 #ff5252, 0 10px 20px rgba(0,0,0,0.5)';
         } else {
-            boom.innerText = '¡OUCH!💢';
+            boom.innerText = '¡OUCH!💢\uFE0F';
             boom.style.color = '#fff';
             boom.style.textShadow = '3px 3px 0 #2c3e50, -3px -3px 0 #2c3e50, 3px -3px 0 #2c3e50, -3px 3px 0 #2c3e50, 0 10px 20px rgba(0,0,0,0.5)';
         }
@@ -284,9 +276,10 @@
     }
 
 
-    // --- LÓGICA DEL JUEGO ---
-    const targets = ['🐭', '🐹', '🐰']; 
-    const decoys = ['🐷', '🐮', '🐔', '🐴', '🐑']; 
+    // --- LÓGICA DEL JUEGO (ARREGLO DE EMOJIS \uFE0F) ---
+    // El código \uFE0F le indica obligatoriamente al navegador que debe renderizar el color
+    const targets = ['🐭\uFE0F', '🐹\uFE0F', '🐰\uFE0F']; 
+    const decoys = ['🐷\uFE0F', '🐮\uFE0F', '🐔\uFE0F', '🐴\uFE0F', '🐑\uFE0F']; 
 
     let score = 0;
     let lives = 5;
@@ -458,7 +451,7 @@
         if (isTarget) {
             playSound('hit');
             score += 10;
-            createParticles(e.clientX, e.clientY, '⭐');
+            createParticles(e.clientX, e.clientY, '⭐\uFE0F');
             
             if (score % 50 === 0) {
                 currentSpeed = Math.max(800, currentSpeed - 150);
@@ -469,7 +462,7 @@
             lives--;
             document.getElementById('game-area').classList.add('shake');
             setTimeout(() => document.getElementById('game-area').classList.remove('shake'), 400);
-            createParticles(e.clientX, e.clientY, '❌');
+            createParticles(e.clientX, e.clientY, '❌\uFE0F');
             
             if (lives <= 0) {
                 gameOver();
@@ -484,7 +477,7 @@
         
         for (let i = 0; i < 5; i++) {
             let p = document.createElement('div');
-            p.className = 'particle emoji'; // Agregamos la clase emoji aquí también
+            p.className = 'particle emoji';
             p.innerText = emoji;
             p.style.left = (x - rect.left - 10) + 'px';
             p.style.top = (y - rect.top - 10) + 'px';
