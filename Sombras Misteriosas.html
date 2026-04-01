@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sombras Misteriosas - Prof. Gastón</title>
     <style>
-        /* Importamos la fuente del juego y la FUENTE DE EMOJIS a color de Google */
+        /* Importamos Noto Color Emoji para forzar el color de los emojis */
         @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;800&family=Noto+Color+Emoji&display=swap');
 
         * {
@@ -18,14 +18,13 @@
         body {
             margin: 0; padding: 0; 
             background: linear-gradient(180deg, #74b9ff 0%, #a29bfe 100%);
-            font-family: 'Baloo 2', sans-serif; display: flex;
+            font-family: 'Baloo 2', cursive; display: flex;
             justify-content: center; align-items: center;
             height: 100vh; overflow: hidden;
         }
 
-        /* --- FIX DEFINITIVO PARA WINDOWS 11 --- */
-        /* Forzamos a que todo lo que sea emoji use fuente normal y no herede negritas */
-        .emoji, .shadow-target, .animal-draggable, .cheer-icon, .score-board span {
+        /* --- CLASE PARA FORZAR EMOJIS A COLOR EN WINDOWS 11 --- */
+        .emoji-color, .shadow-target, .animal-draggable, .score-board span, .cheer-icon {
             font-family: 'Noto Color Emoji', 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif !important;
             font-weight: 400 !important; 
             font-style: normal !important;
@@ -63,9 +62,7 @@
 
         /* --- CONTENEDOR DEL JUEGO --- */
         #game-area {
-            position: relative; width: 100%; 
-            max-width: 990px; /* Ensanchado un 10% (antes 900px) */
-            height: 100%; max-height: 650px;
+            position: relative; width: 100%; max-width: 900px; height: 100%; max-height: 650px;
             z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: space-between;
             padding: 25px;
         }
@@ -93,88 +90,137 @@
             border-radius: 30px;
             font-size: 16px;
             font-weight: 800;
-            color: #2f3542;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            border: 2px solid #fff;
-            z-index: 100;
+            color: #0984e3;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+            border: 2px solid rgba(255,255,255,0.9);
+            z-index: 50;
         }
 
-        /* --- TABLERO DE MADERA --- */
-        .board-container { flex-grow: 1; display: flex; justify-content: center; align-items: center; width: 100%; margin: 20px 0; }
+        /* --- TABLERO DE LA SOMBRA (ESTILO BURBUJA) --- */
+        .board-container { flex-grow: 1; display: flex; justify-content: center; align-items: center; width: 100%; }
         .wooden-board {
-            background: #d35400; border-radius: 40px; border: 12px solid #e67e22;
-            box-shadow: inset 0 0 40px rgba(0,0,0,0.4), 0 20px 40px rgba(0,0,0,0.3);
-            width: 350px; height: 350px; display: flex; justify-content: center; align-items: center;
-            position: relative; overflow: hidden;
+            background: #fffdf5; 
+            border: 12px solid #ffb8b8; 
+            border-radius: 50px;
+            width: 260px; height: 260px; display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 15px 0 #ff9999, inset 0 0 25px rgba(0,0,0,0.05);
+            position: relative;
+            animation: floatBoard 4s infinite ease-in-out;
         }
-        .wooden-board::after {
-            content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: repeating-linear-gradient(0deg, transparent, transparent 10px, rgba(0,0,0,0.05) 10px, rgba(0,0,0,0.05) 20px); pointer-events: none;
-        }
-        .wooden-board::before {
-            content: ""; position: absolute; width: 90%; height: 90%; border: 4px dashed rgba(255,255,255,0.2); border-radius: 30px; pointer-events: none;
+        @keyframes floatBoard {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
         }
 
         .shadow-target {
-            font-size: 160px; line-height: 1; filter: brightness(0) drop-shadow(0 20px 10px rgba(0,0,0,0.4));
-            transition: all 0.5s ease;
+            font-size: 140px; line-height: 1;
+            filter: brightness(0) opacity(0.35);
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            animation: pulseShadow 2s infinite alternate;
         }
-        .shadow-target.revealed { filter: brightness(1) drop-shadow(0 20px 15px rgba(0,0,0,0.3)); transform: scale(1.1); }
-
-        /* --- OPCIONES DE ANIMALES --- */
-        .options-container {
-            display: flex; justify-content: center; gap: 30px; width: 100%;
-            padding: 20px; background: rgba(255,255,255,0.3); border-radius: 40px; backdrop-filter: blur(10px);
-            border: 4px solid rgba(255,255,255,0.5); box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        @keyframes pulseShadow { 0% { transform: scale(0.95); } 100% { transform: scale(1.05); } }
+        
+        .shadow-target.revealed {
+            filter: brightness(1) opacity(1) drop-shadow(0 15px 10px rgba(0,0,0,0.25));
+            transform: scale(1.25) !important; animation: none;
         }
 
+        /* --- MENSAJE "¡MUY BIEN!" --- */
+        #msg-muy-bien {
+            position: absolute; 
+            top: -110px; left: 50%;
+            transform: translate(-50%, 0) scale(0.5) rotate(-10deg);
+            font-size: 55px; color: #ff9f43; 
+            text-shadow: -4px -4px 0 #fff, 4px -4px 0 #fff, -4px 4px 0 #fff, 4px 4px 0 #fff, 0 8px 15px rgba(0,0,0,0.2);
+            pointer-events: none; opacity: 0; 
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 60;
+            text-align: center; line-height: 1; white-space: nowrap;
+        }
+        #msg-muy-bien.show { opacity: 1; transform: translate(-50%, 0) scale(1) rotate(0deg); }
+
+        /* --- ANIMALITOS (OPCIONES TIPO STICKERS) --- */
+        .options-dock {
+            width: 100%; height: 180px; display: flex; justify-content: center; gap: 30px;
+            align-items: flex-end; padding-bottom: 20px; z-index: 20;
+        }
+        .animal-slot {
+            width: 130px; height: 130px; 
+            background: rgba(255,255,255,0.4); 
+            border: 4px dashed rgba(255,255,255,0.8);
+            border-radius: 50%;
+            position: relative; display: flex; justify-content: center; align-items: center;
+            box-shadow: inset 0 5px 15px rgba(0,0,0,0.05);
+        }
         .animal-draggable {
-            font-size: 80px; width: 110px; height: 110px; background: #fff; border-radius: 50%;
-            display: flex; justify-content: center; align-items: center;
-            box-shadow: 0 15px 25px rgba(0,0,0,0.15), inset 0 -5px 10px rgba(0,0,0,0.05);
-            border: 5px solid #fff; cursor: grab; transition: transform 0.1s; z-index: 10;
+            position: absolute; font-size: 95px; line-height: 1;
+            cursor: grab; filter: drop-shadow(0 10px 8px rgba(0,0,0,0.2));
+            transition: transform 0.1s;
         }
         .animal-draggable:active { cursor: grabbing; transform: scale(1.15); filter: drop-shadow(0 20px 15px rgba(0,0,0,0.3)); }
         
         .animal-draggable.anim-float { animation: floatAnim 3s ease-in-out infinite; }
         .animal-draggable.anim-float:nth-child(2) { animation-delay: 1s; }
         .animal-draggable.anim-float:nth-child(3) { animation-delay: 2s; }
-        
+
         @keyframes floatAnim {
             0%, 100% { transform: translateY(0) rotate(0deg); }
-            50% { transform: translateY(-10px) rotate(5deg); }
+            50% { transform: translateY(-12px) rotate(6deg); }
         }
 
-        /* --- MENSAJES Y SCREENS --- */
-        .msg-muy-bien {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0);
-            font-size: 80px; color: #ffeb3b; font-weight: 900;
-            text-shadow: 0 10px 0 #f39c12, 0 15px 30px rgba(0,0,0,0.5); z-index: 100;
-            transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); opacity: 0; pointer-events: none; line-height: 1; text-align: center;
+        /* --- PANTALLA DE INICIO --- */
+        #start-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.4); z-index: 100;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            backdrop-filter: blur(8px);
         }
-        .msg-muy-bien.show { transform: translate(-50%, -50%) scale(1) rotate(-5deg); opacity: 1; }
+        .modal-box {
+            background: linear-gradient(135deg, #fff, #f1f2f6);
+            padding: 50px 40px; border-radius: 40px;
+            text-align: center; border: 8px solid #fff;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            max-width: 90%; width: 500px;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
 
+        h1 { font-size: 50px; color: #ff6b81; margin: 0; text-shadow: 2px 2px 0 #ffeaa7; line-height: 1.1; }
+        .subtitle { font-size: 22px; color: #576574; margin: 15px 0 35px 0; font-weight: 600; }
+        
+        .play-btn {
+            background: linear-gradient(to bottom, #1dd1a1, #10ac84); color: white; border: none; font-family: 'Baloo 2', cursive; font-weight: 800;
+            font-size: 38px; padding: 15px 60px; border-radius: 50px; cursor: pointer; border: 4px solid #fff;
+            box-shadow: 0 10px 0 #0b8766, 0 15px 25px rgba(0,0,0,0.2);
+            transition: transform 0.1s, box-shadow 0.1s;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+        }
+        .play-btn:active { transform: translateY(10px); box-shadow: 0 0px 0 #0b8766, 0 5px 10px rgba(0,0,0,0.2); }
+
+        /* --- PANTALLA DE ALIENTO --- */
         #cheer-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); z-index: 200;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            opacity: 0; pointer-events: none; transition: opacity 0.4s; backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.92); z-index: 200;
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            backdrop-filter: blur(10px);
         }
-        #cheer-screen.show { opacity: 1; pointer-events: all; }
-        .cheer-icon { font-size: 150px; filter: drop-shadow(0 0 50px rgba(255, 234, 167, 0.8)); animation: pulseStar 1s infinite alternate; }
-        @keyframes pulseStar { 0% { transform: scale(0.9); } 100% { transform: scale(1.2); } }
-        .cheer-text { font-size: 60px; color: #fff; text-shadow: 0 5px 0 #000; text-align: center; line-height: 1; margin-top: 20px; }
-        .btn-continue {
-            margin-top: 40px; padding: 15px 50px; font-size: 30px; font-family: 'Baloo 2', cursive; font-weight: 800;
-            background: linear-gradient(to bottom, #00b894, #00cec9); color: white; border: none; border-radius: 50px;
-            box-shadow: 0 8px 0 #019074, 0 15px 20px rgba(0,0,0,0.3); cursor: pointer; border: 4px solid #fff; transition: all 0.1s;
+        .cheer-icon { font-size: 150px; animation: bounceInIcon 1s ease-in-out infinite alternate; filter: drop-shadow(0 15px 15px rgba(0,0,0,0.2)); }
+        .cheer-text { 
+            font-size: 65px; color: #ff4757; text-shadow: 4px 4px 0 #ffeaa7; 
+            margin-top: 20px; text-align: center; line-height: 1.1; 
         }
-        .btn-continue:active { transform: translateY(8px); box-shadow: 0 0 0 #019074, 0 5px 10px rgba(0,0,0,0.3); }
+        @keyframes bounceInIcon { 0% { transform: scale(0.8) translateY(20px); } 100% { transform: scale(1.1) translateY(-20px); } }
 
-        .confetti { position: absolute; width: 15px; height: 30px; border-radius: 4px; animation: fall linear forwards; z-index: 50; }
-        @keyframes fall {
-            to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+        /* --- CONFETI CON DESVANECIMIENTO PROGRESIVO --- */
+        .confetti {
+            position: absolute; width: 16px; height: 16px; background-color: #f00; z-index: 250; 
+            animation: fall linear forwards; border-radius: 4px;
         }
+        @keyframes fall {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            30% { opacity: 1; } 
+            100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+        }
+
     </style>
 </head>
 <body>
@@ -191,40 +237,41 @@
 
     <div id="game-area">
         <div class="header">
-            <div class="score-board"><span>⭐</span> <div id="score">0</div></div>
+            <div class="score-board"><span class="emoji-color">⭐</span> <div id="score">0</div></div>
         </div>
 
         <div class="board-container">
             <div class="wooden-board" id="board">
                 <div class="shadow-target" id="shadow-target"></div>
+                <div id="msg-muy-bien">¡MUY BIEN!</div>
             </div>
         </div>
 
-        <div class="options-container" id="options-container">
-            <div class="animal-draggable anim-float" id="opt-0"></div>
-            <div class="animal-draggable anim-float" id="opt-1"></div>
-            <div class="animal-draggable anim-float" id="opt-2"></div>
+        <div class="options-dock" id="options-dock"></div>
+    </div>
+
+    <div id="start-screen">
+        <div class="modal-box">
+            <h1>SOMBRAS<br>MISTERIOSAS</h1>
+            <p class="subtitle">¡Arrastra al animalito hasta su sombra correcta!</p>
+            <button class="play-btn" onclick="startGame()">¡JUGAR!</button>
         </div>
-        
-        <div class="msg-muy-bien" id="msg-muy-bien">¡EXCELENTE!</div>
     </div>
 
     <div id="cheer-screen">
-        <div class="cheer-icon" id="cheer-icon">🌟</div>
+        <div class="cheer-icon emoji-color" id="cheer-icon">🌟</div>
         <div class="cheer-text" id="cheer-text">¡ERES<br>GENIAL!</div>
-        <button class="btn-continue" onclick="continueGame()">SEGUIR JUGANDO</button>
     </div>
 
 <script>
-    const emojis = ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐔','🐧','🐦','🐤','🦆','🦉','🐢','🐙','🦑','🦐','🐡','🐠','🐟','🐬','🐳','🐋','🦈'];
-    
-    let currentTargetEmoji = '';
-    let currentOptions = [];
+    const emojis = ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐔','🐧','🐤','🦆','🦉','🐝','🐞','🐢','🐙','🦀','🐠','🐳'];
+
     let score = 0;
-    let levelsCompleted = 0;
-    let isDragging = false;
+    let levelsCompleted = 0; 
+    let currentTargetEmoji = "";
     let draggedElement = null;
-    let startX = 0, startY = 0, initialLeft = 0, initialTop = 0;
+    let offsetX = 0, offsetY = 0;
+    let isLevelActive = false;
 
     let audioCtx;
     function initAudio() {
@@ -235,114 +282,203 @@
     function playSound(type) {
         if (!audioCtx) return;
         const now = audioCtx.currentTime;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain); gain.connect(audioCtx.destination);
         
-        if (type === 'bounce') {
-            osc.type = 'sine'; osc.frequency.setValueAtTime(200, now); osc.frequency.exponentialRampToValueAtTime(50, now + 0.2);
-            gain.gain.setValueAtTime(0.5, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-            osc.start(now); osc.stop(now + 0.2);
-        } else if (type === 'win') {
-            osc.type = 'triangle'; osc.frequency.setValueAtTime(400, now); osc.frequency.setValueAtTime(600, now + 0.15); osc.frequency.setValueAtTime(800, now + 0.3);
-            gain.gain.setValueAtTime(0.3, now); gain.gain.linearRampToValueAtTime(0, now + 0.6);
-            osc.start(now); osc.stop(now + 0.6);
-        } else if (type === 'cheer') {
-            osc.type = 'square'; osc.frequency.setValueAtTime(523.25, now); osc.frequency.setValueAtTime(659.25, now + 0.2); osc.frequency.setValueAtTime(783.99, now + 0.4); osc.frequency.setValueAtTime(1046.50, now + 0.6);
-            gain.gain.setValueAtTime(0.3, now); gain.gain.linearRampToValueAtTime(0, now + 1.2);
-            osc.start(now); osc.stop(now + 1.2);
+        if (type === 'win') {
+            const notes = [440, 554.37, 659.25, 880]; 
+            notes.forEach((freq, i) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine'; osc.frequency.value = freq;
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                
+                gain.gain.setValueAtTime(0, now + i*0.1);
+                gain.gain.linearRampToValueAtTime(0.2, now + i*0.1 + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + i*0.1 + 0.5);
+                
+                osc.start(now + i*0.1); osc.stop(now + i*0.1 + 0.5);
+            });
+        } else if (type === 'mega-win') {
+            const notes = [523.25, 659.25, 783.99, 1046.50, 783.99, 1046.50]; 
+            notes.forEach((freq, i) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle'; osc.frequency.value = freq;
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                
+                let delay = i * 0.15;
+                if (i === 5) delay += 0.1; 
+                
+                gain.gain.setValueAtTime(0, now + delay);
+                gain.gain.linearRampToValueAtTime(0.2, now + delay + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + delay + 0.6);
+                
+                osc.start(now + delay); osc.stop(now + delay + 0.6);
+            });
+        } else if (type === 'bounce') {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(200, now);
+            osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
+            osc.frequency.exponentialRampToValueAtTime(100, now + 0.3);
+            
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+            
+            osc.start(now); osc.stop(now + 0.3);
+        } else if (type === 'pop') {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600, now);
+            osc.frequency.exponentialRampToValueAtTime(400, now + 0.1);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            osc.start(now); osc.stop(now + 0.1);
         }
     }
 
-    window.addEventListener('click', initAudio, { once: true });
-    window.addEventListener('touchstart', initAudio, { once: true });
+    function spawnConfetti(amount = 50) {
+        const colors = ['#fbc531', '#e1b12c', '#4cd137', '#00a8ff', '#9c88ff', '#e84118', '#ff4d4d'];
+        for (let i = 0; i < amount; i++) {
+            let conf = document.createElement('div');
+            conf.className = 'confetti';
+            conf.style.left = Math.random() * 100 + 'vw';
+            
+            conf.style.top = (Math.random() * -10 - 2) + 'vh'; 
+            
+            conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            
+            conf.style.animationDuration = (Math.random() * 2.5 + 3) + 's';
+            conf.style.animationDelay = (Math.random() * 0.5) + 's';
+            document.body.appendChild(conf);
+            
+            setTimeout(() => conf.remove(), 6000);
+        }
+    }
+
+    function triggerCheerScreen() {
+        const cheerScreen = document.getElementById('cheer-screen');
+        const cheerText = document.getElementById('cheer-text');
+        const cheerIcon = document.getElementById('cheer-icon');
+
+        const messages = ["¡ERES<br>GENIAL!", "¡QUÉ<br>INTELIGENTE!", "¡SIGUE<br>ASÍ!", "¡SÚPER<br>ESTRELLA!"];
+        const icons = ["🌟", "🏆", "🚀", "🎉", "👑"];
+
+        cheerText.innerHTML = messages[Math.floor(Math.random() * messages.length)];
+        cheerIcon.innerText = icons[Math.floor(Math.random() * icons.length)];
+
+        cheerScreen.style.display = 'flex';
+        playSound('mega-win');
+        
+        spawnConfetti(80); 
+
+        setTimeout(() => {
+            cheerScreen.style.display = 'none';
+            loadLevel();
+        }, 3500);
+    }
+
+    function startGame() {
+        initAudio();
+        document.getElementById('start-screen').style.display = 'none';
+        score = 0;
+        levelsCompleted = 0;
+        document.getElementById('score').innerText = score;
+        loadLevel();
+    }
 
     function loadLevel() {
+        isLevelActive = true;
         document.getElementById('msg-muy-bien').classList.remove('show');
-        document.getElementById('shadow-target').classList.remove('revealed');
-        document.getElementById('cheer-screen').classList.remove('show');
-
+        
+        const shadowEl = document.getElementById('shadow-target');
+        shadowEl.classList.remove('revealed');
+        
         let shuffled = [...emojis].sort(() => 0.5 - Math.random());
-        currentOptions = shuffled.slice(0, 3);
-        currentTargetEmoji = currentOptions[Math.floor(Math.random() * 3)];
+        let levelOptions = shuffled.slice(0, 3);
         
-        const targetEl = document.getElementById('shadow-target');
-        targetEl.innerText = currentTargetEmoji;
+        currentTargetEmoji = levelOptions[Math.floor(Math.random() * 3)];
+        shadowEl.innerText = currentTargetEmoji;
+
+        const dock = document.getElementById('options-dock');
+        dock.innerHTML = ''; 
         
-        currentOptions.forEach((emj, index) => {
-            const el = document.getElementById(`opt-${index}`);
-            el.innerText = emj;
-            el.style.display = 'flex';
-            resetElementPosition(el);
-            el.classList.add('anim-float');
+        levelOptions.forEach((emoji) => {
+            const slot = document.createElement('div');
+            slot.className = 'animal-slot';
+            
+            const animal = document.createElement('div');
+            animal.className = 'animal-draggable anim-float';
+            animal.innerText = emoji;
+            animal.dataset.emoji = emoji;
+            
+            animal.addEventListener('pointerdown', handleDragStart);
+            
+            slot.appendChild(animal);
+            dock.appendChild(slot);
         });
     }
 
-    const draggables = document.querySelectorAll('.animal-draggable');
-    draggables.forEach(el => {
-        el.addEventListener('mousedown', dragStart);
-        el.addEventListener('touchstart', dragStart, {passive: false});
-    });
-
-    window.addEventListener('mousemove', dragMove);
-    window.addEventListener('touchmove', dragMove, {passive: false});
-
-    window.addEventListener('mouseup', dragEnd);
-    window.addEventListener('touchend', dragEnd);
-
-    function dragStart(e) {
-        if(e.type === 'touchstart') e.preventDefault();
-        initAudio();
-        isDragging = true;
-        draggedElement = this;
-        draggedElement.style.transition = 'none';
-        draggedElement.style.zIndex = '100';
-        draggedElement.classList.remove('anim-float');
-
-        const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
-        const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
-
+    function handleDragStart(e) {
+        if (!isLevelActive) return;
+        
+        draggedElement = e.target;
+        draggedElement.classList.remove('anim-float'); 
+        playSound('pop');
+        
+        draggedElement.style.zIndex = 1000;
+        
         const rect = draggedElement.getBoundingClientRect();
-        startX = clientX - rect.left;
-        startY = clientY - rect.top;
-    }
-
-    function dragMove(e) {
-        if (!isDragging || !draggedElement) return;
-        e.preventDefault();
-
-        const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
-        const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+        
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
 
         draggedElement.style.position = 'fixed';
-        draggedElement.style.left = (clientX - startX) + 'px';
-        draggedElement.style.top = (clientY - startY) + 'px';
+        draggedElement.style.left = rect.left + 'px';
+        draggedElement.style.top = rect.top + 'px';
+        draggedElement.style.margin = '0';
+
+        draggedElement.setPointerCapture(e.pointerId);
+        
+        draggedElement.addEventListener('pointermove', handleDragMove);
+        draggedElement.addEventListener('pointerup', handleDragEnd);
     }
 
-    function dragEnd(e) {
-        if (!isDragging || !draggedElement) return;
-        isDragging = false;
+    function handleDragMove(e) {
+        if (!draggedElement) return;
+        draggedElement.style.left = (e.clientX - offsetX) + 'px';
+        draggedElement.style.top = (e.clientY - offsetY) + 'px';
+    }
+
+    function handleDragEnd(e) {
+        if (!draggedElement) return;
         
+        draggedElement.releasePointerCapture(e.pointerId);
+        draggedElement.removeEventListener('pointermove', handleDragMove);
+        draggedElement.removeEventListener('pointerup', handleDragEnd);
+
         checkCollision(draggedElement);
         draggedElement = null;
     }
 
     function checkCollision(element) {
-        const board = document.getElementById('board');
-        const boardRect = board.getBoundingClientRect();
+        const boardRect = document.getElementById('board').getBoundingClientRect();
         const elRect = element.getBoundingClientRect();
 
-        const boardCenterX = boardRect.left + boardRect.width / 2;
-        const boardCenterY = boardRect.top + boardRect.height / 2;
-        
         const elCenterX = elRect.left + elRect.width / 2;
         const elCenterY = elRect.top + elRect.height / 2;
+        const boardCenterX = boardRect.left + boardRect.width / 2;
+        const boardCenterY = boardRect.top + boardRect.height / 2;
 
         const distance = Math.hypot(elCenterX - boardCenterX, elCenterY - boardCenterY);
 
-        if (distance < 150) {
-            if (element.innerText === currentTargetEmoji) {
-                score += 10;
+        if (distance < 100) {
+            if (element.dataset.emoji === currentTargetEmoji) {
+                isLevelActive = false;
+                score++;
                 levelsCompleted++; 
                 document.getElementById('score').innerText = score;
 
@@ -355,7 +491,9 @@
                     setTimeout(triggerCheerScreen, 800); 
                 } else {
                     playSound('win');
-                    spawnConfetti(20);
+                    
+                    spawnConfetti(45);
+                    
                     document.getElementById('msg-muy-bien').classList.add('show');
                     setTimeout(loadLevel, 2500);
                 }
@@ -370,7 +508,7 @@
     function resetElementPosition(element) {
         element.style.transition = 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
         
-        element.style.position = 'relative';
+        element.style.position = 'absolute';
         element.style.left = 'auto';
         element.style.top = 'auto';
         element.style.zIndex = '10';
@@ -381,34 +519,6 @@
         }, 400);
     }
 
-    function triggerCheerScreen() {
-        playSound('cheer');
-        spawnConfetti(80);
-        const cheerPhrases = ["¡ERES<br>GENIAL!", "¡SÚPER<br>INTELIGENTE!", "¡QUÉ<br>RÁPIDO!", "¡UNA<br>ESTRELLA!"];
-        document.getElementById('cheer-text').innerHTML = cheerPhrases[Math.floor(Math.random() * cheerPhrases.length)];
-        document.getElementById('cheer-screen').classList.add('show');
-    }
-
-    function continueGame() {
-        document.getElementById('cheer-screen').classList.remove('show');
-        loadLevel();
-    }
-
-    function spawnConfetti(amount) {
-        const colors = ['#fbc531', '#e1b12c', '#4cd137', '#00a8ff', '#9c88ff', '#e84118', '#ff4d4d'];
-        for (let i = 0; i < amount; i++) {
-            let conf = document.createElement('div');
-            conf.className = 'confetti';
-            conf.style.left = Math.random() * 100 + 'vw';
-            conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-            conf.style.animationDuration = (Math.random() * 2 + 2) + 's';
-            conf.style.animationDelay = (Math.random() * 1) + 's';
-            document.body.appendChild(conf);
-            setTimeout(() => conf.remove(), 4000);
-        }
-    }
-
-    loadLevel();
 </script>
 </body>
 </html>
