@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>¡Golpea al Topo! - Prof. Gastón</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;800&display=swap');
+        /* Importamos la fuente del juego y la FUENTE DE EMOJIS a color de Google */
+        @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;800&family=Noto+Color+Emoji&display=swap');
 
         * {
             box-sizing: border-box;
@@ -18,17 +19,19 @@
         body {
             margin: 0; padding: 0; 
             background: radial-gradient(circle at center, #87CEEB 0%, #4facfe 100%);
-            font-family: 'Baloo 2', cursive; 
+            font-family: 'Baloo 2', sans-serif; 
             display: flex;
             justify-content: center; align-items: center;
             height: 100vh; overflow: hidden;
         }
 
-        /* FIX DEFINITIVO: Uso de la palabra clave 'emoji' nativa de CSS */
+        /* --- FIX DEFINITIVO PARA WINDOWS 11 --- */
+        /* Forzamos a que todo lo que sea emoji use fuente normal y no herede negritas */
         .emoji, .character {
-            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", emoji !important;
-            font-weight: normal !important;
+            font-family: 'Noto Color Emoji', 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif !important;
+            font-weight: 400 !important; 
             font-style: normal !important;
+            color: initial !important; 
         }
 
         /* --- MARTILLO ANIMADO --- */
@@ -52,7 +55,7 @@
         /* --- EFECTO BOOM CÓMIC --- */
         .boom-text {
             position: fixed;
-            font-family: 'Baloo 2', cursive;
+            font-family: 'Baloo 2', sans-serif;
             font-size: 60px;
             font-weight: 900;
             pointer-events: none;
@@ -69,7 +72,7 @@
         /* --- CONTENEDOR PRINCIPAL DEL JUEGO --- */
         #game-area {
             position: relative; width: 100%; 
-            max-width: 880px; /* Ensanchado 10% */
+            max-width: 880px; 
             height: 95vh; max-height: 700px; 
             
             background-image: url('Fondo topo.jpg');
@@ -165,7 +168,7 @@
         /* --- BOTÓN DE JUGAR --- */
         .play-btn {
             background: linear-gradient(to bottom, #e74c3c, #c0392b); 
-            color: white; border: none; font-family: 'Baloo 2', cursive; font-weight: 800;
+            color: white; border: none; font-family: 'Baloo 2', sans-serif; font-weight: 800;
             font-size: 28px; 
             width: 180px; height: 180px; border-radius: 50%; padding: 0;
             display: flex; justify-content: center; align-items: center;
@@ -198,17 +201,17 @@
 </head>
 <body>
 
-    <div id="hammer" class="emoji">&#x1F528;&#xFE0F;</div>
+    <div id="hammer" class="emoji">🔨</div>
 
     <div class="watermark-badge">Creado por el Prof. Gastón</div>
 
     <div id="game-area">
         <div class="header">
             <div class="lives-board emoji" id="lives-display">❤️❤️❤️❤️❤️</div>
-            <div class="score-board"><span class="emoji">⭐&#xFE0F;</span> <span id="score-display">0</span></div>
+            <div class="score-board"><span class="emoji">⭐</span> <span id="score-display">0</span></div>
         </div>
 
-        <div class="instruction">Golpea SOLO a los <span class="emoji">🐭&#xFE0F;, 🐹&#xFE0F; y 🐰&#xFE0F;</span></div>
+        <div class="instruction">Golpea SOLO a los <span class="emoji">🐭, 🐹 y 🐰</span></div>
 
         <div class="grid-container" id="grid">
             </div>
@@ -216,7 +219,7 @@
         <div id="start-screen" class="screen-overlay">
             <div class="modal-box">
                 <h1>¡GOLPEA AL<br>TOPO!</h1>
-                <p class="subtitle">Regla: Golpea a los Topos y Conejos (<span class="emoji">🐭&#xFE0F;🐹&#xFE0F;🐰&#xFE0F;</span>).<br>¡Si golpeas a un animalito de la granja (<span class="emoji">🐷&#xFE0F;🐮&#xFE0F;</span>) pierdes vida!</p>
+                <p class="subtitle">Regla: Golpea a los Topos y Conejos (<span class="emoji">🐭🐹🐰</span>).<br>¡Si golpeas a un animalito de la granja (<span class="emoji">🐷🐮</span>) pierdes vida!</p>
                 <button class="play-btn" onclick="startGame()">¡JUGAR!</button>
             </div>
         </div>
@@ -231,7 +234,6 @@
     </div>
 
 <script>
-    // --- LÓGICA DEL MARTILLO ---
     const hammerEl = document.getElementById('hammer');
     
     window.addEventListener('pointermove', (e) => {
@@ -252,17 +254,17 @@
     });
 
 
-    // --- LÓGICA DEL EFECTO BOOM ---
     function createBoomText(x, y, isTarget) {
         const boom = document.createElement('div');
         boom.className = 'boom-text';
         
         if (isTarget) {
-            boom.innerText = '¡PUM!💥\uFE0F';
+            // El emoji va protegido dentro de un span para evitar las negritas del boom-text
+            boom.innerHTML = '¡PUM!<span class="emoji">💥</span>';
             boom.style.color = '#ffda79';
             boom.style.textShadow = '3px 3px 0 #ff5252, -3px -3px 0 #ff5252, 3px -3px 0 #ff5252, -3px 3px 0 #ff5252, 0 10px 20px rgba(0,0,0,0.5)';
         } else {
-            boom.innerText = '¡OUCH!💢\uFE0F';
+            boom.innerHTML = '¡OUCH!<span class="emoji">💢</span>';
             boom.style.color = '#fff';
             boom.style.textShadow = '3px 3px 0 #2c3e50, -3px -3px 0 #2c3e50, 3px -3px 0 #2c3e50, -3px 3px 0 #2c3e50, 0 10px 20px rgba(0,0,0,0.5)';
         }
@@ -276,10 +278,8 @@
     }
 
 
-    // --- LÓGICA DEL JUEGO (ARREGLO DE EMOJIS \uFE0F) ---
-    // El código \uFE0F le indica obligatoriamente al navegador que debe renderizar el color
-    const targets = ['🐭\uFE0F', '🐹\uFE0F', '🐰\uFE0F']; 
-    const decoys = ['🐷\uFE0F', '🐮\uFE0F', '🐔\uFE0F', '🐴\uFE0F', '🐑\uFE0F']; 
+    const targets = ['🐭', '🐹', '🐰']; 
+    const decoys = ['🐷', '🐮', '🐔', '🐴', '🐑']; 
 
     let score = 0;
     let lives = 5;
@@ -303,7 +303,7 @@
         mask.className = 'hole-mask';
         
         const char = document.createElement('div');
-        char.className = 'character';
+        char.className = 'character'; // La clase character hereda la protección de fuente normal
         char.dataset.id = i;
         char.dataset.isBusy = "false"; 
         
@@ -451,7 +451,7 @@
         if (isTarget) {
             playSound('hit');
             score += 10;
-            createParticles(e.clientX, e.clientY, '⭐\uFE0F');
+            createParticles(e.clientX, e.clientY, '⭐');
             
             if (score % 50 === 0) {
                 currentSpeed = Math.max(800, currentSpeed - 150);
@@ -462,7 +462,7 @@
             lives--;
             document.getElementById('game-area').classList.add('shake');
             setTimeout(() => document.getElementById('game-area').classList.remove('shake'), 400);
-            createParticles(e.clientX, e.clientY, '❌\uFE0F');
+            createParticles(e.clientX, e.clientY, '❌');
             
             if (lives <= 0) {
                 gameOver();
