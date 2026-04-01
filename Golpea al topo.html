@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>¡Golpea al Topo! - Prof. Gastón</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;800&display=swap');
+        /* Importamos Noto Color Emoji junto con Baloo 2 */
+        @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;800&family=Noto+Color+Emoji&display=swap');
 
         * {
             box-sizing: border-box;
@@ -19,9 +20,18 @@
             margin: 0; padding: 0; 
             /* Fondo de cielo despejado (fuera del área de juego) */
             background: radial-gradient(circle at center, #87CEEB 0%, #4facfe 100%);
-            font-family: 'Baloo 2', cursive; display: flex;
+            /* Añadimos las fuentes fallback para emojis */
+            font-family: 'Baloo 2', 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', cursive; 
+            display: flex;
             justify-content: center; align-items: center;
             height: 100vh; overflow: hidden;
+        }
+
+        /* CLASE MÁGICA PARA FORZAR EMOJIS A COLOR EN WINDOWS 11 */
+        .emoji {
+            font-family: 'Noto Color Emoji', 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif !important;
+            font-weight: 400 !important; 
+            color: initial !important; 
         }
 
         /* --- MARTILLO ANIMADO --- */
@@ -45,7 +55,7 @@
         /* --- EFECTO BOOM CÓMIC --- */
         .boom-text {
             position: fixed;
-            font-family: 'Baloo 2', cursive;
+            font-family: 'Baloo 2', 'Noto Color Emoji', cursive;
             font-size: 60px;
             font-weight: 900;
             pointer-events: none;
@@ -59,12 +69,13 @@
             100% { transform: translate(-50%, -50%) scale(1.5) rotate(15deg); opacity: 0; }
         }
 
-        /* --- CONTENEDOR PRINCIPAL DEL JUEGO (NUEVO FONDO DE IMAGEN) --- */
+        /* --- CONTENEDOR PRINCIPAL DEL JUEGO --- */
         #game-area {
-            position: relative; width: 100%; max-width: 800px; 
+            position: relative; width: 100%; 
+            /* ENSANCHADO UN 10%: de 800px a 880px */
+            max-width: 880px; 
             height: 95vh; max-height: 700px; 
             
-            /* --- FONDO CAMBIADO AQUÍ --- */
             background-image: url('Fondo topo.jpg');
             background-size: cover;
             background-position: center;
@@ -76,14 +87,14 @@
             padding: 15px 20px 25px 20px; overflow: hidden;
         }
 
-        /* --- UI Y MARCADOR (ACHICADOS UN ~7%) --- */
+        /* --- UI Y MARCADOR --- */
         .header { width: 100%; display: flex; justify-content: space-between; align-items: center; z-index: 10; margin-bottom: 10px; }
         
         .score-board, .lives-board {
             background: #ffffff; 
-            padding: 6px 18px; /* Márgenes reducidos */
+            padding: 6px 18px; 
             border-radius: 40px;
-            font-size: 22px; /* Letra reducida (antes 24px) */
+            font-size: 22px; 
             font-weight: 800;
             border: 4px solid #dfe4ea; box-shadow: 0 6px 10px rgba(0,0,0,0.1);
             display: flex; align-items: center; gap: 8px;
@@ -130,7 +141,11 @@
             display: flex; justify-content: center; align-items: flex-end;
         }
 
+        /* Al personaje se le asigna la fuente de emojis para evitar colores negros */
         .character {
+            font-family: 'Noto Color Emoji', 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif !important;
+            font-weight: 400 !important;
+            color: initial !important;
             font-size: 70px; line-height: 1; transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             transform: translateY(120%); filter: drop-shadow(0 5px 5px rgba(0,0,0,0.3));
         }
@@ -155,29 +170,23 @@
         h1 { font-size: 45px; color: #ff4757; margin: 0; line-height: 1.1; text-shadow: 2px 2px 0 #ffeaa7; }
         .subtitle { font-size: 18px; color: #2f3542; margin: 20px 0 30px 0; font-weight: 600; }
         
-        /* --- BOTÓN DE JUGAR REDONDO Y CENTRADO --- */
+        /* --- BOTÓN DE JUGAR --- */
         .play-btn {
-            background: linear-gradient(to bottom, #e74c3c, #c0392b); /* Rojo vibrante */
+            background: linear-gradient(to bottom, #e74c3c, #c0392b); 
             color: white; border: none; font-family: 'Baloo 2', cursive; font-weight: 800;
             font-size: 28px; 
-            
-            /* HACERLO REDONDO Y CENTRARLO */
             width: 180px; height: 180px; border-radius: 50%; padding: 0;
             display: flex; justify-content: center; align-items: center;
-            margin: 0 auto; /* ¡AQUÍ ESTÁ LA MAGIA PARA CENTRARLO! */
-            
-            /* EFECTO RELIEVE ARCADE */
+            margin: 0 auto; 
             border: 8px solid #fff; 
-            box-shadow: 0 15px 0 #801d14, 0 20px 30px rgba(0,0,0,0.3); /* Sombra 3D profunda */
-            
+            box-shadow: 0 15px 0 #801d14, 0 20px 30px rgba(0,0,0,0.3); 
             transition: all 0.1s ease;
             text-shadow: 2px 2px 0 rgba(0,0,0,0.2);
         }
         
-        /* EFECTO AL PRESIONAR: SE HUNDE */
         .play-btn:active { 
             transform: translateY(10px); 
-            box-shadow: 0 5px 0 #801d14, 0 8px 15px rgba(0,0,0,0.3); /* Sombra se achica */
+            box-shadow: 0 5px 0 #801d14, 0 8px 15px rgba(0,0,0,0.3); 
         }
 
         .shake { animation: shakeError 0.4s; }
@@ -197,17 +206,17 @@
 </head>
 <body>
 
-    <div id="hammer">🔨</div>
+    <div id="hammer" class="emoji">🔨</div>
 
     <div class="watermark-badge">Creado por el Prof. Gastón</div>
 
     <div id="game-area">
         <div class="header">
-            <div class="lives-board" id="lives-display">❤️❤️❤️❤️❤️</div>
-            <div class="score-board">⭐ <span id="score-display">0</span></div>
+            <div class="lives-board emoji" id="lives-display">❤️❤️❤️❤️❤️</div>
+            <div class="score-board"><span class="emoji">⭐</span> <span id="score-display">0</span></div>
         </div>
 
-        <div class="instruction">Golpea SOLO a los 🐭, 🐹 y 🐰</div>
+        <div class="instruction">Golpea SOLO a los <span class="emoji">🐭, 🐹 y 🐰</span></div>
 
         <div class="grid-container" id="grid">
             </div>
@@ -215,7 +224,7 @@
         <div id="start-screen" class="screen-overlay">
             <div class="modal-box">
                 <h1>¡GOLPEA AL<br>TOPO!</h1>
-                <p class="subtitle">Regla: Golpea a los Topos y Conejos (🐭🐹🐰).<br>¡Si golpeas a un animalito de la granja (🐷🐮) pierdes vida!</p>
+                <p class="subtitle">Regla: Golpea a los Topos y Conejos (<span class="emoji">🐭🐹🐰</span>).<br>¡Si golpeas a un animalito de la granja (<span class="emoji">🐷🐮</span>) pierdes vida!</p>
                 <button class="play-btn" onclick="startGame()">¡JUGAR!</button>
             </div>
         </div>
@@ -276,9 +285,7 @@
 
 
     // --- LÓGICA DEL JUEGO ---
-    // OBJETIVOS: Topos / Roedores
     const targets = ['🐭', '🐹', '🐰']; 
-    // TRAMPAS: Animales de campo / granja
     const decoys = ['🐷', '🐮', '🐔', '🐴', '🐑']; 
 
     let score = 0;
@@ -477,7 +484,7 @@
         
         for (let i = 0; i < 5; i++) {
             let p = document.createElement('div');
-            p.className = 'particle';
+            p.className = 'particle emoji'; // Agregamos la clase emoji aquí también
             p.innerText = emoji;
             p.style.left = (x - rect.left - 10) + 'px';
             p.style.top = (y - rect.top - 10) + 'px';
