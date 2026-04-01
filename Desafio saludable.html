@@ -307,6 +307,9 @@
     let lives = 3;
     let isPlaying = false;
 
+    // Arreglo para ir sacando cartas sin que se repitan
+    let availableFoods = [];
+
     let currentCardEl = null;
     let currentFood = null;
     let startX = 0, currentX = 0;
@@ -348,11 +351,21 @@
         }
     }
 
+    // Función para mezclar las comidas (Fisher-Yates Shuffle)
+    function shuffleFoods() {
+        availableFoods = [...allFoods]; // Copiamos todas las comidas
+        for (let i = availableFoods.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [availableFoods[i], availableFoods[j]] = [availableFoods[j], availableFoods[i]];
+        }
+    }
+
     function startGame() {
         initAudio();
         document.getElementById('start-screen').style.display = 'none';
         score = 0; lives = 3; currentLevel = 1; cardsPlayedInLevel = 0;
         isPlaying = true;
+        shuffleFoods(); // Mezclamos el mazo al empezar
         updateUI();
         spawnCard();
     }
@@ -368,11 +381,16 @@
     function spawnCard() {
         if (!isPlaying) return;
         
-        currentFood = allFoods[Math.floor(Math.random() * allFoods.length)];
+        // Si por alguna razón nos quedamos sin cartas, volvemos a mezclar
+        if (availableFoods.length === 0) {
+            shuffleFoods();
+        }
+        
+        // Sacamos la última carta del mazo mezclado (así no se repite)
+        currentFood = availableFoods.pop();
         
         const card = document.createElement('div');
         card.className = 'food-card';
-        // Agregamos la clase emoji-color al icono de la comida para que no falle en Windows
         card.innerHTML = `<div class="food-emoji emoji-color">${currentFood.icon}</div><div class="food-name">${currentFood.name}</div>`;
         
         document.getElementById('play-area').appendChild(card);
