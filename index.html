@@ -20,7 +20,6 @@
         body {
             background-color: var(--bg-base);
             color: #fff;
-            /* La fuente general del texto */
             font-family: 'Montserrat', sans-serif;
             overflow: hidden;
             height: 100vh; width: 100vw;
@@ -95,7 +94,6 @@
         }
         .brand { font-family: 'Bebas Neue', cursive; color: var(--accent-color); font-size: 2.5rem; letter-spacing: 3px; }
         
-        /* FIX DEFINITIVO EMOJIS: Forzamos Noto Color Emoji */
         .prof-badge {
             font-size: 0.9rem; 
             font-weight: 600; 
@@ -122,9 +120,7 @@
             align-items: flex-end; 
         }
         .hero-category { color: var(--accent-color); font-weight: 800; text-transform: uppercase; font-size: 1.2vw; letter-spacing: 2px; margin-bottom: 10px; }
-        
         .hero-logo { font-family: 'Bebas Neue', cursive; font-size: 3.5vw; line-height: 1; margin-bottom: 15px; text-shadow: 2px 2px 10px rgba(0,0,0,0.5); }
-        
         .hero-desc { font-size: 1.1vw; color: #ccc; max-width: 90%; line-height: 1.5; font-weight: 400; }
 
         /* --- FILAS DE JUEGOS --- */
@@ -157,16 +153,13 @@
             transition: transform 0.3s ease, background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
             transform: translateZ(0);
         }
-        
-        /* FIX DEFINITIVO EMOJIS: Forzamos Noto Color Emoji */
         .card-icon { 
             font-size: 3vw; 
             margin-bottom: 8px; 
             transition: transform 0.3s; 
             font-family: 'Noto Color Emoji', sans-serif;
-            font-weight: normal; /* Asegura que no se apliquen negritas que rompan el emoji */
+            font-weight: normal; 
         }
-        
         .card-title { font-size: 0.85vw; font-weight: 600; color: #ccc; text-align: center; }
 
         .card.active {
@@ -194,7 +187,7 @@
 
     <div id="loader-overlay">
         <div class="netflix-spinner"></div>
-        <div id="loading-msg" style="margin-top:15px; font-family:'Bebas Neue'; color:#e50914; letter-spacing:2px; font-size: 1.5rem;">INICIANDO...</div>
+        <div id="loading-msg" style="margin-top:15px; font-family:'Bebas Neue'; color:#e50914; letter-spacing:2px; font-size: 1.5rem; text-align: center;">INICIANDO...</div>
     </div>
 
     <div id="main-app">
@@ -241,11 +234,10 @@
         setTimeout(() => {
             document.getElementById('login-overlay').style.display = 'none';
             document.getElementById('main-app').classList.add('visible');
-            init(); // Iniciamos los juegos cuando el portal ya es visible
+            init(); 
         }, 500);
     }
 
-    // Comprobar si ya estaba logueado
     document.addEventListener('DOMContentLoaded', () => {
         if(sessionStorage.getItem('acceso_gaston') === 'true') {
             document.getElementById('login-overlay').style.display = 'none';
@@ -254,15 +246,12 @@
         }
     });
 
-
-    // --- LÓGICA DEL PORTAL ---
     window.addEventListener('pageshow', function(event) {
         const loader = document.getElementById('loader-overlay');
-        if (loader) {
-            loader.style.display = 'none';
-        }
+        if (loader) loader.style.display = 'none';
     });
 
+    // --- BASE DE DATOS ORIGINAL ---
     const data = [
         {
             category: "Lengua y Mecanografía", color: "#e50914",
@@ -270,7 +259,8 @@
                 { title: 'Lluvia de Letras', desc: 'Escribe rápido y destruye las letras.', icon: '⌨️', url: 'Lluvia de letras.html' },
                 { title: 'Constructor de Palabras', desc: 'Une las piezas correctamente.', icon: '🧩', url: 'Constructor de palabras.html' },
                 { title: 'Tren de Oraciones', desc: 'Ordena los vagones.', icon: '🚂', url: 'Tren de oraciones.html' },
-                { title: 'Carreras de Teclado', desc: '¡Escribe palabras para ganar la carrera!', icon: '🏎️', url: 'Carreras de teclado.html' }
+                { title: 'Carreras de Teclado', desc: '¡Escribe palabras para ganar la carrera!', icon: '🏎️', url: 'Carreras de teclado.html' },
+                { title: 'Regla Ortográfica', desc: 'Aprende las reglas de ortografía jugando.', icon: '📝', url: 'regla ortografica.html' }
             ]
         },
         {
@@ -310,25 +300,35 @@
         }
     ];
 
-    const processedRows = [];
-    data.forEach(item => {
-        for (let i = 0; i < item.games.length; i += 4) {
-            processedRows.push({ displayTitle: i === 0 ? item.category : "", realCategory: item.category, color: item.color, games: item.games.slice(i, i + 4) });
-        }
-    });
-
+    let processedRows = [];
     let currentRow = 0, currentCol = 0;
     const container = document.getElementById('rows-container');
+
+    // Función que transforma los datos en filas de a 4 juegos
+    function buildRows() {
+        processedRows = [];
+        data.forEach(item => {
+            for (let i = 0; i < item.games.length; i += 4) {
+                processedRows.push({ 
+                    displayTitle: i === 0 ? item.category : "", 
+                    realCategory: item.category, 
+                    color: item.color, 
+                    games: item.games.slice(i, i + 4) 
+                });
+            }
+        });
+    }
 
     function launchGame(url, title) {
         const loader = document.getElementById('loader-overlay');
         document.getElementById('loading-msg').innerText = title.toUpperCase();
+        document.getElementById('loading-msg').style.color = processedRows[currentRow].color;
         loader.style.display = 'flex';
         setTimeout(() => { window.location.href = url; }, 1000); 
     }
 
     function init() {
-        // Evitar que se duplique si se llama más de una vez
+        buildRows();
         container.innerHTML = '';
         
         processedRows.forEach((row, rIdx) => {
@@ -360,6 +360,8 @@
     }
 
     function render() {
+        if(processedRows.length === 0) return;
+
         document.querySelectorAll('.card').forEach(c => {
             c.classList.remove('active');
             c.style.backgroundColor = c.dataset.baseBg;
@@ -381,7 +383,6 @@
         }
 
         const rowElement = document.querySelector('.row');
-        // Validar que exista el elemento antes de calcular para no romper el scroll
         if(rowElement) {
             const rowHeight = rowElement.offsetHeight + (window.innerHeight * 0.05);
             container.style.transform = `translate3d(0, -${currentRow * rowHeight}px, 0)`;
@@ -393,7 +394,49 @@
         document.getElementById('hero-desc').innerText = game.desc;
         document.getElementById('hero-cat').innerText = processedRows[currentRow].realCategory;
         document.getElementById('hero-cat').style.color = color;
-        // Removido: document.getElementById('brand-logo').style.color = color; (dejamos el color de marca original)
+    }
+
+    // --- SISTEMA SECRETO (KEYLOGGER) ---
+    let secretBuffer = "";
+    let extrasUnlocked = false;
+
+    function unlockExtras() {
+        if (extrasUnlocked) return;
+        extrasUnlocked = true;
+
+        // Añadimos la categoría secreta con los juegos de acción
+        data.push({
+            category: "Extras Secretos", color: "#9b59b6",
+            games: [
+                { title: 'Buuñ Shooter', desc: 'Acción de disparos, flechas y cosméticos.', icon: '🏹', url: '10.4.html' },
+                { title: 'Neon Rider', desc: 'Carreras a toda velocidad en vista superior.', icon: '🏎️', url: 'anda sin parar.html' },
+                { title: 'Fútbol 1vs1', desc: 'Partido de fútbol estilo 8-bits cara a cara.', icon: '⚽', url: 'Fut 1vs1 fin.html' },
+                { title: 'Hell Zombi', desc: 'Sobrevive en la arena y derrota a los zombis.', icon: '🧟', url: 'hell zombi.html' },
+                { title: 'Penalty Cup', desc: 'Patea penales, ataja y sé el campeón.', icon: '🥅', url: 'penales.html' },
+                { title: 'Emoji Blast', desc: 'Explosión de colores y emojis al ritmo.', icon: '✨', url: 'tata y titi.html' }
+            ]
+        });
+
+        // Feedback Visual
+        const loader = document.getElementById('loader-overlay');
+        const msg = document.getElementById('loading-msg');
+        msg.innerHTML = "¡CÓDIGO DETECTADO!<br>EXTRAS DESBLOQUEADOS";
+        msg.style.color = "#9b59b6";
+        document.querySelector('.netflix-spinner').style.borderColor = "rgba(155, 89, 182, 0.2)";
+        document.querySelector('.netflix-spinner').style.borderTopColor = "#9b59b6";
+        
+        loader.style.display = 'flex';
+        
+        setTimeout(() => { 
+            loader.style.display = 'none'; 
+            // Re-renderizamos todo el grid
+            init();
+            
+            // Llevamos al usuario directamente a la primera fila de la nueva sección extra
+            currentRow = processedRows.findIndex(r => r.realCategory === "Extras Secretos");
+            currentCol = 0;
+            render();
+        }, 2000);
     }
 
     window.addEventListener('keydown', e => {
@@ -403,6 +446,15 @@
             return; 
         }
 
+        // Registrar teclas para el código secreto
+        secretBuffer += e.key;
+        if (secretBuffer.length > 3) secretBuffer = secretBuffer.substring(1);
+        if (secretBuffer === "031") {
+            unlockExtras();
+            secretBuffer = ""; 
+        }
+
+        // Navegación normal
         if(e.key === 'ArrowUp' && currentRow > 0) {
             currentRow--;
             if (currentCol >= processedRows[currentRow].games.length) currentCol = processedRows[currentRow].games.length - 1;
@@ -419,7 +471,6 @@
     });
 
     window.addEventListener('wheel', e => {
-        // Bloqueo de scroll si el login está activo
         if(sessionStorage.getItem('acceso_gaston') !== 'true') return;
 
         if (e.deltaY > 0 && currentRow < processedRows.length - 1) { currentRow++; currentCol = 0; }
