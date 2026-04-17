@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Minecraft Arena - Colisiones Mejoradas</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', Courier, monospace; }
+        .pantalla {
+            position: absolute; width: 100%; height: 100%;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 100; text-align: center; color: white;
+        }
+        #pantalla-inicio { background: radial-gradient(circle, #4a4a4a 0%, #000 100%); }
+        #hud { 
+            position: absolute; top: 20px; left: 20px; color: #fff; z-index: 10; 
+            font-size: 1.5em; text-shadow: 2px 2px #000; pointer-events: none;
+        }
+        #mira { 
+            position: absolute; top: 50%; left: 50%; width: 20px; height: 20px; 
+            border: 2px solid #fff; transform: translate(-50%, -50%); z-index: 10;
+        }
+        #arma-info { position: absolute; bottom: 20px; left: 20px; color: #fff; background: rgba(0,0,0,0.7); padding: 10px; border: 2px solid #555; }
+        #mensaje-logro { 
+            position: absolute; top: 20%; width: 100%; text-align: center; 
+            color: #ffff55; font-size: 2em; text-shadow: 2px 2px #000; 
+            display: none; pointer-events: none; z-index: 20;
+        }
+    </style>
+</head>
+<body>
+
+<div id="pantalla-inicio" class="pantalla">
+    <h1 style="font-size: 50px; color: #55ff55; margin: 0; text-shadow: 4px 4px #003300;">MINECRAFT ARENA</h1>
+    <p style="color: #ffff55; font-size: 20px;">[ PRESIONA 'F' PARA JUGAR ]</p>
+    <p style="font-size: 14px; color: #ddd;">1: Pistola | 2: Escopeta (500 pts) | 3: Revólver (1000 pts)</p>
+</div>
+
+<div id="mensaje-logro">¡NUEVA ARMA DESBLOQUEADA!</div>
+
+<div id="hud">
+    VIDA: <span id="vida" style="color: #ff5555;">100</span> | PUNTOS: <span id="puntos" style="color:#55ff55">0</span>
+</div>
+<div id="arma-info">EQUIPADO: <span id="arma-nombre" style="color: #55ffff;">PISTOLA</span></div>
+<div id="mira"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<script>
+    let escena, camara, render;
+    let controlesActivos = false;
+    let teclas = {};
+    let zombies = [], balas = [], pilares = [], botiquines = [];
+    let vida = 100, puntos = 0;
+    
+    // Progresión
+    let escopetaDesbloqueada = false;
+    let revolverDesbloqueado = false;
+    
+    let texturaPistola, texturaEscopeta, texturaRevolver, texturaZombie, texturaSuelo, texturaPilar; 
+    let jugadorSprite; 
+    let armaActual = 'pistola';
+
+    const MUNDO_SIZE = 35; 
+
+    function init() {
+        escena = new THREE.Scene();
+        escena.background = new THREE.Color(0x72A1EE); 
+        escena.fog = new THREE.Fog(0x72A1EE, 5, 60); 
+
+        camara = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camara.rotation.order = 'YXZ';
+        camara.position.set(0, 1.6, 10);
+
+        render = new THREE.WebGLRenderer({ antialias: false }); 
+        render.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(render.domElement);
+
+        const luz = new THREE.HemisphereLight(0xffffff, 0x444444, 1);
+        escena.add(luz);
+
+        const loader = new THREE.TextureLoader();
+        texturaSuelo = loader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/minecraft/atlas.png');
+        texturaSuelo.magFilter = THREE.NearestFilter;
+        texturaSuelo.wrapS = texturaSuelo.wrapT = THREE.RepeatWrapping;
+        texturaSuelo.repeat.set(40, 40);
+
+        texturaPilar = loader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/minecraft/dirt.png');
+        texturaPilar.magFilter = THREE.NearestFilter;
+
+        const sueloGeo = new THREE.PlaneGeometry(MUNDO_SIZE * 2, MUNDO_SIZE * 2);
+        const sueloMat = new THREE.MeshLambertMaterial({ map: texturaSuelo });
+        const suelo = new THREE.Mesh(sueloGeo, sueloMat);
+        suelo.rotation.x = -Math.PI / 2;
+        escena.add(suelo);
+
+        texturaPistola = loader.load('image_68a8c5.png'); 
+        texturaEscopeta = loader.load('arma 3d.jfif'); 
+        
+        // Revólver sin skin (bloque gris)
+        const canvasRev = document.createElement('canvas');
+        canvasRev.width = 64; canvasRev.height = 64;
+        const ctxRev = canvasRev.getContext('2d');
+        ctxRev.fillStyle = '#444'; ctxRev.fillRect(10, 20, 44, 15);
+        ctxRev.fillRect(10, 35, 15, 20);
+        texturaRevolver = new THREE.CanvasTexture(canvasRev);
+        texturaRevolver.magFilter = THREE.NearestFilter;
+
+        const materialPistola = new THREE.SpriteMaterial({ map: texturaPistola, depthTest: false });
+        jugadorSprite = new THREE.Sprite(materialPistola);
+        actualizarVisualArma();
+        
+        camara.add(jugadorSprite); 
+        escena.add(camara); 
+
+        crearPilaresAleatorios();
+        configurarEventos();
+        generarTexturaZombie();
+
+        setInterval(spawnZombie, 1500);
+        setInterval(spawnBotiquin, 10000);
+
+        loop();
+    }
+
+    function spawnBotiquin() {
+        if (!controlesActivos) return;
+        const geo = new THREE.BoxGeometry(0.6, 0.6, 0.6);
+        const mat = new THREE.MeshLambertMaterial({ color: 0xff0000 });
+        const medkit = new THREE.Mesh(geo, mat);
+        medkit.position.set((Math.random()-0.5)*50, 0.5, (Math.random()-0.5)*50);
+        escena.add(medkit);
+        botiquines.push(medkit);
+    }
+
+    function crearPilaresAleatorios() {
+        const pilarGeo = new THREE.BoxGeometry(2, 4, 2);
+        const pilarMat = new THREE.MeshLambertMaterial({ map: texturaPilar });
+        for(let i=0; i<20; i++) {
+            const pilar = new THREE.Mesh(pilarGeo, pilarMat);
+            pilar.position.set((Math.random()-0.5)*50, 2, (Math.random()-0.5)*50);
+            escena.add(pilar);
+            pilares.push(new THREE.Box3().setFromObject(pilar));
+        }
+    }
+
+    // FUNCIÓN DE COLISIÓN PARA LOS PILARES
+    function hayColisionPilares(pos, radio) {
+        const checkPos = new THREE.Vector3(pos.x, 2, pos.z);
+        const cajaVirtual = new THREE.Box3().setFromCenterAndSize(
+            checkPos, 
+            new THREE.Vector3(radio * 2, 4, radio * 2)
+        );
+        for(let pilar of pilares) {
+            if(cajaVirtual.intersectsBox(pilar)) return true;
+        }
+        return false;
+    }
+
+    function actualizarVisualArma() {
+        jugadorSprite.material.color.set(0xffffff);
+        
+        if (armaActual === 'pistola') {
+            jugadorSprite.material.map = texturaPistola;
+            jugadorSprite.scale.set(1.5, 1.5, 1);
+            jugadorSprite.position.set(0.4, -0.5, -1);
+            document.getElementById('arma-nombre').innerText = "PISTOLA";
+        } else if (armaActual === 'escopeta') {
+            jugadorSprite.material.map = texturaEscopeta;
+            jugadorSprite.scale.set(1.8, 1.3, 1);
+            jugadorSprite.position.set(0.0, -0.6, -1);
+            document.getElementById('arma-nombre').innerText = "ESCOPETA";
+        } else if (armaActual === 'revolver') {
+            jugadorSprite.material.map = texturaRevolver;
+            jugadorSprite.scale.set(1.2, 1.2, 1);
+            jugadorSprite.position.set(0.3, -0.5, -1);
+            document.getElementById('arma-nombre').innerText = "REVÓLVER (50 DAÑO)";
+        }
+    }
+
+    function spawnZombie() {
+        if (!controlesActivos) return;
+        const mat = new THREE.SpriteMaterial({ map: texturaZombie });
+        const z = new THREE.Sprite(mat);
+        z.scale.set(1.5, 2, 1);
+        z.position.set((Math.random()-0.5)*60, 1, (Math.random()-0.5)*60);
+        z.userData = { vel: 0.06, hp: 50, hitTimer: 0 };
+        escena.add(z);
+        zombies.push(z);
+    }
+
+    function disparar() {
+        if (!controlesActivos) return;
+        const dir = new THREE.Vector3();
+        camara.getWorldDirection(dir);
+        
+        const numBalas = (armaActual === 'escopeta') ? 5 : 1;
+        const danoBala = (armaActual === 'revolver') ? 50 : 10;
+
+        for (let i = 0; i < numBalas; i++) {
+            const b = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.15, 0.15), new THREE.MeshBasicMaterial({color: 0xffff00}));
+            b.position.copy(camara.position);
+            const spread = (armaActual === 'escopeta') ? new THREE.Vector3((Math.random()-0.5)*0.2, (Math.random()-0.5)*0.2, (Math.random()-0.5)*0.2) : new THREE.Vector3();
+            b.userData.v = dir.clone().add(spread).multiplyScalar(1.5);
+            b.userData.dano = danoBala; 
+            escena.add(b);
+            balas.push(b);
+        }
+    }
+
+    function loop() {
+        requestAnimationFrame(loop);
+        if (!controlesActivos) return;
+
+        if (puntos >= 500 && !escopetaDesbloqueada) {
+            escopetaDesbloqueada = true;
+            mostrarMensaje("¡ESCOPETA DESBLOQUEADA! (Tecla 2)");
+        }
+        if (puntos >= 1000 && !revolverDesbloqueado) {
+            revolverDesbloqueado = true;
+            mostrarMensaje("¡REVÓLVER DESBLOQUEADO! (Tecla 3)");
+        }
+
+        // --- MOVIMIENTO DEL JUGADOR ---
+        const speed = 0.15;
+        const dir = new THREE.Vector3();
+        camara.getWorldDirection(dir); dir.y = 0; dir.normalize();
+        const side = new THREE.Vector3().crossVectors(camara.up, dir);
+
+        let nextX = camara.position.x;
+        let nextZ = camara.position.z;
+
+        if (teclas['KeyW']) { nextX += dir.x * speed; nextZ += dir.z * speed; }
+        if (teclas['KeyS']) { nextX -= dir.x * speed; nextZ -= dir.z * speed; }
+        if (teclas['KeyA']) { nextX += side.x * speed; nextZ += side.z * speed; }
+        if (teclas['KeyD']) { nextX -= side.x * speed; nextZ -= side.z * speed; }
+
+        const radioJugador = 0.5;
+
+        // Colisión con pilares (Deslizamiento)
+        if (!hayColisionPilares({x: nextX, z: camara.position.z}, radioJugador)) {
+            camara.position.x = nextX;
+        }
+        if (!hayColisionPilares({x: camara.position.x, z: nextZ}, radioJugador)) {
+            camara.position.z = nextZ;
+        }
+
+        // Colisión con los límites del mapa (SÓLO JUGADOR)
+        camara.position.x = Math.max(-MUNDO_SIZE + radioJugador, Math.min(MUNDO_SIZE - radioJugador, camara.position.x));
+        camara.position.z = Math.max(-MUNDO_SIZE + radioJugador, Math.min(MUNDO_SIZE - radioJugador, camara.position.z));
+
+        // --- BOTIQUINES ---
+        for (let i = botiquines.length - 1; i >= 0; i--) {
+            let b = botiquines[i];
+            b.rotation.y += 0.05;
+            if (camara.position.distanceTo(b.position) < 1.5) {
+                vida = Math.min(100, vida + 20);
+                document.getElementById('vida').innerText = Math.ceil(vida);
+                escena.remove(b); botiquines.splice(i, 1);
+            }
+        }
+
+        // --- ZOMBIES ---
+        for (let i = zombies.length - 1; i >= 0; i--) {
+            let z = zombies[i];
+            
+            if(z.userData.hitTimer > 0) {
+                z.userData.hitTimer--;
+                if(z.userData.hitTimer <= 0) z.material.color.set(0xffffff);
+            }
+
+            const dist = z.position.distanceTo(camara.position);
+            const moveDir = new THREE.Vector3().subVectors(camara.position, z.position).normalize();
+            
+            let proxX = z.position.x + moveDir.x * z.userData.vel;
+            let proxZ = z.position.z + moveDir.z * z.userData.vel;
+            const radioZombie = 0.6;
+
+            // Colisión con pilares (Deslizamiento para rodearlos)
+            if (!hayColisionPilares({x: proxX, z: z.position.z}, radioZombie)) {
+                z.position.x = proxX;
+            }
+            if (!hayColisionPilares({x: z.position.x, z: proxZ}, radioZombie)) {
+                z.position.z = proxZ;
+            }
+            // NOTA: Los zombies NO tienen límites de mapa, ignoran la barrera del mundo.
+
+            if (dist < 1.2) { 
+                vida -= 0.3; document.getElementById('vida').innerText = Math.ceil(vida);
+                if(vida <= 0) location.reload();
+            }
+        }
+
+        // --- BALAS ---
+        for (let i = balas.length - 1; i >= 0; i--) {
+            let b = balas[i];
+            b.position.add(b.userData.v);
+            if(b.position.length() > 80) { escena.remove(b); balas.splice(i, 1); continue; }
+
+            for (let j = zombies.length - 1; j >= 0; j--) {
+                if(b.position.distanceTo(zombies[j].position) < 1.5) {
+                    zombies[j].userData.hp -= b.userData.dano;
+                    zombies[j].material.color.set(0xff0000); 
+                    zombies[j].userData.hitTimer = 5;
+
+                    escena.remove(b); balas.splice(i, 1);
+                    
+                    if(zombies[j].userData.hp <= 0) {
+                        escena.remove(zombies[j]); zombies.splice(j, 1);
+                        puntos += 10; document.getElementById('puntos').innerText = puntos;
+                    }
+                    break;
+                }
+            }
+        }
+
+        render.render(escena, camara);
+    }
+
+    function mostrarMensaje(txt) {
+        const m = document.getElementById('mensaje-logro');
+        m.innerText = txt;
+        m.style.display = 'block';
+        setTimeout(() => { m.style.display = 'none'; }, 4000);
+    }
+
+    function generarTexturaZombie() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 64; canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#2d4d22'; ctx.fillRect(16, 10, 32, 54);
+        ctx.fillStyle = '#000'; ctx.fillRect(22, 22, 6, 6); ctx.fillRect(36, 22, 6, 6);
+        texturaZombie = new THREE.CanvasTexture(canvas);
+        texturaZombie.magFilter = THREE.NearestFilter;
+    }
+
+    function configurarEventos() {
+        document.addEventListener('pointerlockchange', () => {
+            controlesActivos = document.pointerLockElement === document.body;
+            document.getElementById('pantalla-inicio').style.display = controlesActivos ? 'none' : 'flex';
+        });
+        
+        window.onkeydown = (e) => {
+            if (e.code === 'KeyF' && !controlesActivos) document.body.requestPointerLock();
+            teclas[e.code] = true;
+            if(e.code === 'Digit1') { armaActual = 'pistola'; actualizarVisualArma(); }
+            if(e.code === 'Digit2' && escopetaDesbloqueada) { armaActual = 'escopeta'; actualizarVisualArma(); }
+            if(e.code === 'Digit3' && revolverDesbloqueado) { armaActual = 'revolver'; actualizarVisualArma(); }
+        };
+        
+        window.onkeyup = (e) => teclas[e.code] = false;
+        window.onmousedown = disparar;
+        window.onmousemove = (e) => { 
+            if(controlesActivos) { 
+                camara.rotation.y -= e.movementX * 0.002; 
+                camara.rotation.x = Math.max(-1.5, Math.min(1.5, camara.rotation.x - e.movementY * 0.002));
+            } 
+        };
+    }
+
+    window.onload = init;
+</script>
+</body>
+</html>

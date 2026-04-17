@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emoji Blast Mini</title>
+    <style>
+        :root {
+            --primary: #ff1493;
+            --secondary: #00d2ff;
+            --glass: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+        }
+
+        body {
+            background: #0f0c29;
+            background-image: linear-gradient(rgba(15, 12, 41, 0.8), rgba(48, 43, 99, 0.8)), 
+                              url('https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=1200');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: white;
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            transition: all 0.8s ease-in-out;
+        }
+
+        /* UI Compacta */
+        #ui {
+            text-align: center;
+            margin-bottom: 15px;
+            z-index: 10;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2rem; /* Reducido */
+            letter-spacing: 2px;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 8px rgba(255, 20, 147, 0.4));
+            text-transform: uppercase;
+        }
+
+        #score-container {
+            font-size: 1.1rem; /* Reducido */
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            padding: 5px 20px;
+            border-radius: 30px;
+            border: 1px solid var(--glass-border);
+            display: inline-block;
+            margin-top: 5px;
+        }
+
+        /* Tablero Redimensionado (-30%) */
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(8, 34px); /* Antes 48px */
+            grid-template-rows: repeat(8, 34px);
+            gap: 4px; /* Antes 6px */
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 15px;
+            backdrop-filter: blur(5px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+        }
+
+        .cell {
+            width: 34px;
+            height: 34px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px; /* Antes 26px */
+            transition: transform 0.2s, background 0.3s;
+        }
+
+        /* Contenedor de piezas compacto */
+        #pieces-container {
+            display: flex;
+            gap: 20px;
+            margin-top: 25px;
+            height: 100px; /* Reducido de 140px */
+            align-items: center;
+            padding: 15px;
+            background: var(--glass);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .piece {
+            display: grid;
+            gap: 3px;
+            cursor: grab;
+            transition: transform 0.2s;
+        }
+
+        .dragging {
+            opacity: 0.4;
+            transform: scale(0.7);
+        }
+
+        @keyframes blast {
+            0% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.15); filter: brightness(2.5); }
+            100% { transform: scale(0); opacity: 0; }
+        }
+
+        .blasting { animation: blast 0.4s forwards; }
+    </style>
+</head>
+<body>
+
+<div id="ui">
+    <h1>Emoji Blast</h1>
+    <div id="score-container">Puntos: <span id="score">0</span></div>
+</div>
+
+<div id="grid"></div>
+<div id="pieces-container"></div>
+
+<script>
+    const emojis = ["😜", "🎉", "💕", "🐱‍👤", "🦄", "🐲", "✨", "⚽", "🎵", "💗", "💎", "🍭"];
+    const colors = ["#FF1493", "#00FF7F", "#1E90FF", "#BA55D3", "#FF4500", "#00CED1", "#FFFF00"];
+    
+    const kpopBackgrounds = [
+        'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=1200',
+        'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=1200',
+        'https://images.unsplash.com/photo-1493225255756-d9584f8606e9?w=1200',
+        'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=1200',
+        'https://images.unsplash.com/photo-1514525253344-7814d9994a81?w=1200'
+    ];
+
+    let score = 0;
+    const gridSize = 8;
+    const gridElement = document.getElementById('grid');
+    const piecesContainer = document.getElementById('pieces-container');
+    const scoreElement = document.getElementById('score');
+
+    let board = Array(gridSize).fill().map(() => Array(gridSize).fill(null));
+
+    function createBoard() {
+        gridElement.innerHTML = '';
+        for (let r = 0; r < gridSize; r++) {
+            for (let c = 0; c < gridSize; c++) {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                cell.id = `cell-${r}-${c}`;
+                cell.ondragover = (e) => e.preventDefault();
+                cell.ondrop = (e) => handleDrop(e, r, c);
+                gridElement.appendChild(cell);
+            }
+        }
+    }
+
+    const pieceTemplates = [
+        [[1, 1], [1, 1]], [[1, 1, 1]], [[1], [1], [1]], 
+        [[1, 0], [1, 1]], [[1, 1], [0, 1]], [[1]], [[1, 1, 1, 1]]
+    ];
+
+    function createRandomPiece() {
+        const template = pieceTemplates[Math.floor(Math.random() * pieceTemplates.length)];
+        const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        
+        const pieceDiv = document.createElement('div');
+        pieceDiv.classList.add('piece');
+        pieceDiv.draggable = true;
+        pieceDiv.style.gridTemplateColumns = `repeat(${template[0].length}, 24px)`; /* Reducido */
+
+        template.forEach((row) => {
+            row.forEach((cell) => {
+                const subCell = document.createElement('div');
+                subCell.className = cell ? 'cell' : '';
+                if(cell) {
+                    subCell.style.background = color;
+                    subCell.innerText = emoji;
+                    subCell.style.width = "24px"; /* Reducido */
+                    subCell.style.height = "24px";
+                    subCell.style.fontSize = "14px"; /* Reducido */
+                    subCell.style.boxShadow = `0 3px 8px ${color}44`;
+                }
+                pieceDiv.appendChild(subCell);
+            });
+        });
+
+        pieceDiv.dataset.info = JSON.stringify({template, emoji, color});
+        pieceDiv.ondragstart = (e) => {
+            e.dataTransfer.setData('pieceData', pieceDiv.dataset.info);
+            pieceDiv.classList.add('dragging');
+        };
+        pieceDiv.ondragend = () => pieceDiv.classList.remove('dragging');
+        return pieceDiv;
+    }
+
+    function spawnPieces() {
+        piecesContainer.innerHTML = '';
+        for (let i = 0; i < 3; i++) {
+            piecesContainer.appendChild(createRandomPiece());
+        }
+    }
+
+    function handleDrop(e, row, col) {
+        e.preventDefault();
+        const {template, emoji, color} = JSON.parse(e.dataTransfer.getData('pieceData'));
+        if (canPlace(template, row, col)) {
+            placePiece(template, emoji, color, row, col);
+            checkLines();
+            document.querySelector('.dragging').remove();
+            if (piecesContainer.children.length === 0) spawnPieces();
+        }
+    }
+
+    function canPlace(template, row, col) {
+        for (let r = 0; r < template.length; r++) {
+            for (let c = 0; c < template[r].length; c++) {
+                if (template[r][c]) {
+                    let nr = row + r, nc = col + c;
+                    if (nr >= gridSize || nc >= gridSize || board[nr][nc] !== null) return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    function placePiece(template, emoji, color, row, col) {
+        for (let r = 0; r < template.length; r++) {
+            for (let c = 0; c < template[r].length; c++) {
+                if (template[r][c]) board[row + r][col + c] = {emoji, color};
+            }
+        }
+        renderBoard();
+    }
+
+    function renderBoard() {
+        board.forEach((row, r) => {
+            row.forEach((cellData, c) => {
+                const cell = document.getElementById(`cell-${r}-${c}`);
+                if (cellData) {
+                    cell.style.background = cellData.color;
+                    cell.innerText = cellData.emoji;
+                } else {
+                    cell.style.background = '';
+                    cell.innerText = '';
+                }
+            });
+        });
+    }
+
+    function checkLines() {
+        let rows = [], cols = [];
+        for (let r = 0; r < gridSize; r++) if (board[r].every(cell => cell !== null)) rows.push(r);
+        for (let c = 0; c < gridSize; c++) {
+            let colFilled = true;
+            for (let r = 0; r < gridSize; r++) if (board[r][c] === null) colFilled = false;
+            if (colFilled) cols.push(c);
+        }
+
+        if (rows.length > 0 || cols.length > 0) {
+            score += (rows.length + cols.length) * 100;
+            scoreElement.innerText = score;
+            
+            rows.forEach(r => {
+                for(let c=0; c<gridSize; c++) document.getElementById(`cell-${r}-${c}`).classList.add('blasting');
+                board[r].fill(null);
+            });
+            cols.forEach(c => {
+                for(let r=0; r<gridSize; r++) document.getElementById(`cell-${r}-${c}`).classList.add('blasting');
+                for (let r = 0; r < gridSize; r++) board[r][c] = null;
+            });
+
+            setTimeout(() => {
+                document.querySelectorAll('.blasting').forEach(el => el.classList.remove('blasting'));
+                changeKpopVibe();
+                renderBoard();
+            }, 400);
+        }
+    }
+
+    function changeKpopVibe() {
+        document.body.style.filter = "brightness(1.6) saturate(1.2)";
+        setTimeout(() => document.body.style.filter = "brightness(1) saturate(1)", 200);
+
+        const newUrl = kpopBackgrounds[Math.floor(Math.random() * kpopBackgrounds.length)];
+        document.body.style.backgroundImage = `linear-gradient(rgba(15, 12, 41, 0.8), rgba(48, 43, 99, 0.8)), url('${newUrl}')`;
+    }
+
+    createBoard();
+    spawnPieces();
+</script>
+
+</body>
+</html>
