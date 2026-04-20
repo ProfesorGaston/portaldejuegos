@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Travesía Ortográfica - Prof. Gastón</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;800&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Montserrat', sans-serif; }
+
+        /* --- CANVAS --- */
+        #game-canvas {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: 1; display: none; 
+        }
+
+        /* --- INTERFAZ --- */
+        #hud {
+            position: absolute; top: 0; left: 0; width: 100%;
+            padding: 15px 25px; display: flex; justify-content: flex-end; gap: 15px;
+            pointer-events: none; z-index: 10;
+            display: none; 
+        }
+        .hud-box {
+            background: rgba(10, 30, 50, 0.85); border: 3px solid #f1c40f;
+            padding: 8px 14px; border-radius: 8px; color: #fff;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            font-family: 'Bebas Neue', cursive; 
+            font-size: 1.1rem; 
+            letter-spacing: 1.5px;
+            backdrop-filter: blur(4px);
+        }
+        #word-container {
+            position: absolute; top: 12%; width: 100%; text-align: center;
+            pointer-events: none; z-index: 10;
+            display: none; 
+        }
+        #current-word {
+            font-family: 'Bebas Neue', cursive; font-size: 6rem;
+            color: #fff; text-shadow: 3px 3px 0 #002244, -1px -1px 0 #002244, 0 10px 20px rgba(0,0,0,0.5);
+            letter-spacing: 8px;
+        }
+
+        #flash {
+            position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 5;
+        }
+
+        /* PANTALLAS */
+        .overlay-screen {
+            position: absolute; inset: 0; 
+            background: radial-gradient(circle, #003264 0%, #000f1e 100%); 
+            display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100;
+        }
+        .overlay-screen h1 {
+            font-family: 'Bebas Neue', cursive; font-size: 7rem; color: #f1c40f;
+            text-shadow: 0 10px 30px rgba(0,0,0,0.8); margin-bottom: 10px; text-align: center; line-height: 0.9;
+        }
+        .btn-play {
+            background: linear-gradient(to bottom, #f1c40f, #f39c12); border: none; color: #001e3c;
+            padding: 20px 60px; font-size: 2.5rem; font-family: 'Bebas Neue', cursive;
+            cursor: pointer; border-radius: 50px; box-shadow: 0 8px 0 #b9770e, 0 15px 20px rgba(0,0,0,0.4);
+            transition: all 0.1s; text-transform: uppercase; letter-spacing: 2px; margin-top: 20px;
+        }
+        .btn-play:active { transform: translateY(8px); box-shadow: 0 0 0 transparent, 0 5px 10px rgba(0,0,0,0.4); }
+        .instructions { color: #e0e0e0; margin-top: 40px; font-size: 1.3rem; text-align: center; line-height: 1.8; background: rgba(0,0,0,0.3); padding: 20px; border-radius: 15px; }
+        .instructions span { color: #f1c40f; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <canvas id="game-canvas"></canvas>
+
+    <div id="hud">
+        <div class="hud-box" style="border-color: #e74c3c;">❤ SALVAVIDAS: <span id="lives">3</span></div>
+        <div class="hud-box" style="border-color: #2ecc71;">★ PUNTOS: <span id="score">0</span></div>
+    </div>
+
+    <div id="word-container"><div id="current-word">CARGANDO...</div></div>
+    <div id="flash"></div>
+
+    <div id="start-screen" class="overlay-screen">
+        <h1>TRAVESÍA<br><span style="color:#fff; font-size: 5rem;">ORTOGRÁFICA</span></h1>
+        <button id="btn-zarpar" class="btn-play">ZARPAR AHORA</button>
+        <div class="instructions">
+            Reglas: <span>MB</span>, <span>MP</span>, <span>NV</span><br>
+            Usa las <span>FLECHAS ⬅ ➡</span> para virar el barco.<br>
+            Mantén <span>FLECHA ⬆</span> para ir a velocidad x1.5.<br>
+            ¡Navega hacia el <span>cartel</span> correcto!
+        </div>
+    </div>
+
+    <div id="game-over-screen" class="overlay-screen" style="display: none;">
+        <h1 style="color: #e74c3c;">¡BARCO ENCALLADO!</h1>
+        <p style="color: #fff; font-size: 2.5rem; margin-bottom: 30px;">Puntuación Final: <span id="final-score" style="color:#f1c40f; font-weight:bold;">0</span></p>
+        <button class="btn-play" onclick="location.reload()">REINTENTAR</button>
+    </div>
+
+<script>
+    window.addEventListener('load', () => {
+
+        const words = [
+            { t: "TA _ _ OR", a: "MB", f: "TAMBOR" }, { t: "BO _ _ ERO", a: "MB", f: "BOMBERO" },
+            { t: "CA _ _ ANA", a: "MP", f: "CAMPANA" }, { t: "TRO _ _ ETA", a: "MP", f: "TROMPETA" },
+            { t: "CO _ _ RAR", a: "MP", f: "COMPRAR" }, { t: "I _ _ IERNO", a: "NV", f: "INVIERNO" },
+            { t: "E _ _ ASE", a: "NV", f: "ENVASE" }, { t: "I _ _ ITAR", a: "NV", f: "INVITAR" },
+            { t: "A _ _ ULANCIA", a: "MB", f: "AMBULANCIA" }, { t: "TIE _ _ O", a: "MP", f: "TIEMPO" },
+            { t: "E _ _ IAR", a: "NV", f: "ENVIAR" }, { t: "I _ _ ENTO", a: "NV", f: "INVENTO" }
+        ];
+
+        let currentWordObj = null;
+        let correctLane = 0;
+        let score = 0, lives = 3;
+        
+        let gameSpeed = 0.08; 
+        let speedMultiplier = 1.0; // Multiplicador de velocidad (flecha arriba)
+        let gameTime = 0; // Acumulador de tiempo suave
+        let isPlaying = false;
+
+        // --- MOTOR 3D ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x5D9CEC); 
+
+        const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 6, 14); 
+        camera.lookAt(0, 2, -20);
+
+        const canvasEl = document.getElementById('game-canvas');
+        const renderer = new THREE.WebGLRenderer({ canvas: canvasEl, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x5D9CEC, 1); 
+        renderer.shadowMap.enabled = true; 
+        renderer.shadowMap.type = THREE.PCFShadowMap;
+
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        });
+
+        // --- ILUMINACIÓN ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); 
+        scene.add(ambientLight);
+
+        const sunLight = new THREE.DirectionalLight(0xfffaee, 1.2); 
+        sunLight.position.set(20, 40, -100); 
+        sunLight.castShadow = true;
+        scene.add(sunLight);
+
+        // --- EL SOL ---
+        const sunGeo = new THREE.SphereGeometry(15, 32, 32);
+        const sunMat = new THREE.MeshBasicMaterial({ color: 0xffdd44 });
+        const sunMesh = new THREE.Mesh(sunGeo, sunMat);
+        sunMesh.position.set(30, 45, -150);
+        scene.add(sunMesh);
+
+        // --- AGUA ---
+        const waterGeo = new THREE.PlaneGeometry(300, 300, 45, 45); 
+        const waterMat = new THREE.MeshStandardMaterial({ 
+            color: 0x0077be, roughness: 0.05, metalness: 0.4, transparent: true, opacity: 0.9 
+        });
+        const water = new THREE.Mesh(waterGeo, waterMat);
+        water.rotation.x = -Math.PI / 2;
+        water.position.y = -1;
+        water.receiveShadow = true;
+        scene.add(water);
+
+        // --- NUBES ---
+        const cloudsGroup = new THREE.Group();
+        scene.add(cloudsGroup);
+        const cloudGeo = new THREE.SphereGeometry(1.5, 16, 16);
+        const cloudMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 });
+
+        function createFluffyCloud() {
+            const cloud = new THREE.Group();
+            const numPuffs = 4 + Math.floor(Math.random() * 3);
+            for(let i=0; i<numPuffs; i++) {
+                const puff = new THREE.Mesh(cloudGeo, cloudMat);
+                puff.position.set(
+                    (Math.random() - 0.5) * 4,  
+                    (Math.random() - 0.5) * 1.5, 
+                    (Math.random() - 0.5) * 3   
+                );
+                const scale = 0.8 + Math.random() * 1.2;
+                puff.scale.set(scale, scale, scale);
+                cloud.add(puff);
+            }
+            return cloud;
+        }
+
+        for(let i=0; i<12; i++) {
+            const cloud = createFluffyCloud();
+            cloud.position.set((Math.random() - 0.5) * 120, 15 + Math.random() * 10, -50 - Math.random() * 100);
+            cloudsGroup.add(cloud);
+        }
+
+        // --- BARCO DE PAPEL (ORIGAMI) ---
+        const boatGroup = new THREE.Group();
+        
+        // Material de papel: blanco mate, doble cara y shading plano para marcar dobleces
+        const paperMat = new THREE.MeshStandardMaterial({ 
+            color: 0xffffff, 
+            roughness: 1.0, 
+            metalness: 0.0, 
+            side: THREE.DoubleSide,
+            flatShading: true 
+        });
+
+        // Coordenadas exactas para dibujar los pliegues del barco
+        const vertices = new Float32Array([
+            // Casco exterior izquierdo (Proa y Popa)
+            0, 0.5, -2.5,   -1.2, 0.8, 0,   0, -0.2, 0,
+            0, 0.5, 2.5,    0, -0.2, 0,     -1.2, 0.8, 0,
+            
+            // Casco exterior derecho (Proa y Popa)
+            0, 0.5, -2.5,   0, -0.2, 0,     1.2, 0.8, 0,
+            0, 0.5, 2.5,    1.2, 0.8, 0,    0, -0.2, 0,
+
+            // Interior del casco (los pliegues hacia adentro)
+            0, 0.5, -2.5,   0, 0.5, 0,      -1.2, 0.8, 0,
+            0, 0.5, 2.5,    -1.2, 0.8, 0,   0, 0.5, 0,
+            0, 0.5, -2.5,   1.2, 0.8, 0,    0, 0.5, 0,
+            0, 0.5, 2.5,    0, 0.5, 0,      1.2, 0.8, 0,
+
+            // Vela principal (triángulo grande central)
+            0, 0.5, 0,      0, 3, -0.5,     -0.8, 0.8, 0,
+            
+            // Vela secundaria (triángulo más pequeño superpuesto)
+            0, 0.5, 0,      0.6, 0.8, 0.2,  0, 2.2, -0.2
+        ]);
+
+        const paperGeo = new THREE.BufferGeometry();
+        paperGeo.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+        paperGeo.computeVertexNormals(); 
+
+        const paperBoat = new THREE.Mesh(paperGeo, paperMat);
+        paperBoat.castShadow = true;
+        paperBoat.receiveShadow = true;
+        paperBoat.position.y = -0.3; // Hundir un poquito en el agua
+
+        boatGroup.add(paperBoat);
+
+        scene.add(boatGroup);
+        boatGroup.scale.set(0.9, 0.9, 0.9); 
+
+        // --- CARRILES E INPUT ---
+        const lanes = [-6, 0, 6]; 
+        let targetLane = 1; let currentX = 0; 
+
+        window.addEventListener('keydown', (e) => {
+            if (!isPlaying) return;
+            if ((e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') && targetLane > 0) targetLane--;
+            else if ((e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') && targetLane < 2) targetLane++;
+            else if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') speedMultiplier = 1.5;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') speedMultiplier = 1.0;
+        });
+
+        // --- BOYAS DISPERSAS ---
+        const buoysGroup = new THREE.Group();
+        scene.add(buoysGroup);
+        const buoyDecoGeo = new THREE.SphereGeometry(0.4, 8, 8);
+        const buoyYellowGeo = new THREE.SphereGeometry(0.3, 8, 8);
+        const buoyMatRed = new THREE.MeshStandardMaterial({ color: 0xff4444, roughness: 0.3 });
+        const buoyMatWhite = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+        const buoyMatYellow = new THREE.MeshStandardMaterial({ color: 0xf1c40f, roughness: 0.3 });
+
+        function spawnDecorativeBuoys() {
+            while(buoysGroup.children.length > 0) buoysGroup.remove(buoysGroup.children[0]);
+            for (let i = 0; i < 8; i++) {
+                const type = Math.random();
+                let buoy;
+                if(type > 0.6) buoy = new THREE.Mesh(buoyYellowGeo, buoyMatYellow);
+                else if(type > 0.3) buoy = new THREE.Mesh(buoyDecoGeo, buoyMatRed);
+                else buoy = new THREE.Mesh(buoyDecoGeo, buoyMatWhite);
+                
+                const randomX = (Math.random() - 0.5) * 140; 
+                const randomZ = - (Math.random() * 200) - 40; 
+                buoy.position.set(randomX, -0.5, randomZ);
+                buoy.castShadow = true;
+                buoysGroup.add(buoy);
+            }
+        }
+
+        // --- FAROS ---
+        const lhBaseMatWhite = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9 });
+        const lhBaseMatRed = new THREE.MeshStandardMaterial({ color: 0xe74c3c, roughness: 0.9 });
+        const lhLightMat = new THREE.MeshBasicMaterial({ color: 0xffea00 });
+        const lhRoofMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+
+        const lighthousesGroup = new THREE.Group();
+        scene.add(lighthousesGroup);
+
+        function createLighthouse() {
+            const lh = new THREE.Group();
+            
+            for (let i = 0; i < 5; i++) {
+                const radius = 1.2 - (i * 0.1);
+                const cyl = new THREE.Mesh(new THREE.CylinderGeometry(radius - 0.1, radius, 1.5), i % 2 === 0 ? lhBaseMatWhite : lhBaseMatRed);
+                cyl.position.y = i * 1.5;
+                cyl.castShadow = true;
+                lh.add(cyl);
+            }
+
+            const lightMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.7, 1.2), lhLightMat);
+            lightMesh.position.y = 5 * 1.5 - 0.2;
+            lh.add(lightMesh);
+
+            const roof = new THREE.Mesh(new THREE.ConeGeometry(1, 1.5, 8), lhRoofMat);
+            roof.position.y = 5 * 1.5 + 1;
+            lh.add(roof);
+
+            return lh;
+        }
+
+        function spawnLighthouses() {
+            while(lighthousesGroup.children.length > 0) lighthousesGroup.remove(lighthousesGroup.children[0]);
+            for (let i = 0; i < 2; i++) {
+                const lh = createLighthouse();
+                const randomX = (Math.random() > 0.5 ? 1 : -1) * (15 + Math.random() * 40);
+                const randomZ = - (Math.random() * 250) - 50;
+                lh.position.set(randomX, -1.5, randomZ);
+                lighthousesGroup.add(lh);
+            }
+        }
+
+        // --- CARTELES INTERACTIVOS ---
+        const gatesGroup = new THREE.Group();
+        scene.add(gatesGroup);
+        let gatesZ = -100; let gatesPassed = true; 
+
+        const gateGeo = new THREE.BoxGeometry(5.7, 2.85, 0.4); 
+        const postGeo = new THREE.CylinderGeometry(0.15, 0.15, 8); 
+        const postMat = new THREE.MeshStandardMaterial({ color: 0x2e1a0f });
+
+        const signCache = {}; 
+
+        function getWoodSignMaterial(text) {
+            if (signCache[text]) return signCache[text]; 
+
+            const canvas = document.createElement('canvas');
+            canvas.width = 512; canvas.height = 256; 
+            const ctx = canvas.getContext('2d');
+            
+            ctx.fillStyle = '#4a3018'; ctx.fillRect(0, 0, 512, 256);
+            ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 15; ctx.strokeRect(0, 0, 512, 256);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 160px Arial'; 
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(text, 256, 138); 
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.needsUpdate = true;
+            
+            const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+            signCache[text] = material; 
+            return material;
+        }
+
+        function spawnGates() {
+            currentWordObj = words[Math.floor(Math.random() * words.length)];
+            document.getElementById('current-word').innerText = currentWordObj.t;
+            document.getElementById('current-word').style.color = "#fff";
+
+            while(gatesGroup.children.length > 0) gatesGroup.remove(gatesGroup.children[0]); 
+
+            let options = ["MB", "MP", "NV"].sort(() => Math.random() - 0.5);
+            correctLane = options.indexOf(currentWordObj.a);
+
+            for(let i=0; i<3; i++) {
+                const wrap = new THREE.Group();
+
+                const material = getWoodSignMaterial(options[i]); 
+                const gate = new THREE.Mesh(gateGeo, material);
+                gate.position.set(lanes[i], 3, 0.1); 
+                // Evitamos que los carteles arrojen o reciban sombra
+                gate.castShadow = false; gate.receiveShadow = false;
+                wrap.add(gate);
+
+                const post = new THREE.Mesh(postGeo, postMat);
+                post.position.set(lanes[i], 0, -0.2); 
+                // Evitamos la sombra en los postes también
+                post.castShadow = false; post.receiveShadow = false;
+                wrap.add(post);
+
+                gatesGroup.add(wrap);
+            }
+
+            gatesZ = -100;
+            gatesGroup.position.z = gatesZ;
+            gatesPassed = false;
+        }
+
+        // --- SISTEMA DE INICIO Y BOTÓN ---
+        function startGame() {
+            if (isPlaying) return; 
+
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('game-canvas').style.display = 'block';
+            document.getElementById('hud').style.display = 'flex';
+            document.getElementById('word-container').style.display = 'block';
+            
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+
+            score = 0; lives = 3; 
+            document.getElementById('score').innerText = score;
+            document.getElementById('lives').innerText = lives;
+
+            spawnGates(); 
+            spawnDecorativeBuoys(); 
+            spawnLighthouses();
+            isPlaying = true; 
+            clock.start(); // Reiniciamos el reloj al empezar
+            animate();
+        }
+
+        document.getElementById('btn-zarpar').addEventListener('click', startGame);
+
+        function triggerFlash(color) {
+            const flash = document.getElementById('flash');
+            flash.style.backgroundColor = color; flash.style.opacity = '0.4';
+            setTimeout(() => flash.style.opacity = '0', 300);
+        }
+
+        function handleCollision() {
+            gatesPassed = true;
+            const display = document.getElementById('current-word');
+
+            let closestLaneIndex = 1;
+            let minDiff = 999;
+            lanes.forEach((x, index) => {
+                let diff = Math.abs(boatGroup.position.x - x);
+                if (diff < minDiff) { minDiff = diff; closestLaneIndex = index; }
+            });
+
+            if (closestLaneIndex === correctLane) {
+                score += 10;
+                gameSpeed += 0.001; 
+                document.getElementById('score').innerText = score;
+                display.innerText = currentWordObj.f; 
+                display.style.color = "#2ecc71"; 
+                triggerFlash('#2ecc71'); 
+            } else {
+                lives--;
+                document.getElementById('lives').innerText = lives;
+                display.style.color = "#e74c3c";
+                triggerFlash('#e74c3c'); 
+
+                if (lives <= 0) {
+                    isPlaying = false;
+                    document.getElementById('game-canvas').style.display = 'none';
+                    document.getElementById('hud').style.display = 'none';
+                    document.getElementById('word-container').style.display = 'none';
+                    document.getElementById('game-over-screen').style.display = 'flex';
+                    document.getElementById('final-score').innerText = score;
+                }
+            }
+        }
+
+        const clock = new THREE.Clock();
+
+        function animate() {
+            if (!isPlaying) return;
+            requestAnimationFrame(animate);
+            
+            // Calculamos el tiempo que pasó desde el último frame (Delta)
+            const delta = clock.getDelta();
+            
+            // Sumamos el tiempo afectado por el multiplicador de velocidad
+            gameTime += delta * speedMultiplier;
+
+            // 1. OLAS DEL MAR
+            if (water.geometry.attributes && water.geometry.attributes.position) {
+                const waterPositions = water.geometry.attributes.position;
+                for (let i = 0; i < waterPositions.count; i++) {
+                    const x = waterPositions.getX(i); 
+                    const y = waterPositions.getY(i); 
+                    // Usamos gameTime en lugar de multiplicar el tiempo absoluto
+                    const wave = Math.sin(x * 0.2 + gameTime * 1.5) * 0.4 + Math.cos(y * 0.2 + gameTime * 1.5) * 0.4;
+                    waterPositions.setZ(i, wave);
+                }
+                waterPositions.needsUpdate = true; 
+                water.geometry.computeVertexNormals();
+            }
+
+            // 2. BARCO DE PAPEL
+            const targetX = lanes[targetLane];
+            const difX = targetX - currentX;
+            
+            currentX += difX * 0.08 * (speedMultiplier === 1.5 ? 1.2 : 1); 
+            boatGroup.position.x = currentX;
+            boatGroup.rotation.z = -difX * 0.15; 
+            boatGroup.position.y = Math.sin(gameTime * 2) * 0.3; 
+            boatGroup.rotation.x = Math.sin(gameTime * 1.5) * 0.05; 
+
+            // 3. NUBES
+            cloudsGroup.children.forEach(cloud => {
+                cloud.position.z += gameSpeed * 0.2 * speedMultiplier; 
+                if (cloud.position.z > 20) {
+                    cloud.position.z = -150 - Math.random() * 50;
+                    cloud.position.x = (Math.random() - 0.5) * 120; 
+                }
+            });
+
+            // 4. BOYAS
+            buoysGroup.children.forEach(buoy => {
+                buoy.position.y = -0.5 + Math.sin(buoy.position.x * 0.2 + buoy.position.z * 0.2 + gameTime * 1.5) * 0.4;
+                buoy.position.z += gameSpeed * 1.5 * speedMultiplier;
+                if (buoy.position.z > 20) {
+                    buoy.position.z = -150 - (Math.random() * 100); 
+                    buoy.position.x = (Math.random() - 0.5) * 140; 
+                }
+            });
+
+            // 5. FAROS
+            lighthousesGroup.children.forEach(lh => {
+                lh.position.y = -2 + Math.sin(lh.position.x * 0.2 + lh.position.z * 0.2 + gameTime * 1.5) * 0.4;
+                lh.rotation.z = Math.sin(gameTime * 2 + lh.position.x) * 0.05;
+                lh.rotation.x = Math.cos(gameTime * 1.5 + lh.position.z) * 0.05;
+                
+                lh.position.z += gameSpeed * 1.2 * speedMultiplier;
+                if (lh.position.z > 20) {
+                    lh.position.z = -200 - (Math.random() * 100); 
+                    lh.position.x = (Math.random() > 0.5 ? 1 : -1) * (15 + Math.random() * 40);
+                }
+            });
+
+            // 6. CARTELES
+            let currentMultiplier = (gatesZ < -75) ? 2 : 1;
+            gatesZ += (gameSpeed * currentMultiplier * speedMultiplier) * 1.5;
+            
+            gatesGroup.position.z = gatesZ;
+            gatesGroup.position.y = Math.sin(gameTime * 2) * 0.2; 
+
+            if (gatesZ > 0 && !gatesPassed) handleCollision(); 
+            if (gatesZ > 17) spawnGates(); 
+
+            renderer.render(scene, camera);
+        }
+    });
+</script>
+</body>
+</html>
