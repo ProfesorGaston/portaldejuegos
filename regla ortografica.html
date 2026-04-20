@@ -115,11 +115,11 @@
         let score = 0, lives = 3;
         
         let gameSpeed = 0.08; 
-        let speedMultiplier = 1.0; // Multiplicador de velocidad (flecha arriba)
-        let gameTime = 0; // Acumulador de tiempo suave
+        let speedMultiplier = 1.0; 
+        let gameTime = 0; 
         let isPlaying = false;
 
-        // --- MOTOR 3D ---
+        // --- MOTOR 3D OPTIMIZADO ---
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x5D9CEC); 
 
@@ -128,9 +128,15 @@
         camera.lookAt(0, 2, -20);
 
         const canvasEl = document.getElementById('game-canvas');
-        const renderer = new THREE.WebGLRenderer({ canvas: canvasEl, antialias: true });
+        const renderer = new THREE.WebGLRenderer({ 
+            canvas: canvasEl, 
+            antialias: true,
+            powerPreference: "high-performance" // Forzar uso de GPU dedicada
+        });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setClearColor(0x5D9CEC, 1); 
+        // Límite de PixelRatio para pantallas 4K / Retina. Máximo rendimiento.
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); 
         renderer.shadowMap.enabled = true; 
         renderer.shadowMap.type = THREE.PCFShadowMap;
 
@@ -156,7 +162,7 @@
         sunMesh.position.set(30, 45, -150);
         scene.add(sunMesh);
 
-        // --- AGUA ---
+        // --- AGUA LÍQUIDA ---
         const waterGeo = new THREE.PlaneGeometry(300, 300, 45, 45); 
         const waterMat = new THREE.MeshStandardMaterial({ 
             color: 0x0077be, roughness: 0.05, metalness: 0.4, transparent: true, opacity: 0.9 
@@ -166,6 +172,20 @@
         water.position.y = -1;
         water.receiveShadow = true;
         scene.add(water);
+
+        // --- OPTIMIZACIÓN MÁXIMA: PRE-CÁLCULO TRIGONOMÉTRICO DEL MAR ---
+        // Evita hacer cálculos de posición plana en cada frame ahorrando cientos de ms.
+        const waterVertexCount = waterGeo.attributes.position.count;
+        const waterParams = new Float32Array(waterVertexCount * 4); // [sinX, cosX, sinY, cosY]
+        const initialPos = waterGeo.attributes.position.array;
+        for(let i=0, j=0; i < initialPos.length; i+=3, j+=4) {
+            const x = initialPos[i];
+            const y = initialPos[i+1];
+            waterParams[j]   = Math.sin(x * 0.2);
+            waterParams[j+1] = Math.cos(x * 0.2);
+            waterParams[j+2] = Math.sin(y * 0.2);
+            waterParams[j+3] = Math.cos(y * 0.2);
+        }
 
         // --- NUBES ---
         const cloudsGroup = new THREE.Group();
@@ -178,11 +198,7 @@
             const numPuffs = 4 + Math.floor(Math.random() * 3);
             for(let i=0; i<numPuffs; i++) {
                 const puff = new THREE.Mesh(cloudGeo, cloudMat);
-                puff.position.set(
-                    (Math.random() - 0.5) * 4,  
-                    (Math.random() - 0.5) * 1.5, 
-                    (Math.random() - 0.5) * 3   
-                );
+                puff.position.set((Math.random() - 0.5) * 4, (Math.random() - 0.5) * 1.5, (Math.random() - 0.5) * 3);
                 const scale = 0.8 + Math.random() * 1.2;
                 puff.scale.set(scale, scale, scale);
                 cloud.add(puff);
@@ -198,36 +214,20 @@
 
         // --- BARCO DE PAPEL (ORIGAMI) ---
         const boatGroup = new THREE.Group();
-        
-        // Material de papel: blanco mate, doble cara y shading plano para marcar dobleces
         const paperMat = new THREE.MeshStandardMaterial({ 
-            color: 0xffffff, 
-            roughness: 1.0, 
-            metalness: 0.0, 
-            side: THREE.DoubleSide,
-            flatShading: true 
+            color: 0xffffff, roughness: 1.0, metalness: 0.0, side: THREE.DoubleSide, flatShading: true 
         });
 
-        // Coordenadas exactas para dibujar los pliegues del barco
         const vertices = new Float32Array([
-            // Casco exterior izquierdo (Proa y Popa)
             0, 0.5, -2.5,   -1.2, 0.8, 0,   0, -0.2, 0,
             0, 0.5, 2.5,    0, -0.2, 0,     -1.2, 0.8, 0,
-            
-            // Casco exterior derecho (Proa y Popa)
             0, 0.5, -2.5,   0, -0.2, 0,     1.2, 0.8, 0,
             0, 0.5, 2.5,    1.2, 0.8, 0,    0, -0.2, 0,
-
-            // Interior del casco (los pliegues hacia adentro)
             0, 0.5, -2.5,   0, 0.5, 0,      -1.2, 0.8, 0,
             0, 0.5, 2.5,    -1.2, 0.8, 0,   0, 0.5, 0,
             0, 0.5, -2.5,   1.2, 0.8, 0,    0, 0.5, 0,
             0, 0.5, 2.5,    0, 0.5, 0,      1.2, 0.8, 0,
-
-            // Vela principal (triángulo grande central)
             0, 0.5, 0,      0, 3, -0.5,     -0.8, 0.8, 0,
-            
-            // Vela secundaria (triángulo más pequeño superpuesto)
             0, 0.5, 0,      0.6, 0.8, 0.2,  0, 2.2, -0.2
         ]);
 
@@ -236,12 +236,8 @@
         paperGeo.computeVertexNormals(); 
 
         const paperBoat = new THREE.Mesh(paperGeo, paperMat);
-        paperBoat.castShadow = true;
-        paperBoat.receiveShadow = true;
-        paperBoat.position.y = -0.3; // Hundir un poquito en el agua
-
+        paperBoat.castShadow = true; paperBoat.receiveShadow = true; paperBoat.position.y = -0.3; 
         boatGroup.add(paperBoat);
-
         scene.add(boatGroup);
         boatGroup.scale.set(0.9, 0.9, 0.9); 
 
@@ -260,7 +256,7 @@
             if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') speedMultiplier = 1.0;
         });
 
-        // --- BOYAS DISPERSAS ---
+        // --- OPTIMIZACIÓN: OBJECT POOLING DE BOYAS ---
         const buoysGroup = new THREE.Group();
         scene.add(buoysGroup);
         const buoyDecoGeo = new THREE.SphereGeometry(0.4, 8, 8);
@@ -269,66 +265,78 @@
         const buoyMatWhite = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
         const buoyMatYellow = new THREE.MeshStandardMaterial({ color: 0xf1c40f, roughness: 0.3 });
 
+        const buoysList = [];
+        for (let i = 0; i < 8; i++) {
+            const type = Math.random();
+            let buoy;
+            if(type > 0.6) buoy = new THREE.Mesh(buoyYellowGeo, buoyMatYellow);
+            else if(type > 0.3) buoy = new THREE.Mesh(buoyDecoGeo, buoyMatRed);
+            else buoy = new THREE.Mesh(buoyDecoGeo, buoyMatWhite);
+            
+            buoysGroup.add(buoy);
+            buoysList.push(buoy);
+        }
+
         function spawnDecorativeBuoys() {
-            while(buoysGroup.children.length > 0) buoysGroup.remove(buoysGroup.children[0]);
+            // Solo reposicionamos las existentes, nunca instanciamos nuevas en juego
             for (let i = 0; i < 8; i++) {
-                const type = Math.random();
-                let buoy;
-                if(type > 0.6) buoy = new THREE.Mesh(buoyYellowGeo, buoyMatYellow);
-                else if(type > 0.3) buoy = new THREE.Mesh(buoyDecoGeo, buoyMatRed);
-                else buoy = new THREE.Mesh(buoyDecoGeo, buoyMatWhite);
-                
                 const randomX = (Math.random() - 0.5) * 140; 
                 const randomZ = - (Math.random() * 200) - 40; 
-                buoy.position.set(randomX, -0.5, randomZ);
-                buoy.castShadow = true;
-                buoysGroup.add(buoy);
+                buoysList[i].position.set(randomX, -0.5, randomZ);
             }
         }
 
-        // --- FAROS ---
+        // --- OPTIMIZACIÓN: OBJECT POOLING Y GEOMETRÍA COMPARTIDA DE FAROS ---
         const lhBaseMatWhite = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9 });
         const lhBaseMatRed = new THREE.MeshStandardMaterial({ color: 0xe74c3c, roughness: 0.9 });
         const lhLightMat = new THREE.MeshBasicMaterial({ color: 0xffea00 });
         const lhRoofMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
 
+        const lhCylGeos = [];
+        for (let i = 0; i < 5; i++) {
+            const radius = 1.2 - (i * 0.1);
+            lhCylGeos.push(new THREE.CylinderGeometry(radius - 0.1, radius, 1.5));
+        }
+        const lhLightGeo = new THREE.CylinderGeometry(0.6, 0.7, 1.2);
+        const lhRoofGeo = new THREE.ConeGeometry(1, 1.5, 8);
+
         const lighthousesGroup = new THREE.Group();
         scene.add(lighthousesGroup);
+        const lhList = [];
 
         function createLighthouse() {
             const lh = new THREE.Group();
-            
             for (let i = 0; i < 5; i++) {
-                const radius = 1.2 - (i * 0.1);
-                const cyl = new THREE.Mesh(new THREE.CylinderGeometry(radius - 0.1, radius, 1.5), i % 2 === 0 ? lhBaseMatWhite : lhBaseMatRed);
+                const cyl = new THREE.Mesh(lhCylGeos[i], i % 2 === 0 ? lhBaseMatWhite : lhBaseMatRed);
                 cyl.position.y = i * 1.5;
                 cyl.castShadow = true;
                 lh.add(cyl);
             }
-
-            const lightMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.7, 1.2), lhLightMat);
+            const lightMesh = new THREE.Mesh(lhLightGeo, lhLightMat);
             lightMesh.position.y = 5 * 1.5 - 0.2;
             lh.add(lightMesh);
 
-            const roof = new THREE.Mesh(new THREE.ConeGeometry(1, 1.5, 8), lhRoofMat);
+            const roof = new THREE.Mesh(lhRoofGeo, lhRoofMat);
             roof.position.y = 5 * 1.5 + 1;
             lh.add(roof);
-
             return lh;
         }
 
+        for (let i = 0; i < 2; i++) {
+            const lh = createLighthouse();
+            lighthousesGroup.add(lh);
+            lhList.push(lh);
+        }
+
         function spawnLighthouses() {
-            while(lighthousesGroup.children.length > 0) lighthousesGroup.remove(lighthousesGroup.children[0]);
             for (let i = 0; i < 2; i++) {
-                const lh = createLighthouse();
                 const randomX = (Math.random() > 0.5 ? 1 : -1) * (15 + Math.random() * 40);
                 const randomZ = - (Math.random() * 250) - 50;
-                lh.position.set(randomX, -1.5, randomZ);
-                lighthousesGroup.add(lh);
+                lhList[i].position.set(randomX, -1.5, randomZ);
             }
         }
 
-        // --- CARTELES INTERACTIVOS ---
+        // --- OPTIMIZACIÓN: OBJECT POOLING DE CARTELES ---
         const gatesGroup = new THREE.Group();
         scene.add(gatesGroup);
         let gatesZ = -100; let gatesPassed = true; 
@@ -338,10 +346,8 @@
         const postMat = new THREE.MeshStandardMaterial({ color: 0x2e1a0f });
 
         const signCache = {}; 
-
         function getWoodSignMaterial(text) {
             if (signCache[text]) return signCache[text]; 
-
             const canvas = document.createElement('canvas');
             canvas.width = 512; canvas.height = 256; 
             const ctx = canvas.getContext('2d');
@@ -361,33 +367,34 @@
             return material;
         }
 
+        const gateMeshes = [];
+        for(let i=0; i<3; i++) {
+            const wrap = new THREE.Group();
+            const gate = new THREE.Mesh(gateGeo, postMat); 
+            gate.position.set(lanes[i], 3, 0.1); 
+            gate.castShadow = false; gate.receiveShadow = false;
+            wrap.add(gate);
+            gateMeshes.push(gate);
+
+            const post = new THREE.Mesh(postGeo, postMat);
+            post.position.set(lanes[i], 0, -0.2); 
+            post.castShadow = false; post.receiveShadow = false;
+            wrap.add(post);
+
+            gatesGroup.add(wrap);
+        }
+
         function spawnGates() {
             currentWordObj = words[Math.floor(Math.random() * words.length)];
             document.getElementById('current-word').innerText = currentWordObj.t;
             document.getElementById('current-word').style.color = "#fff";
 
-            while(gatesGroup.children.length > 0) gatesGroup.remove(gatesGroup.children[0]); 
-
             let options = ["MB", "MP", "NV"].sort(() => Math.random() - 0.5);
             correctLane = options.indexOf(currentWordObj.a);
 
             for(let i=0; i<3; i++) {
-                const wrap = new THREE.Group();
-
-                const material = getWoodSignMaterial(options[i]); 
-                const gate = new THREE.Mesh(gateGeo, material);
-                gate.position.set(lanes[i], 3, 0.1); 
-                // Evitamos que los carteles arrojen o reciban sombra
-                gate.castShadow = false; gate.receiveShadow = false;
-                wrap.add(gate);
-
-                const post = new THREE.Mesh(postGeo, postMat);
-                post.position.set(lanes[i], 0, -0.2); 
-                // Evitamos la sombra en los postes también
-                post.castShadow = false; post.receiveShadow = false;
-                wrap.add(post);
-
-                gatesGroup.add(wrap);
+                // Solo se intercambia el material en memoria, no se destruye nada
+                gateMeshes[i].material = getWoodSignMaterial(options[i]);
             }
 
             gatesZ = -100;
@@ -416,7 +423,7 @@
             spawnDecorativeBuoys(); 
             spawnLighthouses();
             isPlaying = true; 
-            clock.start(); // Reiniciamos el reloj al empezar
+            clock.start(); 
             animate();
         }
 
@@ -469,30 +476,32 @@
             if (!isPlaying) return;
             requestAnimationFrame(animate);
             
-            // Calculamos el tiempo que pasó desde el último frame (Delta)
             const delta = clock.getDelta();
-            
-            // Sumamos el tiempo afectado por el multiplicador de velocidad
             gameTime += delta * speedMultiplier;
 
-            // 1. OLAS DEL MAR
+            // 1. OLAS DEL MAR LÍQUIDO ULTRA OPTIMIZADO
             if (water.geometry.attributes && water.geometry.attributes.position) {
-                const waterPositions = water.geometry.attributes.position;
-                for (let i = 0; i < waterPositions.count; i++) {
-                    const x = waterPositions.getX(i); 
-                    const y = waterPositions.getY(i); 
-                    // Usamos gameTime en lugar de multiplicar el tiempo absoluto
-                    const wave = Math.sin(x * 0.2 + gameTime * 1.5) * 0.4 + Math.cos(y * 0.2 + gameTime * 1.5) * 0.4;
-                    waterPositions.setZ(i, wave);
+                const pos = water.geometry.attributes.position.array;
+                const T = gameTime * 1.5;
+                const sinT = Math.sin(T);
+                const cosT = Math.cos(T);
+                
+                // Sustituimos miles de llamadas a Math.sin() por simple aritmética lineal
+                for (let i = 0, j = 0; i < pos.length; i += 3, j += 4) {
+                    const sinX = waterParams[j];
+                    const cosX = waterParams[j+1];
+                    const sinY = waterParams[j+2];
+                    const cosY = waterParams[j+3];
+                    
+                    pos[i+2] = 0.4 * (sinX * cosT + cosX * sinT + cosY * cosT - sinY * sinT);
                 }
-                waterPositions.needsUpdate = true; 
+                water.geometry.attributes.position.needsUpdate = true; 
                 water.geometry.computeVertexNormals();
             }
 
             // 2. BARCO DE PAPEL
             const targetX = lanes[targetLane];
             const difX = targetX - currentX;
-            
             currentX += difX * 0.08 * (speedMultiplier === 1.5 ? 1.2 : 1); 
             boatGroup.position.x = currentX;
             boatGroup.rotation.z = -difX * 0.15; 
