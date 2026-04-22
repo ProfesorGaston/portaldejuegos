@@ -2,34 +2,24 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mario X - Prof. Gastón</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
         body {
             margin: 0; padding: 0; 
-            background: radial-gradient(circle at center, #2c3e50 0%, #000000 100%);
+            background: #000;
             font-family: 'Press Start 2P', cursive;
             display: flex; justify-content: center; align-items: center;
-            height: 100vh; color: white; user-select: none; overflow: hidden;
-        }
-
-        .arcade-machine {
-            background: #1a1a1a;
-            padding: 40px 30px 40px 30px;
-            border-radius: 20px 20px 10px 10px;
-            box-shadow: 0 0 50px rgba(0,0,0,1), inset 0 5px 15px rgba(255,255,255,0.1);
-            border: 4px solid #333;
-            border-bottom-width: 15px;
-            display: flex; flex-direction: column; align-items: center;
+            height: 100vh; width: 100vw; color: white; user-select: none; overflow: hidden;
         }
 
         #game-container {
-            position: relative; width: 980px; height: 580px;
-            background-color: #5c94fc; border: 8px solid #000;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.8); 
-            overflow: hidden; border-radius: 8px;
+            position: relative; 
+            width: 100vw; height: 100vh; 
+            background-color: #5c94fc; 
+            overflow: hidden; 
         }
 
         #game-container::after {
@@ -39,27 +29,30 @@
             box-shadow: inset 0 0 30px rgba(0,0,0,0.5);
         }
 
-        canvas { display: block; image-rendering: pixelated; width: 100%; height: 100%; }
+        canvas { 
+            display: block; width: 100%; height: 100%; 
+            image-rendering: pixelated; /* Mantiene el estilo retro sin importar el ancho */
+        }
 
         #hud {
             position: absolute; top: 0; left: 0; width: 100%;
-            padding: 10px 20px; display: flex; justify-content: space-between;
-            box-sizing: border-box; font-size: 9px; text-shadow: 2px 2px 0 #000;
+            padding: 15px 30px; display: flex; justify-content: space-between;
+            box-sizing: border-box; font-size: 14px; text-shadow: 2px 2px 0 #000;
             z-index: 60; pointer-events: none; color: #fff;
         }
 
         #question-board {
-            position: absolute; top: 45px; left: 50%; transform: translateX(-50%);
+            position: absolute; top: 60px; left: 50%; transform: translateX(-50%);
             background: #8e44ad; background-image: linear-gradient(to bottom, #9b59b6, #8e44ad);
             border: 3px solid #fff; box-shadow: 0 3px 0 #000, inset 0 2px 0 rgba(255,255,255,0.3);
-            padding: 6px 15px; font-size: 14px; color: #fff; text-shadow: 2px 2px 0 #000; 
+            padding: 10px 20px; font-size: 18px; color: #fff; text-shadow: 2px 2px 0 #000; 
             border-radius: 6px; z-index: 60; display: none; pointer-events: none; 
-            text-align: center; letter-spacing: 2px;
+            text-align: center; letter-spacing: 2px; transition: color 0.3s;
         }
 
         .watermark {
-            position: absolute; bottom: 5px; right: 15px;
-            font-size: 9px; color: rgba(255, 255, 255, 0.6);
+            position: absolute; bottom: 15px; right: 25px;
+            font-size: 12px; color: rgba(255, 255, 255, 0.6);
             text-shadow: 1px 1px 0 #000; z-index: 60; pointer-events: none;
         }
 
@@ -69,11 +62,12 @@
             justify-content: center; align-items: center; z-index: 100; text-align: center;
         }
 
-        h1 { font-size: 45px; color: #f1c40f; margin-bottom: 30px; text-shadow: 5px 5px 0 #e74c3c; }
+        h1 { font-size: 35px; color: #f1c40f; margin-bottom: 30px; text-shadow: 5px 5px 0 #e74c3c; line-height: 1.5; }
+        @media(min-width: 768px) { h1 { font-size: 45px; } }
         
         .btn {
             background: #f1c40f; color: #000; font-family: 'Press Start 2P', cursive;
-            font-size: 14px; padding: 15px 25px; margin: 10px; border: 4px solid #fff;
+            font-size: 16px; padding: 20px 30px; margin: 10px; border: 4px solid #fff;
             cursor: pointer; box-shadow: 5px 5px 0 #d35400; transition: all 0.1s;
         }
         .btn:hover { background: #f39c12; }
@@ -86,40 +80,50 @@
 </head>
 <body>
 
-<div class="arcade-machine">
-    <div id="game-container">
-        <div id="hud">
-            <div>NIVEL: <span id="ui-level">-</span></div>
-            <div>PUNTOS: <span id="ui-score">0</span></div>
-            <div>VIDAS: <span id="ui-lives">❤️❤️❤️</span></div>
-        </div>
+<div id="game-container">
+    <div id="hud">
+        <div>NIVEL: <span id="ui-level">-</span></div>
+        <div>PUNTOS: <span id="ui-score">0</span></div>
+        <div>VIDAS: <span id="ui-lives">❤️❤️❤️</span></div>
+    </div>
 
-        <div id="question-board">...</div>
-        
-        <div class="watermark">Creado por el Prof. Gastón</div>
+    <div id="question-board">...</div>
+    <div class="watermark">Creado por el Prof. Gastón</div>
 
-        <canvas id="gameCanvas" width="800" height="500"></canvas>
+    <canvas id="gameCanvas"></canvas>
 
-        <div id="menu" class="screen">
-            <h1>INSERTE MONEDA</h1>
-            <button class="btn" id="btn-easy" onclick="startGame('facil', [2,3,4])">FÁCIL (Tablas 2 al 4)</button>
-            <button class="btn" id="btn-medium" onclick="startGame('medio', [5,6,7])">MEDIO (Tablas 5 al 7)</button>
-            <button class="btn" id="btn-hard" onclick="startGame('dificil', [8,9])">DIFÍCIL (Tablas 8 y 9)</button>
-        </div>
+    <div id="menu" class="screen">
+        <h1>INSERTE MONEDA</h1>
+        <button class="btn" id="btn-easy" onclick="startGame('facil', [2,3,4])">FÁCIL (Tablas 2-4)</button>
+        <button class="btn" id="btn-medium" onclick="startGame('medio', [5,6,7])">MEDIO (Tablas 5-7)</button>
+        <button class="btn" id="btn-hard" onclick="startGame('dificil', [8,9])">DIFÍCIL (Tablas 8-9)</button>
+    </div>
 
-        <div id="game-over" class="screen" style="display: none;">
-            <h1 id="go-title">FIN DEL JUEGO</h1>
-            <p id="go-msg" style="color: #f1c40f; font-size: 18px; margin-bottom: 30px;"></p>
-            <button class="btn" onclick="location.reload()">VOLVER AL MENÚ</button>
-        </div>
+    <div id="game-over" class="screen" style="display: none;">
+        <h1 id="go-title">FIN DEL JUEGO</h1>
+        <p id="go-msg" style="color: #f1c40f; font-size: 24px; margin-bottom: 30px;"></p>
+        <button class="btn" onclick="location.reload()">VOLVER AL MENÚ</button>
     </div>
 </div>
 
 <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
-    ctx.imageSmoothingEnabled = false; 
     const board = document.getElementById('question-board');
+
+    // ==========================================
+    // SISTEMA DE CANVAS DINÁMICO (Adiós bordes negros)
+    // ==========================================
+    function resizeCanvas() {
+        const container = document.getElementById('game-container');
+        const ratio = container.clientWidth / container.clientHeight;
+        // Mantenemos la altura interna en 500 para la física, expandimos el ancho
+        canvas.width = Math.floor(500 * ratio);
+        canvas.height = 500;
+        ctx.imageSmoothingEnabled = false; 
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
 
     // ==========================================
     // MOTOR DE PIXEL ART
@@ -128,7 +132,7 @@
         '.': 'transparent', '0': '#000', '1': '#FFF', '2': '#E74C3C', '3': '#2980B9', 
         '4': '#F1C40F', '5': '#FAD7A1', '6': '#D35400', '7': '#A04000', '8': '#2ECC71', 
         '9': '#27AE60', 'A': '#7F8C8D', 'B': '#BDC3C7', 'C': '#E67E22', 'D': '#145A32',
-        'F': '#FF69B4', 'E': '#C71585' // Colores del enemigo Slime
+        'F': '#FF69B4', 'E': '#C71585'
     };
 
     const artData = {
@@ -213,23 +217,18 @@
     };
 
     const images = {};
-    function buildGraphics() {
-        for(let key in artData) {
-            let c = document.createElement('canvas');
-            c.width = 16; c.height = 16;
-            let xCtx = c.getContext('2d');
-            for(let y=0; y<16; y++) {
-                for(let x=0; x<16; x++) {
-                    if(artData[key][y] && artData[key][y][x] !== '.') {
-                        xCtx.fillStyle = colors[artData[key][y][x]];
-                        xCtx.fillRect(x, y, 1, 1);
-                    }
+    for(let key in artData) {
+        let c = document.createElement('canvas'); c.width = 16; c.height = 16;
+        let xCtx = c.getContext('2d');
+        for(let y=0; y<16; y++) {
+            for(let x=0; x<16; x++) {
+                if(artData[key][y] && artData[key][y][x] !== '.') {
+                    xCtx.fillStyle = colors[artData[key][y][x]]; xCtx.fillRect(x, y, 1, 1);
                 }
             }
-            images[key] = c;
         }
+        images[key] = c;
     }
-    buildGraphics();
 
     // ==========================================
     // SINTETIZADOR DE AUDIO
@@ -264,23 +263,37 @@
     // ==========================================
     // LÓGICA DEL JUEGO
     // ==========================================
-    let game = { active: false, score: 0, lives: 3, tables: [], currentAnswer: 0, lastQuestion: "", cameraX: 0, lastLayout: -1 };
+    let game = { active: false, score: 0, lives: 3, tables: [], activeChunkIndex: 0, cameraX: 0, lastLayout: -1 };
     
     let player = { 
         x: 50, y: 300, w: 48, h: 48, vx: 0, vy: 0, speed: 6, jumpPower: -13, gravity: 0.6, 
-        onGround: false, facingRight: true, animTimer: 0, currentImg: images.playerIdle,
-        invulnerable: 0 
+        onGround: false, facingRight: true, animTimer: 0, currentImg: images.playerIdle, invulnerable: 0 
     };
     
     let keys = {};
-    window.addEventListener('keydown', e => { keys[e.code] = true; if(e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.code === 'ArrowLeft' || e.code === 'ArrowRight' || e.code === 'Space') e.preventDefault(); });
+    window.addEventListener('keydown', e => { keys[e.code] = true; });
     window.addEventListener('keyup', e => { keys[e.code] = false; });
+
+    // Controles táctiles
+    let touchLeft = false, touchRight = false;
+    canvas.addEventListener('touchstart', e => {
+        for(let t of e.touches) {
+            if (t.clientX < window.innerWidth / 2) {
+                if (t.clientY > window.innerHeight * 0.7) { 
+                    if (t.clientX < window.innerWidth * 0.25) touchLeft = true; 
+                    else touchRight = true; 
+                }
+            } else if (player.onGround) {
+                player.vy = player.jumpPower; player.onGround = false; playSound('jump');
+            }
+        }
+    });
+    canvas.addEventListener('touchend', e => { touchLeft = false; touchRight = false; });
 
     let chunks = [];
     let nextChunkX = 0;
-    
     let clouds = [];
-    for(let i=0; i<15; i++) clouds.push({ x: Math.random() * 3000, y: Math.random() * 200 + 20, s: Math.random() * 0.5 + 0.5 });
+    for(let i=0; i<20; i++) clouds.push({ x: Math.random() * 4000, y: Math.random() * 200 + 20, s: Math.random() * 0.5 + 0.5 });
 
     function startGame(levelName, tables) {
         initAudio();
@@ -289,51 +302,50 @@
         
         game.tables = tables; game.score = 0; game.lives = 3; game.active = true; game.cameraX = 0; game.lastLayout = -1;
         player.x = 50; player.y = 300; player.vx = 0; player.vy = 0; player.facingRight = true; player.invulnerable = 0;
-        chunks = []; nextChunkX = 0;
+        
+        chunks = []; nextChunkX = 0; game.activeChunkIndex = 0;
 
-        updateUI(); generateQuestion(); requestAnimationFrame(gameLoop);
+        // SISTEMA MAP BUFFER: Generamos 3 zonas por adelantado
+        generateNextChunk();
+        generateNextChunk();
+        generateNextChunk();
+        
+        updateBoard(); requestAnimationFrame(gameLoop);
     }
 
-    function generateQuestion() {
+    function generateNextChunk() {
         let f1, f2, qStr;
         do {
             f1 = game.tables[Math.floor(Math.random() * game.tables.length)];
             f2 = Math.floor(Math.random() * 9) + 1;
             qStr = `${f1} x ${f2}`;
-        } while (qStr === game.lastQuestion);
+        } while (chunks.length > 0 && qStr === chunks[chunks.length - 1].question);
 
-        game.lastQuestion = qStr; game.currentAnswer = f1 * f2;
-        
-        board.innerText = `${f1} x ${f2}`; 
-        board.style.display = 'block';
-
-        let options = [game.currentAnswer];
+        let ans = f1 * f2;
+        let options = [ans];
         while(options.length < 3) {
-            let fake = game.currentAnswer + (Math.random() > 0.5 ? f1 : -f1);
+            let fake = ans + (Math.random() > 0.5 ? f1 : -f1);
             if(fake <= 0 || options.includes(fake)) fake = f1 * (Math.floor(Math.random() * 9) + 1);
             if(!options.includes(fake) && fake > 0) options.push(fake);
         }
         options.sort(() => Math.random() - 0.5);
 
-        buildChunk(options);
+        buildChunk(options, ans, qStr);
     }
 
-    function buildChunk(options) {
+    function buildChunk(options, ans, qStr) {
         let cx = nextChunkX;
-        let c = { floors: [], platforms: [], blocks: [], wall: null, bushes: [], enemies: [] };
+        let c = { question: qStr, answer: ans, floors: [], platforms: [], blocks: [], wall: null, bushes: [], enemies: [] };
 
         let layout;
-        // NUEVO: Nos aseguramos de que el mapa no sea el mismo que el anterior
-        do {
-            layout = Math.floor(Math.random() * 3); 
-        } while (layout === game.lastLayout);
+        do { layout = Math.floor(Math.random() * 3); } while (layout === game.lastLayout);
         game.lastLayout = layout;
 
         let blockPositions = [];
 
         if (layout === 0) { 
             c.floors.push({ x: cx, y: 465, w: 480, h: 48 }); 
-            c.floors.push({ x: cx + 624, y: 465, w: 600, h: 48 }); 
+            c.floors.push({ x: cx + 624, y: 465, w: 676, h: 48 }); // Total cubre 1300
 
             c.platforms.push({ x: cx + 200, y: 369, w: 144, h: 24 }); 
             c.platforms.push({ x: cx + 450, y: 273, w: 144, h: 24 }); 
@@ -342,15 +354,10 @@
             c.enemies.push({ x: cx + 300, y: 417, w: 48, h: 48, vx: -2, minX: cx + 100, maxX: cx + 400, active: true });
             c.enemies.push({ x: cx + 800, y: 417, w: 48, h: 48, vx: -2, minX: cx + 700, maxX: cx + 1000, active: true });
 
-            // NUEVO: Posiciones de los bloques atadas a las plataformas de este mapa
-            blockPositions = [
-                { x: cx + 248, y: 233 },
-                { x: cx + 498, y: 137 },
-                { x: cx + 798, y: 233 }
-            ];
+            blockPositions = [ { x: cx + 248, y: 233 }, { x: cx + 498, y: 137 }, { x: cx + 798, y: 233 } ];
         } 
         else if (layout === 1) { 
-            c.floors.push({ x: cx, y: 465, w: 1224, h: 48 });
+            c.floors.push({ x: cx, y: 465, w: 1300, h: 48 });
 
             c.platforms.push({ x: cx + 200, y: 369, w: 240, h: 24 }); 
             c.platforms.push({ x: cx + 550, y: 273, w: 192, h: 24 }); 
@@ -358,15 +365,10 @@
 
             c.enemies.push({ x: cx + 600, y: 225, w: 48, h: 48, vx: -2, minX: cx + 550, maxX: cx + 700, active: true });
 
-            // NUEVO: Diferentes posiciones
-            blockPositions = [
-                { x: cx + 296, y: 233 },
-                { x: cx + 622, y: 137 },
-                { x: cx + 898, y: 233 }
-            ];
+            blockPositions = [ { x: cx + 296, y: 233 }, { x: cx + 622, y: 137 }, { x: cx + 898, y: 233 } ];
         } 
         else { 
-            c.floors.push({ x: cx, y: 465, w: 1224, h: 48 });
+            c.floors.push({ x: cx, y: 465, w: 1300, h: 48 });
 
             c.platforms.push({ x: cx + 150, y: 369, w: 96, h: 24 }); 
             c.platforms.push({ x: cx + 450, y: 273, w: 144, h: 24 }); 
@@ -375,31 +377,29 @@
             c.enemies.push({ x: cx + 500, y: 417, w: 48, h: 48, vx: -2, minX: cx + 300, maxX: cx + 600, active: true });
             c.enemies.push({ x: cx + 800, y: 129, w: 48, h: 48, vx: -2, minX: cx + 750, maxX: cx + 900, active: true });
 
-            // NUEVO: Diferentes posiciones (incluso la caja más alta ajustada a la plataforma alta)
-            blockPositions = [
-                { x: cx + 174, y: 233 },
-                { x: cx + 498, y: 137 },
-                { x: cx + 822, y: 41 } 
-            ];
+            blockPositions = [ { x: cx + 174, y: 233 }, { x: cx + 498, y: 137 }, { x: cx + 822, y: 41 } ];
         }
 
-        // Construir los bloques en las nuevas posiciones elegidas
         for (let i = 0; i < 3; i++) {
             c.blocks.push({ 
-                x: blockPositions[i].x, 
-                y: blockPositions[i].y, 
-                w: 48, h: 48, 
-                val: options[i], 
-                active: true, 
-                offset: 0, 
-                floatOffset: Math.random() 
+                x: blockPositions[i].x, y: blockPositions[i].y, 
+                w: 48, h: 48, val: options[i], active: true, offset: 0, floatOffset: Math.random() 
             });
         }
 
         c.bushes.push({ x: cx + 100, y: 417 });
         c.wall = { x: cx + 1150, y: 321, w: 96, h: 144, active: true }; 
 
-        chunks.push(c); nextChunkX += 1300;
+        chunks.push(c); 
+        nextChunkX += 1300;
+    }
+
+    function updateBoard() {
+        if(game.activeChunkIndex < chunks.length) {
+            let current = chunks[game.activeChunkIndex];
+            board.innerText = current.question;
+            board.style.display = 'block';
+        }
     }
 
     function updateUI() {
@@ -416,12 +416,11 @@
 
         if (player.invulnerable > 0) player.invulnerable--; 
 
-        if (keys['ArrowLeft']) { player.vx = -player.speed; player.facingRight = false; }
-        else if (keys['ArrowRight']) { player.vx = player.speed; player.facingRight = true; }
+        if (keys['ArrowLeft'] || touchLeft) { player.vx = -player.speed; player.facingRight = false; }
+        else if (keys['ArrowRight'] || touchRight) { player.vx = player.speed; player.facingRight = true; }
         else if (player.invulnerable === 0 || player.onGround) { player.vx = 0; } 
 
         player.x += player.vx;
-        
         if(player.x < 0) player.x = 0;
 
         let pRectX = {x: player.x, y: player.y, w: player.w, h: player.h};
@@ -433,7 +432,7 @@
             }
         }
 
-        if (keys['ArrowUp'] && player.onGround) {
+        if ((keys['ArrowUp'] || keys['Space']) && player.onGround) {
             player.vy = player.jumpPower; player.onGround = false; playSound('jump');
         }
 
@@ -446,7 +445,7 @@
             
             for(let b of c.blocks) {
                 let currentY = b.y + b.offset + Math.sin(Date.now()/300 + b.floatOffset)*4;
-                solids.push({x: b.x, y: currentY, w: b.w, h: b.h, val: b.val, active: b.active, isBlock: true, blockRef: b});
+                solids.push({x: b.x, y: currentY, w: b.w, h: b.h, val: b.val, active: b.active, isBlock: true, blockRef: b, chunkRef: c});
             }
 
             for (let s of solids) {
@@ -456,14 +455,13 @@
                     }
                     else if (player.vy < 0 && s.isBlock && player.y - player.vy >= s.y + s.h - 15) { 
                         player.y = s.y + s.h; player.vy = 2; 
-                        if (s.active) handleHit(s.blockRef, c);
+                        if (s.active) handleHit(s.blockRef, s.chunkRef);
                     }
                 }
             }
 
             for (let e of c.enemies) {
                 if (!e.active) continue;
-                
                 e.x += e.vx;
                 if (e.x <= e.minX || e.x + e.w >= e.maxX) e.vx *= -1;
 
@@ -471,25 +469,21 @@
                 
                 if (rectIntersect({x: player.x, y: player.y, w: player.w, h: player.h}, eRect)) {
                     if (player.vy > 0 && player.y + player.h - player.vy <= e.y + 20) {
-                        e.active = false;
-                        player.vy = player.jumpPower * 0.7; 
-                        playSound('coin'); 
-                        game.score += 5; updateUI();
+                        e.active = false; player.vy = player.jumpPower * 0.7; 
+                        playSound('coin'); game.score += 5; updateUI();
                     } 
                     else if (player.invulnerable <= 0) {
                         playSound('error'); game.lives--; updateUI();
                         player.invulnerable = 60; 
-                        player.vx = player.facingRight ? -10 : 10; 
-                        player.vy = -5;
+                        player.vx = player.facingRight ? -10 : 10; player.vy = -5;
                         if (game.lives <= 0) gameOver("¡TE ATRAPÓ UN SLIME!");
                     }
                 }
             }
         }
 
-        if (!player.onGround) {
-            player.currentImg = images.playerJump;
-        } else if (Math.abs(player.vx) > 0 && player.invulnerable === 0) {
+        if (!player.onGround) player.currentImg = images.playerJump;
+        else if (Math.abs(player.vx) > 0 && player.invulnerable === 0) {
             player.animTimer += 0.2; 
             player.currentImg = Math.floor(player.animTimer) % 2 === 0 ? images.playerWalk1 : images.playerWalk2;
         } else {
@@ -502,10 +496,12 @@
             else { player.x = game.cameraX + 50; player.y = 100; player.vy = 0; player.invulnerable = 60; }
         }
 
-        if (player.x - 250 > game.cameraX) {
-            game.cameraX = player.x - 250;
-        } else if (player.x - 150 < game.cameraX) {
-            game.cameraX = Math.max(0, player.x - 150);
+        // Cámara Dinámica: Se ajusta al tamaño de la pantalla actual
+        let targetCamX = player.x - canvas.width * 0.3; 
+        if (targetCamX > game.cameraX) {
+            game.cameraX = targetCamX;
+        } else if (player.x - canvas.width * 0.1 < game.cameraX) {
+            game.cameraX = Math.max(0, player.x - canvas.width * 0.1);
         }
 
         draw(); requestAnimationFrame(gameLoop);
@@ -513,14 +509,19 @@
 
     function handleHit(block, chunk) {
         block.offset = -15; setTimeout(() => block.offset = 0, 150);
+        let currentChunk = chunks[game.activeChunkIndex];
 
-        if (block.val === game.currentAnswer) {
+        // Validamos contra la respuesta correcta del chunk actual
+        if (block.val === currentChunk.answer) {
             playSound('coin'); game.score += 10; updateUI();
             block.active = false; chunk.wall.active = false;
             chunk.blocks.forEach(b => b.active = false);
 
+            game.activeChunkIndex++;
+            generateNextChunk(); // Cargamos sigilosamente otra zona a lo lejos
+
             board.style.color = "#f1c40f"; board.innerText = "¡CORRECTO!";
-            setTimeout(() => { board.style.color = "#fff"; generateQuestion(); }, 1000);
+            setTimeout(() => { board.style.color = "#fff"; updateBoard(); }, 1000);
         } else {
             playSound('error'); game.lives--; updateUI();
             if (game.lives <= 0) gameOver("¡MALA RESPUESTA!");
@@ -528,24 +529,10 @@
     }
 
     function drawMountains(offsetX) {
-        ctx.save();
-        ctx.translate(offsetX, 0);
-
-        ctx.fillStyle = '#2c3e50';
-        ctx.beginPath();
-        ctx.moveTo(0, 465); ctx.lineTo(150, 200); ctx.lineTo(350, 465);
-        ctx.fill();
-
-        ctx.fillStyle = '#34495e';
-        ctx.beginPath();
-        ctx.moveTo(200, 465); ctx.lineTo(400, 150); ctx.lineTo(600, 465);
-        ctx.fill();
-        
-        ctx.fillStyle = '#2c3e50';
-        ctx.beginPath();
-        ctx.moveTo(500, 465); ctx.lineTo(750, 250); ctx.lineTo(1000, 465); 
-        ctx.fill();
-
+        ctx.save(); ctx.translate(offsetX, 0);
+        ctx.fillStyle = '#2c3e50'; ctx.beginPath(); ctx.moveTo(0, 465); ctx.lineTo(150, 200); ctx.lineTo(350, 465); ctx.fill();
+        ctx.fillStyle = '#34495e'; ctx.beginPath(); ctx.moveTo(200, 465); ctx.lineTo(400, 150); ctx.lineTo(600, 465); ctx.fill();
+        ctx.fillStyle = '#2c3e50'; ctx.beginPath(); ctx.moveTo(500, 465); ctx.lineTo(750, 250); ctx.lineTo(1000, 465); ctx.fill();
         ctx.restore();
     }
 
@@ -555,9 +542,9 @@
         ctx.fillStyle = grad; ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+        let wrapW = Math.max(2000, canvas.width + 500);
         clouds.forEach(c => {
-            let pX = (c.x - game.cameraX * 0.2) % 1500;
-            if (pX < -100) pX += 1500;
+            let pX = (c.x - game.cameraX * 0.2) % wrapW; if (pX < -100) pX += wrapW;
             ctx.beginPath();
             ctx.arc(pX, c.y, 30 * c.s, 0, Math.PI * 2);
             ctx.arc(pX + 25*c.s, c.y - 10*c.s, 35 * c.s, 0, Math.PI * 2);
@@ -565,12 +552,18 @@
         });
 
         let mountainParallax = (game.cameraX * 0.1) % 1000;
-        drawMountains(-mountainParallax); drawMountains(1000 - mountainParallax); drawMountains(2000 - mountainParallax);
+        // Dibujamos montañas suficientes para llenar monitores ultra anchos
+        for(let i=-1; i<Math.ceil(canvas.width/1000)+1; i++) {
+            drawMountains((i * 1000) - mountainParallax);
+        }
 
         ctx.save();
         ctx.translate(-game.cameraX, 0);
 
         for (let c of chunks) {
+            // Optimización: Solo dibujamos lo que está en cámara
+            if(c.floors[0].x > game.cameraX + canvas.width + 500 || c.floors[c.floors.length-1].x + 1300 < game.cameraX) continue;
+
             c.bushes.forEach(b => ctx.drawImage(images.bush, b.x, b.y, 48, 48));
 
             c.floors.forEach(f => {
@@ -592,8 +585,7 @@
             c.enemies.forEach(e => {
                 if (e.active) {
                     let animFrame = Math.floor(Date.now() / 200) % 2 === 0 ? images.enemy1 : images.enemy2;
-                    ctx.save();
-                    ctx.translate(e.x + e.w/2, e.y + e.h/2);
+                    ctx.save(); ctx.translate(e.x + e.w/2, e.y + e.h/2);
                     if(e.vx > 0) ctx.scale(-1, 1); 
                     ctx.drawImage(animFrame, -e.w/2, -e.h/2, e.w, e.h);
                     ctx.restore();
@@ -602,11 +594,8 @@
 
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '16px "Press Start 2P"';
             c.blocks.forEach(b => {
-                let floatY = b.active ? Math.sin(Date.now() / 300 + b.floatOffset) * 4 : 0;
-                let currentY = b.y + b.offset + floatY;
-
+                let currentY = b.y + b.offset + (b.active ? Math.sin(Date.now() / 300 + b.floatOffset) * 4 : 0);
                 ctx.drawImage(b.active ? images.blockOn : images.blockOff, b.x, currentY, b.w, b.h);
-                
                 if(b.active) {
                     ctx.fillStyle = "black"; ctx.fillText(b.val, b.x + b.w/2 + 2, currentY + b.h/2 + 2);
                     ctx.fillStyle = "white"; ctx.fillText(b.val, b.x + b.w/2, currentY + b.h/2);
@@ -615,11 +604,9 @@
         }
 
         if (player.invulnerable === 0 || Math.floor(Date.now() / 100) % 2 === 0) {
-            ctx.save();
-            ctx.translate(player.x + player.w/2, player.y + player.h/2);
+            ctx.save(); ctx.translate(player.x + player.w/2, player.y + player.h/2);
             if(!player.facingRight) ctx.scale(-1, 1);
-            ctx.drawImage(player.currentImg, -player.w/2, -player.h/2, player.w, player.h);
-            ctx.restore();
+            ctx.drawImage(player.currentImg, -player.w/2, -player.h/2, player.w, player.h); ctx.restore();
         }
 
         ctx.restore();
