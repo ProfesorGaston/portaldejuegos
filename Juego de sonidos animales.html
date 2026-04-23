@@ -27,16 +27,15 @@
             height: 100vh;
             width: 100vw;
             overflow: hidden;
-            touch-action: none; /* Evita arrastre en pantallas táctiles */
+            touch-action: none; 
         }
 
-        /* Contenedor a Pantalla Completa (Sin bordes limitantes) */
         #game-container {
             background: var(--panel);
             width: 100vw;
             height: 100vh;
             box-sizing: border-box;
-            padding: 24px 24px 78px 24px; /* Aumentado 20% */
+            padding: 24px 24px 78px 24px; 
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -45,7 +44,6 @@
             text-align: center;
         }
 
-        /* Barra de progreso aumentada 20% */
         #progress-wrapper {
             width: 90%; 
             max-width: 800px;
@@ -63,10 +61,8 @@
             transition: width 0.4s;
         }
 
-        /* Textos aumentados 20% */
         #message { font-size: 1.9rem; font-weight: bold; height: 54px; color: #555; margin-bottom: 6px; }
 
-        /* Botón de Sonido aumentado 20% */
         #sound-btn {
             background: #f1c40f;
             border: none;
@@ -89,13 +85,12 @@
             display: flex;
             justify-content: center;
             flex-wrap: wrap;
-            gap: 18px; /* Aumentado 20% */
+            gap: 18px; 
             margin-top: 24px;
             width: 90%;
             max-width: 800px;
         }
 
-        /* Opciones de animales aumentadas 20% */
         .btn-picto {
             background: #fff;
             border: 5px solid #dcdde1;
@@ -110,7 +105,6 @@
 
         .btn-picto:hover { transform: scale(1.05); border-color: var(--primary); }
 
-        /* ESTILOS PARA LAS IMÁGENES DE TWEMOJI */
         img.emoji {
             width: 1em; 
             height: 1em;
@@ -119,7 +113,6 @@
             vertical-align: -0.1em;
         }
 
-        /* Cartel de Finalizado (Todo +20%) */
         #overlay {
             display: none;
             position: absolute;
@@ -194,6 +187,7 @@
     const etapasMeta = 10;
     let animalCorrecto = null;
     let animalesDisponibles = [];
+    let bloqueado = false; // <-- ¡Este es el candado mágico!
     const player = document.getElementById('player');
 
     const listaAnimales = [
@@ -210,7 +204,6 @@
         { picto: '🦁', audio: 'leon.mp3' }
     ];
 
-    // Función para renderizar los Emojis a color
     function renderEmojis() {
         twemoji.parse(document.body, {
             base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/'
@@ -227,6 +220,8 @@
     }
 
     function nuevaRonda() {
+        bloqueado = false; // <-- ¡Desbloqueamos al iniciar una nueva ronda!
+
         if (etapa >= etapasMeta) {
             document.getElementById('overlay').style.display = 'flex';
             return;
@@ -255,7 +250,6 @@
             btn.className = 'btn-picto';
             btn.innerText = a.picto;
             
-            // Pasamos el objeto original "a" a la validación
             btn.onclick = () => validar(a); 
             container.appendChild(btn);
         });
@@ -263,29 +257,36 @@
         document.getElementById('message').innerText = "¡Toca para escuchar!";
         document.getElementById('message').style.color = "#555";
         
-        // Renderizamos los nuevos emojis a color después de crear los botones
         renderEmojis();
     }
 
     function validar(elegido) {
+        // Si el candado está activado, ignoramos el clic por completo
+        if (bloqueado) return; 
+
         if (elegido.picto === animalCorrecto.picto) {
+            bloqueado = true; // <-- Activamos el candado para que no sigan sumando puntos
             document.getElementById('message').innerText = "¡SÍ! ✨";
             document.getElementById('message').style.color = "var(--correct)";
             etapa++;
             
-            // Renderizamos el destello mágico del texto
             renderEmojis();
             
             setTimeout(nuevaRonda, 1200);
         } else {
+            // Ponemos el candado brevemente para que no aprieten rápido otra incorrecta mientras hace la animación
+            bloqueado = true; 
             document.getElementById('message').innerText = "¡Intenta de nuevo! 👂";
             document.getElementById('message').style.color = "var(--wrong)";
             document.getElementById('game-container').classList.add('shake');
             
-            // Renderizamos la oreja del texto
             renderEmojis();
             
-            setTimeout(() => document.getElementById('game-container').classList.remove('shake'), 400);
+            setTimeout(() => {
+                document.getElementById('game-container').classList.remove('shake');
+                bloqueado = false; // Desbloqueamos después de la animación de error
+            }, 400);
+            
             reproducir();
         }
     }
@@ -297,7 +298,6 @@
         nuevaRonda();
     }
 
-    // Arrancamos el juego y renderizamos los emojis estáticos (el parlante y el trofeo)
     nuevaRonda();
     renderEmojis();
 </script>
