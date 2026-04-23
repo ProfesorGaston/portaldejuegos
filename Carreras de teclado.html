@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Carrera de Teclado - Prof. Gastón</title>
+    <title>Carrera de Teclado Pro - Prof. Gastón</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
@@ -422,8 +422,8 @@
         let normalShakeY = (Math.random() - 0.5) * (speed / 50);
         
         // --- FACTOR DE ESCALA PARA EL AUTO ---
-        // Se calcula en base a la altura de la pantalla para que nunca se vea diminuto
-        let carScale = Math.max(1, canvas.height / 500);
+        // Se calcula en base a la altura de la pantalla y se le aumenta un 15% adicional
+        let carScale = Math.max(1, canvas.height / 500) * 1.15;
         
         ctx.translate(canvas.width / 2 + carShakeOffset.x + normalShakeX, canvas.height - (70 * carScale) + normalShakeY);
         ctx.scale(carScale, carScale); // Aplicamos el factor de aumento aquí
