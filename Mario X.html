@@ -31,7 +31,7 @@
 
         canvas { 
             display: block; width: 100%; height: 100%; 
-            image-rendering: pixelated; /* Mantiene el estilo retro sin importar el ancho */
+            image-rendering: pixelated;
         }
 
         #hud {
@@ -62,7 +62,7 @@
             justify-content: center; align-items: center; z-index: 100; text-align: center;
         }
 
-        h1 { font-size: 35px; color: #f1c40f; margin-bottom: 30px; text-shadow: 5px 5px 0 #e74c3c; line-height: 1.5; }
+        h1 { font-size: 35px; color: #f1c40f; margin-bottom: 20px; text-shadow: 5px 5px 0 #e74c3c; line-height: 1.5; }
         @media(min-width: 768px) { h1 { font-size: 45px; } }
         
         .btn {
@@ -76,6 +76,24 @@
         #btn-easy { background: #2ecc71; box-shadow: 5px 5px 0 #27ae60; }
         #btn-medium { background: #f1c40f; box-shadow: 5px 5px 0 #d35400; }
         #btn-hard { background: #e74c3c; color: white; box-shadow: 5px 5px 0 #c0392b; }
+
+        /* --- ESTILOS PARA LA SELECCIÓN DE PERSONAJE --- */
+        .character-select-container {
+            display: flex; gap: 20px; margin-bottom: 30px;
+        }
+        .char-card {
+            background: #222; border: 4px solid #555; border-radius: 10px;
+            padding: 15px; cursor: pointer; transition: 0.2s;
+            display: flex; flex-direction: column; align-items: center;
+            width: 120px;
+        }
+        .char-card.selected { border-color: #f1c40f; background: #333; transform: translateY(-10px); box-shadow: 0 10px 0 #d35400; }
+        .char-card:hover:not(.selected) { border-color: #aaa; background: #2a2a2a; }
+        .char-name { font-size: 14px; margin-top: 10px; text-shadow: 2px 2px 0 #000; }
+        
+        .char-canvas-preview { width: 48px; height: 48px; image-rendering: pixelated; }
+        .btn-container { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; max-width: 900px; }
+
     </style>
 </head>
 <body>
@@ -94,9 +112,23 @@
 
     <div id="menu" class="screen">
         <h1>INSERTE MONEDA</h1>
-        <button class="btn" id="btn-easy" onclick="startGame('facil', [2,3,4])">FÁCIL (Tablas 2-4)</button>
-        <button class="btn" id="btn-medium" onclick="startGame('medio', [5,6,7])">MEDIO (Tablas 5-7)</button>
-        <button class="btn" id="btn-hard" onclick="startGame('dificil', [8,9])">DIFÍCIL (Tablas 8-9)</button>
+        
+        <div class="character-select-container">
+            <div class="char-card selected" id="char-mario" onclick="selectCharacter('mario')">
+                <canvas class="char-canvas-preview" id="preview-mario" width="16" height="16"></canvas>
+                <div class="char-name" style="color: #ff5555;">MARIO</div>
+            </div>
+            <div class="char-card" id="char-luigi" onclick="selectCharacter('luigi')">
+                <canvas class="char-canvas-preview" id="preview-luigi" width="16" height="16"></canvas>
+                <div class="char-name" style="color: #55ff55;">LUIGI</div>
+            </div>
+        </div>
+
+        <div class="btn-container">
+            <button class="btn" id="btn-easy" onclick="startGame('facil', [2,3,4])">FÁCIL (Tablas 2 al 4)</button>
+            <button class="btn" id="btn-medium" onclick="startGame('medio', [5,6,7])">MEDIO (Tablas 5 al 7)</button>
+            <button class="btn" id="btn-hard" onclick="startGame('dificil', [8,9])">DIFÍCIL (Tablas 8 y 9)</button>
+        </div>
     </div>
 
     <div id="game-over" class="screen" style="display: none;">
@@ -111,13 +143,18 @@
     const ctx = canvas.getContext('2d');
     const board = document.getElementById('question-board');
 
-    // ==========================================
-    // SISTEMA DE CANVAS DINÁMICO (Adiós bordes negros)
-    // ==========================================
+    // Estado del personaje elegido (Mario por defecto)
+    let selectedChar = 'mario';
+
+    function selectCharacter(char) {
+        selectedChar = char;
+        document.querySelectorAll('.char-card').forEach(el => el.classList.remove('selected'));
+        document.getElementById(`char-${char}`).classList.add('selected');
+    }
+
     function resizeCanvas() {
         const container = document.getElementById('game-container');
         const ratio = container.clientWidth / container.clientHeight;
-        // Mantenemos la altura interna en 500 para la física, expandimos el ancho
         canvas.width = Math.floor(500 * ratio);
         canvas.height = 500;
         ctx.imageSmoothingEnabled = false; 
@@ -126,13 +163,19 @@
     resizeCanvas();
 
     // ==========================================
-    // MOTOR DE PIXEL ART
+    // MOTOR DE PIXEL ART MEJORADO
     // ==========================================
-    const colors = {
+    
+    const baseColors = {
         '.': 'transparent', '0': '#000', '1': '#FFF', '2': '#E74C3C', '3': '#2980B9', 
         '4': '#F1C40F', '5': '#FAD7A1', '6': '#D35400', '7': '#A04000', '8': '#2ECC71', 
         '9': '#27AE60', 'A': '#7F8C8D', 'B': '#BDC3C7', 'C': '#E67E22', 'D': '#145A32',
         'F': '#FF69B4', 'E': '#C71585'
+    };
+
+    const charColors = {
+        'mario': '#E74C3C', // Rojo
+        'luigi': '#2ECC71'  // Verde
     };
 
     const artData = {
@@ -216,19 +259,49 @@
         ]
     };
 
-    const images = {};
-    for(let key in artData) {
-        let c = document.createElement('canvas'); c.width = 16; c.height = 16;
-        let xCtx = c.getContext('2d');
-        for(let y=0; y<16; y++) {
-            for(let x=0; x<16; x++) {
-                if(artData[key][y] && artData[key][y][x] !== '.') {
-                    xCtx.fillStyle = colors[artData[key][y][x]]; xCtx.fillRect(x, y, 1, 1);
+    let images = {};
+    
+    function buildGraphics(charColor) {
+        images = {};
+        for(let key in artData) {
+            let c = document.createElement('canvas'); c.width = 16; c.height = 16;
+            let xCtx = c.getContext('2d');
+            for(let y=0; y<16; y++) {
+                for(let x=0; x<16; x++) {
+                    if(artData[key][y] && artData[key][y][x] !== '.') {
+                        if (artData[key][y][x] === '2' && key.startsWith('player')) {
+                            xCtx.fillStyle = charColor;
+                        } else {
+                            xCtx.fillStyle = baseColors[artData[key][y][x]];
+                        }
+                        xCtx.fillRect(x, y, 1, 1);
+                    }
                 }
             }
+            images[key] = c;
         }
-        images[key] = c;
     }
+
+    function drawPreviews() {
+        ['mario', 'luigi'].forEach(char => {
+            const previewCanvas = document.getElementById(`preview-${char}`);
+            const pCtx = previewCanvas.getContext('2d');
+            pCtx.clearRect(0, 0, 16, 16);
+            
+            for(let y=0; y<16; y++) {
+                for(let x=0; x<16; x++) {
+                    if(artData.playerIdle[y][x] !== '.') {
+                        if (artData.playerIdle[y][x] === '2') pCtx.fillStyle = charColors[char];
+                        else pCtx.fillStyle = baseColors[artData.playerIdle[y][x]];
+                        pCtx.fillRect(x, y, 1, 1);
+                    }
+                }
+            }
+        });
+    }
+    
+    buildGraphics(charColors['mario']);
+    drawPreviews();
 
     // ==========================================
     // SINTETIZADOR DE AUDIO
@@ -267,14 +340,13 @@
     
     let player = { 
         x: 50, y: 300, w: 48, h: 48, vx: 0, vy: 0, speed: 6, jumpPower: -13, gravity: 0.6, 
-        onGround: false, facingRight: true, animTimer: 0, currentImg: images.playerIdle, invulnerable: 0 
+        onGround: false, facingRight: true, animTimer: 0, currentImg: null, invulnerable: 0 
     };
     
     let keys = {};
     window.addEventListener('keydown', e => { keys[e.code] = true; });
     window.addEventListener('keyup', e => { keys[e.code] = false; });
 
-    // Controles táctiles
     let touchLeft = false, touchRight = false;
     canvas.addEventListener('touchstart', e => {
         for(let t of e.touches) {
@@ -300,12 +372,18 @@
         document.getElementById('menu').style.display = 'none';
         document.getElementById('ui-level').innerText = levelName.toUpperCase();
         
+        buildGraphics(charColors[selectedChar]);
+        player.currentImg = images.playerIdle;
+
+        // Físicas idénticas para ambos personajes
+        player.jumpPower = -13;
+        player.gravity = 0.6;
+        
         game.tables = tables; game.score = 0; game.lives = 3; game.active = true; game.cameraX = 0; game.lastLayout = -1;
         player.x = 50; player.y = 300; player.vx = 0; player.vy = 0; player.facingRight = true; player.invulnerable = 0;
         
         chunks = []; nextChunkX = 0; game.activeChunkIndex = 0;
 
-        // SISTEMA MAP BUFFER: Generamos 3 zonas por adelantado
         generateNextChunk();
         generateNextChunk();
         generateNextChunk();
@@ -345,7 +423,7 @@
 
         if (layout === 0) { 
             c.floors.push({ x: cx, y: 465, w: 480, h: 48 }); 
-            c.floors.push({ x: cx + 624, y: 465, w: 676, h: 48 }); // Total cubre 1300
+            c.floors.push({ x: cx + 624, y: 465, w: 676, h: 48 }); 
 
             c.platforms.push({ x: cx + 200, y: 369, w: 144, h: 24 }); 
             c.platforms.push({ x: cx + 450, y: 273, w: 144, h: 24 }); 
@@ -496,7 +574,6 @@
             else { player.x = game.cameraX + 50; player.y = 100; player.vy = 0; player.invulnerable = 60; }
         }
 
-        // Cámara Dinámica: Se ajusta al tamaño de la pantalla actual
         let targetCamX = player.x - canvas.width * 0.3; 
         if (targetCamX > game.cameraX) {
             game.cameraX = targetCamX;
@@ -511,14 +588,13 @@
         block.offset = -15; setTimeout(() => block.offset = 0, 150);
         let currentChunk = chunks[game.activeChunkIndex];
 
-        // Validamos contra la respuesta correcta del chunk actual
         if (block.val === currentChunk.answer) {
             playSound('coin'); game.score += 10; updateUI();
             block.active = false; chunk.wall.active = false;
             chunk.blocks.forEach(b => b.active = false);
 
             game.activeChunkIndex++;
-            generateNextChunk(); // Cargamos sigilosamente otra zona a lo lejos
+            generateNextChunk(); 
 
             board.style.color = "#f1c40f"; board.innerText = "¡CORRECTO!";
             setTimeout(() => { board.style.color = "#fff"; updateBoard(); }, 1000);
@@ -552,7 +628,6 @@
         });
 
         let mountainParallax = (game.cameraX * 0.1) % 1000;
-        // Dibujamos montañas suficientes para llenar monitores ultra anchos
         for(let i=-1; i<Math.ceil(canvas.width/1000)+1; i++) {
             drawMountains((i * 1000) - mountainParallax);
         }
@@ -561,7 +636,6 @@
         ctx.translate(-game.cameraX, 0);
 
         for (let c of chunks) {
-            // Optimización: Solo dibujamos lo que está en cámara
             if(c.floors[0].x > game.cameraX + canvas.width + 500 || c.floors[c.floors.length-1].x + 1300 < game.cameraX) continue;
 
             c.bushes.forEach(b => ctx.drawImage(images.bush, b.x, b.y, 48, 48));
