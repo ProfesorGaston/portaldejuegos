@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Lluvia de Letras - Mecanografía</title>
+    <title>Lluvia de Letras - Prof. Gastón (Pantalla Completa)</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap');
         
@@ -15,17 +15,15 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
+            width: 100vw;
             color: white;
         }
 
         #game-container {
             position: relative;
-            width: 800px;
-            height: 600px;
-            border: 8px solid #fff;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            width: 100vw;  /* Ocupa el 100% del ancho */
+            height: 100vh; /* Ocupa el 100% del alto */
             background: linear-gradient(to bottom, #2980b9, #6dd5fa, #ffffff);
-            border-radius: 20px;
             overflow: hidden;
         }
 
@@ -38,9 +36,9 @@
         }
         
         @keyframes driftUp {
-            from { transform: translateY(600px); opacity: 0; }
+            from { transform: translateY(120vh); opacity: 0; }
             50% { opacity: 0.8; }
-            to { transform: translateY(-200px); opacity: 0; }
+            to { transform: translateY(-20vh); opacity: 0; }
         }
 
         canvas { 
@@ -106,7 +104,6 @@
             bottom: 10px; 
             right: 15px;
             font-size: 16px; 
-            /* CAMBIO: Color azul fuerte para que se vea sobre el blanco */
             color: #2980b9; 
             opacity: 0.8;
             pointer-events: none;
@@ -141,44 +138,55 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     
-    canvas.width = 800;
-    canvas.height = 600;
+    // Función para ajustar el tamaño del canvas al tamaño de la pantalla
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    
+    // Inicializar el tamaño
+    resizeCanvas();
 
     let gameActive = false;
     let score = 0;
     let lives = 3;
     
-    // --- CAMBIOS DE VELOCIDAD ---
-    // 1. Velocidad de caída: 0.3 (Antes 0.6) -> Doble de lento
     let baseSpeed = 0.3; 
-    
-    // 2. SpawnRate: 180 cuadros = 3 Segundos exactos (60fps * 3)
     let spawnRate = 180;  
     
     let frameCount = 0;
-    const MAX_LETTERS_ON_SCREEN = 4;
+    // Aumentamos un poco la cantidad máxima de letras al haber más espacio en pantalla
+    const MAX_LETTERS_ON_SCREEN = 6; 
 
     let letters = [];
     let particles = [];
     let animationId;
 
-    // Generador de Nubes
+    // Generador de Nubes dinámico
     function createClouds() {
         const layer = document.getElementById('clouds-layer');
         layer.innerHTML = ''; 
-        for(let i=0; i<10; i++) {
+        // Generar más nubes para cubrir pantallas anchas
+        const numClouds = Math.floor(window.innerWidth / 60); 
+        for(let i=0; i<numClouds; i++) {
             let c = document.createElement('div');
             c.className = 'cloud';
             let size = Math.random() * 100 + 50;
             c.style.width = size + 'px';
             c.style.height = size + 'px';
-            c.style.left = Math.random() * 800 + 'px';
-            c.style.top = Math.random() * 600 + 'px';
-            c.style.animation = `driftUp ${Math.random() * 10 + 10}s linear infinite`;
+            c.style.left = Math.random() * window.innerWidth + 'px';
+            c.style.top = Math.random() * window.innerHeight + 'px';
+            c.style.animation = `driftUp ${Math.random() * 15 + 10}s linear infinite`;
             layer.appendChild(c);
         }
     }
     createClouds();
+
+    // Reajustar si la ventana cambia de tamaño
+    window.addEventListener('resize', () => {
+        resizeCanvas();
+        createClouds();
+    });
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playSound(type) {
@@ -210,9 +218,9 @@
     class Letter {
         constructor() {
             this.char = String.fromCharCode(65 + Math.floor(Math.random() * 26));
-            this.x = Math.random() * (canvas.width - 60) + 30;
+            // Asegura que las letras aparezcan dentro del ancho dinámico de la pantalla
+            this.x = Math.random() * (canvas.width - 100) + 50;
             this.y = -50;
-            // Velocidad base muy lenta + incremento mínimo
             this.speed = baseSpeed + (score * 0.002); 
         }
 
@@ -304,7 +312,6 @@
 
         frameCount++;
         
-        // delay 3 segs, aceleración muy lenta
         let currentRate = Math.max(60, spawnRate - Math.floor(score / 50));
         
         if (frameCount % currentRate === 0) {
