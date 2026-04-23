@@ -15,29 +15,31 @@
         }
 
         body {
-            background-color: #2c3e50;
+            background-color: var(--sky);
             font-family: 'Open Sans', sans-serif;
-            margin: 0; height: 100vh;
-            display: flex; align-items: center; justify-content: center;
-            overflow: hidden; user-select: none;
+            margin: 0; 
+            padding: 0;
+            height: 100vh;
+            width: 100vw;
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            overflow: hidden; 
+            user-select: none;
         }
 
         .watermark {
             position: fixed; bottom: 10px; right: 15px;
-            color: rgba(255, 255, 255, 0.3); font-family: 'Fredoka One'; font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.5); 
+            font-family: 'Fredoka One'; font-size: 0.9rem;
             pointer-events: none; z-index: 999;
         }
 
-        /* --- MARCO REDUCIDO UN 10% --- */
+        /* --- PANTALLA COMPLETA --- */
         #game-frame {
-            width: 95%; 
-            max-width: 900px; /* Antes 1000px */
-            height: 90vh; 
-            max-height: 540px; /* Antes 600px */
+            width: 100vw; 
+            height: 100vh; 
             background: linear-gradient(to bottom, var(--sky) 60%, var(--grass) 60%);
-            border-radius: 20px;
-            border: 8px solid #fff;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
             position: relative;
             overflow: hidden;
             display: flex; flex-direction: column;
@@ -45,7 +47,7 @@
 
         /* DECORACIÓN */
         .sun {
-            position: absolute; top: 20px; right: 20px; width: 50px; height: 50px; /* Reducido */
+            position: absolute; top: 20px; right: 20px; width: 50px; height: 50px;
             background: #f1c40f; border-radius: 50%;
             box-shadow: 0 0 20px #f39c12; animation: sunPulse 4s infinite alternate;
         }
@@ -62,7 +64,7 @@
         }
         h1 {
             font-family: 'Fredoka One'; color: #fff; 
-            font-size: 2.2rem; /* Antes 2.5rem */
+            font-size: 2.2rem; 
             text-shadow: 3px 3px 0 rgba(0,0,0,0.2); margin: 0;
         }
         #level-info {
@@ -88,7 +90,7 @@
         /* TREN */
         #train-container {
             position: absolute; 
-            bottom: 28%; /* Ajustado para el nuevo tamaño */
+            bottom: 28%; 
             left: 40px;
             display: flex; align-items: flex-end; gap: 4px;
             transition: transform 1s cubic-bezier(0.25, 1, 0.5, 1);
@@ -104,7 +106,7 @@
         .t-orange { background: #e67e22; border-color: #d35400; }
 
         .locomotive {
-            width: 108px; height: 90px; /* Reducido de 120x100 */
+            width: 108px; height: 90px;
             border-radius: 10px 25px 5px 5px;
             position: relative;
             display: flex; justify-content: center; align-items: center;
@@ -129,7 +131,7 @@
         }
 
         .wagon {
-            width: 100px; height: 63px; /* Reducido de 110x70 */
+            width: 100px; height: 63px;
             border-style: solid; border-width: 3px; border-radius: 8px;
             position: relative;
             display: flex; justify-content: center; align-items: center;
@@ -144,8 +146,8 @@
 
         .wheel {
             position: absolute; 
-            bottom: -11px; /* Ajuste fino */
-            width: 21px; height: 21px; /* Reducido de 24 */
+            bottom: -11px; 
+            width: 21px; height: 21px; 
             background: #222; border: 3px solid #777; border-radius: 50%;
             animation: spin 2s linear infinite; animation-play-state: paused;
             z-index: 6;
@@ -161,7 +163,7 @@
 
         .wagon-word {
             font-family: 'Fredoka One'; color: #2c3e50; 
-            font-size: 1rem; /* Reducido */
+            font-size: 1rem; 
             pointer-events: none; text-shadow: 0 0 5px rgba(255,255,255,0.5);
         }
 
@@ -174,10 +176,10 @@
         }
 
         .word-card {
-            background: white; padding: 8px 16px; /* Padding reducido */
+            background: white; padding: 8px 16px; 
             border-radius: 8px; border-bottom: 4px solid #95a5a6;
             font-family: 'Fredoka One'; 
-            font-size: 1.1rem; /* Reducido */
+            font-size: 1.1rem; 
             color: #2c3e50;
             cursor: pointer; transition: transform 0.1s;
             box-shadow: 0 3px 4px rgba(0,0,0,0.1);
@@ -189,9 +191,9 @@
             position: absolute; bottom: 30%; right: 25px;
             background: #2ecc71; color: white;
             border: none; border-radius: 50px;
-            padding: 12px 25px; /* Reducido */
+            padding: 12px 25px; 
             font-family: 'Fredoka One'; 
-            font-size: 1.1rem; /* Reducido */
+            font-size: 1.1rem; 
             cursor: pointer; box-shadow: 0 4px 0 #27ae60;
             z-index: 30; transition: all 0.2s;
         }
@@ -200,7 +202,7 @@
 
         /* MODALES */
         .modal-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
             background: rgba(44, 62, 80, 0.95); z-index: 100;
             display: none; flex-direction: column; justify-content: center; align-items: center;
             text-align: center; color: white;
@@ -217,7 +219,7 @@
         @keyframes exitRight {
             0% { transform: translateX(0); }
             20% { transform: translateX(-30px); }
-            100% { transform: translateX(1500px); }
+            100% { transform: translateX(1500px); } /* Aumentado a 1500px para que salga de la pantalla completa */
         }
         @keyframes spin { 100% { transform: rotate(360deg); } }
         .shake { animation: shake 0.4s; }
@@ -362,7 +364,7 @@
         const trainContainer = document.getElementById('train-container');
         trainContainer.classList.remove('train-exit');
         trainContainer.style.transition = 'none';
-        trainContainer.style.transform = 'translateX(-150%)'; 
+        trainContainer.style.transform = 'translateX(-150vw)'; /* Ajustado para pantalla completa */
 
         buildTrain();
         buildPlatform();
@@ -379,7 +381,7 @@
 
         let lastColor = getRandomColor(null);
         
-        // Locomotora (Ajuste de ruedas para ancho reducido 108px)
+        // Locomotora
         const loco = document.createElement('div');
         loco.className = `locomotive ${lastColor}`;
         loco.innerHTML = `
