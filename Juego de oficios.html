@@ -76,8 +76,12 @@
             align-items: center;
             justify-content: center;
             user-select: none;
-            /* Forzar fuente de emojis a color en Win11/Mac/Android */
-            font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+            
+            /* RECETA DEFINITIVA PARA EMOJIS A COLOR EN WINDOWS */
+            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", emoji !important;
+            font-weight: normal !important; /* Evita que la negrita rompa el color */
+            font-style: normal !important;
+            color: #000; /* Evita heredar colores que confundan al navegador */
         }
 
         /* Tamaño 20% más grande para niveles 1 y 2 */
@@ -108,15 +112,24 @@
         }
 
         #overlay h2 { 
-            font-size: 4rem; 
             margin: 0; 
-            /* Asegurar que el emoji del cartel también sea a color */
-            font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
         }
+        
+        #overlay-emoji {
+            font-size: 4rem; 
+            /* Aplicamos la misma receta al emoji del cartel */
+            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", emoji !important;
+            font-weight: normal !important;
+        }
+
         #overlay-title {
-            font-family: 'Segoe UI', Tahoma, sans-serif; /* Regresamos a la fuente normal para el texto */
+            font-size: 4rem; 
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            font-weight: bold;
         }
+
         #overlay p { font-size: 2rem; color: #555; }
+        
         #overlay button {
             padding: 20px 40px;
             font-size: 1.5rem;
@@ -161,7 +174,7 @@
     </div>
 
     <div id="overlay">
-        <h2 id="overlay-emoji">😢</h2>
+        <div id="overlay-emoji">😢</div>
         <h2 id="overlay-title">¡Oh no!</h2>
         <p id="overlay-msg">Te has equivocado.</p>
         <button onclick="closeOverlay()">Intentar de nuevo</button>
@@ -257,7 +270,10 @@
         const div = document.createElement('div');
         const sizeClass = (currentLevel <= 2) ? 'large-emoji' : 'normal-emoji';
         div.className = `item ${sizeClass}`;
-        div.innerText = emoji;
+        
+        // Agregar el Variation Selector 16 (&#xFE0F;) oculto asegura que el navegador intente renderizar la versión gráfica
+        div.innerHTML = `${emoji}&#xFE0F;`; 
+        
         div.dataset.id = id;
         div.dataset.side = side;
         div.onclick = () => handleSelect(div);
