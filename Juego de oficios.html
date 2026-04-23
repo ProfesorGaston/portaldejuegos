@@ -31,7 +31,7 @@
             width: 100vw;
             height: 100vh;
             padding: 20px;
-            box-sizing: border-box; /* Asegura que el padding no genere scroll */
+            box-sizing: border-box; 
             text-align: center;
             position: relative;
             display: flex;
@@ -52,7 +52,7 @@
             display: flex;
             justify-content: space-between;
             position: relative;
-            padding: 20px 80px; /* Un poco más de espacio a los lados para pantalla completa */
+            padding: 20px 80px; 
         }
 
         .column {
@@ -76,6 +76,8 @@
             align-items: center;
             justify-content: center;
             user-select: none;
+            /* Forzar fuente de emojis a color en Win11/Mac/Android */
+            font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
         }
 
         /* Tamaño 20% más grande para niveles 1 y 2 */
@@ -92,7 +94,7 @@
             z-index: 1;
         }
 
-        /* Carteles Flotantes (Sustituyen al alert) */
+        /* Carteles Flotantes */
         #overlay {
             display: none;
             position: absolute;
@@ -105,7 +107,15 @@
             animation: fadeIn 0.3s;
         }
 
-        #overlay h2 { font-size: 4rem; margin: 0; }
+        #overlay h2 { 
+            font-size: 4rem; 
+            margin: 0; 
+            /* Asegurar que el emoji del cartel también sea a color */
+            font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+        }
+        #overlay-title {
+            font-family: 'Segoe UI', Tahoma, sans-serif; /* Regresamos a la fuente normal para el texto */
+        }
         #overlay p { font-size: 2rem; color: #555; }
         #overlay button {
             padding: 20px 40px;
@@ -173,7 +183,7 @@
         { l: '📬', r: '✉️', id: 'cart' },
         { l: '💇‍♂️', r: '✂️', id: 'pelu' },
         { l: '👨‍🎨', r: '🎨', id: 'pintor' },
-        { l: '👨‍🌾', r: '🪴', id: 'jardi' }, // Regadera/Planta clara
+        { l: '👨‍🌾', r: '🪴', id: 'jardi' },
         { l: '🥋', r: '🏆', id: 'deport' }
     ];
 
@@ -289,7 +299,7 @@
                     }
                 }
             } else {
-                // ERROR - MOSTRAR CARTEL Y REINICIAR
+                // ERROR
                 showOverlay("¡UPS!", "¡Volvamos a intentarlo!", "👂", false);
             }
         }
@@ -308,7 +318,7 @@
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);
         ctx.strokeStyle = '#27ae60';
-        ctx.lineWidth = 10; /* Línea un poco más gruesa para que se vea mejor en pantalla completa */
+        ctx.lineWidth = 10;
         ctx.lineCap = 'round';
         ctx.stroke();
     }
