@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Desafío de Oficios - Prof. Gastón</title>
+    
+    <script src="https://unpkg.com/twemoji@14.0.2/dist/twemoji.min.js"></script>
+
     <style>
         :root {
             --bg: #d6eaf8;
@@ -76,17 +79,20 @@
             align-items: center;
             justify-content: center;
             user-select: none;
-            
-            /* RECETA DEFINITIVA PARA EMOJIS A COLOR EN WINDOWS */
-            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", emoji !important;
-            font-weight: normal !important; /* Evita que la negrita rompa el color */
-            font-style: normal !important;
-            color: #000; /* Evita heredar colores que confundan al navegador */
         }
 
-        /* Tamaño 20% más grande para niveles 1 y 2 */
+        /* Tamaños de las tarjetas */
         .large-emoji { font-size: 80px !important; width: 130px; height: 130px; }
         .normal-emoji { font-size: 60px; }
+
+        /* ESTILOS PARA LAS IMÁGENES DE TWEMOJI */
+        img.emoji {
+            width: 1em; /* Se adapta al font-size de la tarjeta */
+            height: 1em;
+            pointer-events: none; /* Crucial: Evita que la imagen bloquee el clic en la tarjeta */
+            margin: 0;
+            vertical-align: -0.1em;
+        }
 
         .item.selected { border-color: var(--line); transform: scale(1.1); background: #ebf5fb; }
         .item.matched { border-color: var(--correct); background: #e9f7ef; opacity: 0.7; cursor: default; }
@@ -111,23 +117,9 @@
             animation: fadeIn 0.3s;
         }
 
-        #overlay h2 { 
-            margin: 0; 
-        }
-        
-        #overlay-emoji {
-            font-size: 4rem; 
-            /* Aplicamos la misma receta al emoji del cartel */
-            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", emoji !important;
-            font-weight: normal !important;
-        }
-
-        #overlay-title {
-            font-size: 4rem; 
-            font-family: 'Segoe UI', Tahoma, sans-serif;
-            font-weight: bold;
-        }
-
+        #overlay h2 { margin: 0; }
+        #overlay-emoji { font-size: 6rem; line-height: 1; margin-bottom: 20px;}
+        #overlay-title { font-size: 4rem; font-weight: bold; }
         #overlay p { font-size: 2rem; color: #555; }
         
         #overlay button {
@@ -207,6 +199,14 @@
     const canvas = document.getElementById('lineCanvas');
     const ctx = canvas.getContext('2d');
 
+    // Función mágica que convierte el texto a imágenes coloridas
+    function renderEmojis() {
+        twemoji.parse(document.body, {
+            // Usamos un servidor CDN confiable para las imágenes
+            base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/'
+        });
+    }
+
     // Función de sonido
     function playSound(type) {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -237,6 +237,7 @@
         document.getElementById('overlay-msg').innerText = msg;
         document.getElementById('overlay-emoji').innerText = emoji;
         document.getElementById('overlay').style.display = 'flex';
+        renderEmojis(); // Convertimos el emoji del cartel a imagen también
         playSound(isWin ? 'win' : 'lose');
     }
 
@@ -263,6 +264,7 @@
         gameData.forEach(pair => leftCol.appendChild(createItem(pair.l, pair.id, 'left')));
         [...gameData].sort(() => Math.random() - 0.5).forEach(pair => rightCol.appendChild(createItem(pair.r, pair.id, 'right')));
         
+        renderEmojis(); // Transformamos todos los emojis recién creados en la pantalla
         resizeCanvas();
     }
 
@@ -270,10 +272,7 @@
         const div = document.createElement('div');
         const sizeClass = (currentLevel <= 2) ? 'large-emoji' : 'normal-emoji';
         div.className = `item ${sizeClass}`;
-        
-        // Agregar el Variation Selector 16 (&#xFE0F;) oculto asegura que el navegador intente renderizar la versión gráfica
-        div.innerHTML = `${emoji}&#xFE0F;`; 
-        
+        div.innerText = emoji; // Insertamos el texto normal, Twemoji hará la magia luego
         div.dataset.id = id;
         div.dataset.side = side;
         div.onclick = () => handleSelect(div);
@@ -316,7 +315,7 @@
                 }
             } else {
                 // ERROR
-                showOverlay("¡UPS!", "¡Volvamos a intentarlo!", "👂", false);
+                showOverlay("¡UPS!", "¡Volvamos a intentarlo!", "😢", false);
             }
         }
     }
@@ -348,7 +347,10 @@
     function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
 
     window.addEventListener('resize', resizeCanvas);
+    
+    // Iniciar juego y parsear emojis iniciales (el título)
     initLevel();
+    renderEmojis();
 </script>
 </body>
 </html>
