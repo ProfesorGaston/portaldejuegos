@@ -143,7 +143,7 @@
     const ctx = canvas.getContext('2d');
     const board = document.getElementById('question-board');
 
-    // Estado del personaje elegido (Mario por defecto)
+    // Estado del personaje elegido
     let selectedChar = 'mario';
 
     function selectCharacter(char) {
@@ -163,9 +163,8 @@
     resizeCanvas();
 
     // ==========================================
-    // MOTOR DE PIXEL ART MEJORADO
+    // MOTOR DE PIXEL ART
     // ==========================================
-    
     const baseColors = {
         '.': 'transparent', '0': '#000', '1': '#FFF', '2': '#E74C3C', '3': '#2980B9', 
         '4': '#F1C40F', '5': '#FAD7A1', '6': '#D35400', '7': '#A04000', '8': '#2ECC71', 
@@ -173,10 +172,7 @@
         'F': '#FF69B4', 'E': '#C71585'
     };
 
-    const charColors = {
-        'mario': '#E74C3C', // Rojo
-        'luigi': '#2ECC71'  // Verde
-    };
+    const charColors = { 'mario': '#E74C3C', 'luigi': '#2ECC71' };
 
     const artData = {
         playerIdle: [
@@ -287,7 +283,6 @@
             const previewCanvas = document.getElementById(`preview-${char}`);
             const pCtx = previewCanvas.getContext('2d');
             pCtx.clearRect(0, 0, 16, 16);
-            
             for(let y=0; y<16; y++) {
                 for(let x=0; x<16; x++) {
                     if(artData.playerIdle[y][x] !== '.') {
@@ -304,7 +299,7 @@
     drawPreviews();
 
     // ==========================================
-    // SINTETIZADOR DE AUDIO
+    // AUDIO
     // ==========================================
     let audioCtx;
     function initAudio() {
@@ -374,10 +369,6 @@
         
         buildGraphics(charColors[selectedChar]);
         player.currentImg = images.playerIdle;
-
-        // Físicas idénticas para ambos personajes
-        player.jumpPower = -13;
-        player.gravity = 0.6;
         
         game.tables = tables; game.score = 0; game.lives = 3; game.active = true; game.cameraX = 0; game.lastLayout = -1;
         player.x = 50; player.y = 300; player.vx = 0; player.vy = 0; player.facingRight = true; player.invulnerable = 0;
@@ -423,11 +414,12 @@
 
         if (layout === 0) { 
             c.floors.push({ x: cx, y: 465, w: 480, h: 48 }); 
-            c.floors.push({ x: cx + 624, y: 465, w: 676, h: 48 }); 
+            // Acortado para ajustar la distancia total a 1550 (480 hueco de 144 y piso de 926 = 1550)
+            c.floors.push({ x: cx + 624, y: 465, w: 926, h: 48 }); 
 
             c.platforms.push({ x: cx + 200, y: 369, w: 144, h: 24 }); 
             c.platforms.push({ x: cx + 450, y: 273, w: 144, h: 24 }); 
-            c.platforms.push({ x: cx + 750, y: 369, w: 144, h: 24 }); 
+            c.platforms.push({ x: cx + 750, y: 369, w: 144, h: 24 }); // Termina en 894
 
             c.enemies.push({ x: cx + 300, y: 417, w: 48, h: 48, vx: -2, minX: cx + 100, maxX: cx + 400, active: true });
             c.enemies.push({ x: cx + 800, y: 417, w: 48, h: 48, vx: -2, minX: cx + 700, maxX: cx + 1000, active: true });
@@ -435,22 +427,22 @@
             blockPositions = [ { x: cx + 248, y: 233 }, { x: cx + 498, y: 137 }, { x: cx + 798, y: 233 } ];
         } 
         else if (layout === 1) { 
-            c.floors.push({ x: cx, y: 465, w: 1300, h: 48 });
+            c.floors.push({ x: cx, y: 465, w: 1550, h: 48 });
 
             c.platforms.push({ x: cx + 200, y: 369, w: 240, h: 24 }); 
             c.platforms.push({ x: cx + 550, y: 273, w: 192, h: 24 }); 
-            c.platforms.push({ x: cx + 850, y: 369, w: 144, h: 24 });
+            c.platforms.push({ x: cx + 850, y: 369, w: 144, h: 24 }); // Termina en 994
 
             c.enemies.push({ x: cx + 600, y: 225, w: 48, h: 48, vx: -2, minX: cx + 550, maxX: cx + 700, active: true });
 
             blockPositions = [ { x: cx + 296, y: 233 }, { x: cx + 622, y: 137 }, { x: cx + 898, y: 233 } ];
         } 
         else { 
-            c.floors.push({ x: cx, y: 465, w: 1300, h: 48 });
+            c.floors.push({ x: cx, y: 465, w: 1550, h: 48 });
 
             c.platforms.push({ x: cx + 150, y: 369, w: 96, h: 24 }); 
             c.platforms.push({ x: cx + 450, y: 273, w: 144, h: 24 }); 
-            c.platforms.push({ x: cx + 750, y: 177, w: 192, h: 24 }); 
+            c.platforms.push({ x: cx + 750, y: 177, w: 192, h: 24 }); // Termina en 942
 
             c.enemies.push({ x: cx + 500, y: 417, w: 48, h: 48, vx: -2, minX: cx + 300, maxX: cx + 600, active: true });
             c.enemies.push({ x: cx + 800, y: 129, w: 48, h: 48, vx: -2, minX: cx + 750, maxX: cx + 900, active: true });
@@ -466,10 +458,14 @@
         }
 
         c.bushes.push({ x: cx + 100, y: 417 });
-        c.wall = { x: cx + 1150, y: 321, w: 96, h: 144, active: true }; 
+        c.bushes.push({ x: cx + 1150, y: 417 }); 
+
+        // Muro en 1450 asegura mínimo 450px a 600px de distancia desde la última plataforma sin irse tan lejos.
+        c.wall = { x: cx + 1450, y: 321, w: 96, h: 144, active: true }; 
 
         chunks.push(c); 
-        nextChunkX += 1300;
+        // Avance de mapa reducido de 1950 a 1550.
+        nextChunkX += 1550; 
     }
 
     function updateBoard() {
@@ -636,7 +632,8 @@
         ctx.translate(-game.cameraX, 0);
 
         for (let c of chunks) {
-            if(c.floors[0].x > game.cameraX + canvas.width + 500 || c.floors[c.floors.length-1].x + 1300 < game.cameraX) continue;
+            // Rango de vista adaptado al nuevo ancho de 1550
+            if(c.floors[0].x > game.cameraX + canvas.width + 500 || c.floors[c.floors.length-1].x + 1550 < game.cameraX) continue;
 
             c.bushes.forEach(b => ctx.drawImage(images.bush, b.x, b.y, 48, 48));
 
