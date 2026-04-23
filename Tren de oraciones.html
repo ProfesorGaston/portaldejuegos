@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>El Tren de las Palabras - Prof. Gastón</title>
+    <title>El Tren de las Palabras - Prof. Gastón (Pantalla Completa)</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Open+Sans:wght@600&display=swap');
 
@@ -35,7 +35,6 @@
             pointer-events: none; z-index: 999;
         }
 
-        /* --- PANTALLA COMPLETA --- */
         #game-frame {
             width: 100vw; 
             height: 100vh; 
@@ -74,27 +73,27 @@
             font-size: 0.9rem;
         }
 
-        /* VÍAS */
+        /* VÍAS (Altura triplicada) */
         .track-container {
-            position: absolute; bottom: 26%; left: 0; width: 100%; height: 18px;
+            position: absolute; bottom: 36%; left: 0; width: 100%; height: 54px;
         }
         .rail {
-            position: absolute; top: 0; width: 100%; height: 7px; background: var(--rail-color);
+            position: absolute; top: 0; width: 100%; height: 21px; background: var(--rail-color);
         }
         .ties {
-            position: absolute; top: 0; width: 100%; height: 18px;
-            background-image: linear-gradient(90deg, transparent 20px, var(--wood) 20px, var(--wood) 30px, transparent 30px);
-            background-size: 50px 100%; z-index: -1;
+            position: absolute; top: 0; width: 100%; height: 54px;
+            background-image: linear-gradient(90deg, transparent 60px, var(--wood) 60px, var(--wood) 90px, transparent 90px);
+            background-size: 150px 100%; z-index: -1;
         }
 
-        /* TREN */
+        /* TREN CONTAINER */
         #train-container {
             position: absolute; 
-            bottom: 28%; 
+            bottom: 38%; 
             left: 40px;
-            display: flex; align-items: flex-end; gap: 4px;
+            display: flex; align-items: flex-end; gap: 12px; /* Gap triplicado */
             transition: transform 1s cubic-bezier(0.25, 1, 0.5, 1);
-            padding-bottom: 5px;
+            padding-bottom: 15px;
         }
 
         /* COLORES DEL TREN */
@@ -105,99 +104,103 @@
         .t-purple { background: #9b59b6; border-color: #8e44ad; }
         .t-orange { background: #e67e22; border-color: #d35400; }
 
+        /* LOCOMOTORA Y PARTES (Triplicadas) */
         .locomotive {
-            width: 108px; height: 90px;
-            border-radius: 10px 25px 5px 5px;
+            width: 324px; height: 270px;
+            border-radius: 30px 75px 15px 15px;
             position: relative;
             display: flex; justify-content: center; align-items: center;
-            border-style: solid; border-width: 3px; z-index: 5;
+            border-style: solid; border-width: 9px; z-index: 5;
         }
         .chimney {
-            position: absolute; top: -22px; left: 18px; width: 22px; height: 25px;
-            background: #333; border-top: 4px solid #000;
+            position: absolute; top: -66px; left: 54px; width: 66px; height: 75px;
+            background: #333; border-top: 12px solid #000;
         }
         .cabin-window {
-            position: absolute; top: 12px; right: 8px; width: 30px; height: 30px;
-            background: #81ecec; border: 3px solid #333; border-radius: 5px;
+            position: absolute; top: 36px; right: 24px; width: 90px; height: 90px;
+            background: #81ecec; border: 9px solid #333; border-radius: 15px;
         }
         .smoke {
-            position: absolute; top: -35px; left: 22px; width: 12px; height: 12px;
+            position: absolute; top: -105px; left: 66px; width: 36px; height: 36px;
             background: rgba(255,255,255,0.6); border-radius: 50%;
             animation: smokeAnim 2s infinite; opacity: 0;
         }
         @keyframes smokeAnim {
             0% { transform: translateY(0) scale(1); opacity: 0.8; }
-            100% { transform: translateY(-25px) scale(2); opacity: 0; }
+            100% { transform: translateY(-75px) scale(2); opacity: 0; }
         }
 
+        /* VAGONES (Triplicados) */
         .wagon {
-            width: 100px; height: 63px;
-            border-style: solid; border-width: 3px; border-radius: 8px;
+            width: 300px; height: 189px;
+            border-style: solid; border-width: 9px; border-radius: 24px;
             position: relative;
             display: flex; justify-content: center; align-items: center;
-            margin-left: 2px;
+            margin-left: 6px;
             cursor: pointer; transition: transform 0.1s;
         }
         .wagon::before {
-            content: ''; position: absolute; left: -8px; bottom: 18px;
-            width: 8px; height: 6px; background: #333;
+            content: ''; position: absolute; left: -24px; bottom: 54px;
+            width: 24px; height: 18px; background: #333;
         }
-        .wagon:hover { transform: translateY(-3px); }
+        .wagon:hover { transform: translateY(-9px); }
 
+        /* RUEDAS (Triplicadas) */
         .wheel {
             position: absolute; 
-            bottom: -11px; 
-            width: 21px; height: 21px; 
-            background: #222; border: 3px solid #777; border-radius: 50%;
+            bottom: -33px; 
+            width: 63px; height: 63px; 
+            background: #222; border: 9px solid #777; border-radius: 50%;
             animation: spin 2s linear infinite; animation-play-state: paused;
             z-index: 6;
         }
         .wheel::after {
-            content: ''; position: absolute; top: 50%; left: 0; width: 100%; height: 2px;
+            content: ''; position: absolute; top: 50%; left: 0; width: 100%; height: 6px;
             background: #777; transform: translateY(-50%);
         }
         .wheel::before {
-            content: ''; position: absolute; left: 50%; top: 0; width: 2px; height: 100%;
+            content: ''; position: absolute; left: 50%; top: 0; width: 6px; height: 100%;
             background: #777; transform: translateX(-50%);
         }
 
+        /* PALABRAS EN EL VAGÓN (Fuente triplicada) */
         .wagon-word {
             font-family: 'Fredoka One'; color: #2c3e50; 
-            font-size: 1rem; 
-            pointer-events: none; text-shadow: 0 0 5px rgba(255,255,255,0.5);
+            font-size: 3rem; 
+            pointer-events: none; text-shadow: 0 0 15px rgba(255,255,255,0.5);
         }
 
-        /* ANDÉN */
+        /* ANDÉN Y TARJETAS (Todo triplicado o ampliado) */
         #platform {
-            position: absolute; bottom: 0; width: 100%; height: 25%;
-            background: #ecf0f1; border-top: 6px solid #bdc3c7;
-            display: flex; justify-content: center; align-items: center; gap: 8px;
-            z-index: 20; padding: 10px; box-sizing: border-box; flex-wrap: wrap;
+            position: absolute; bottom: 0; width: 100%; height: 35%; /* Más alto para que quepan las cartas grandes */
+            background: #ecf0f1; border-top: 18px solid #bdc3c7;
+            display: flex; justify-content: center; align-items: center; gap: 24px;
+            z-index: 20; padding: 20px; box-sizing: border-box; flex-wrap: wrap;
         }
 
         .word-card {
-            background: white; padding: 8px 16px; 
-            border-radius: 8px; border-bottom: 4px solid #95a5a6;
+            background: white; padding: 24px 48px; 
+            border-radius: 24px; border-bottom: 12px solid #95a5a6;
             font-family: 'Fredoka One'; 
-            font-size: 1.1rem; 
+            font-size: 3.3rem; 
             color: #2c3e50;
             cursor: pointer; transition: transform 0.1s;
-            box-shadow: 0 3px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 9px 12px rgba(0,0,0,0.1);
         }
-        .word-card:active { transform: translateY(4px); border-bottom: 0; margin-top: 4px;}
+        .word-card:active { transform: translateY(12px); border-bottom: 0; margin-top: 12px;}
 
         /* BOTÓN */
         #action-btn {
-            position: absolute; bottom: 30%; right: 25px;
+            position: absolute; bottom: 42%; right: 25px;
             background: #2ecc71; color: white;
             border: none; border-radius: 50px;
-            padding: 12px 25px; 
+            padding: 18px 36px; 
             font-family: 'Fredoka One'; 
-            font-size: 1.1rem; 
-            cursor: pointer; box-shadow: 0 4px 0 #27ae60;
+            font-size: 1.5rem; 
+            cursor: pointer; box-shadow: 0 6px 0 #27ae60;
             z-index: 30; transition: all 0.2s;
         }
-        #action-btn:active { transform: translateY(4px); box-shadow: none; }
+        #action-btn:active { transform: translateY(6px); box-shadow: none; }
         #action-btn:disabled { background: #bdc3c7; box-shadow: none; cursor: not-allowed; }
 
         /* MODALES */
@@ -208,22 +211,22 @@
             text-align: center; color: white;
         }
         .modal-btn {
-            padding: 12px 25px; font-size: 1.3rem; background: #f1c40f; color: #2c3e50;
+            padding: 15px 30px; font-size: 1.5rem; background: #f1c40f; color: #2c3e50;
             border: none; border-radius: 50px; cursor: pointer; font-family: 'Fredoka One';
             margin-top: 20px; box-shadow: 0 4px 0 #d35400;
         }
         .modal-btn:hover { transform: scale(1.05); }
 
         /* ANIMACIONES */
-        .train-exit { animation: exitRight 2s ease-in forwards; }
+        .train-exit { animation: exitRight 2.5s ease-in forwards; }
         @keyframes exitRight {
             0% { transform: translateX(0); }
-            20% { transform: translateX(-30px); }
-            100% { transform: translateX(1500px); } /* Aumentado a 1500px para que salga de la pantalla completa */
+            10% { transform: translateX(-90px); }
+            100% { transform: translateX(3500px); } /* Mayor distancia para salir de la pantalla */
         }
         @keyframes spin { 100% { transform: rotate(360deg); } }
         .shake { animation: shake 0.4s; }
-        @keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-10px);} 75%{transform:translateX(10px);} }
+        @keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-30px);} 75%{transform:translateX(30px);} }
 
     </style>
 </head>
@@ -233,8 +236,8 @@
 
     <div id="game-frame">
         <div class="sun"></div>
-        <div class="cloud" style="width:100px; height:50px; top:40px; left:10%"></div>
-        <div class="cloud" style="width:140px; height:70px; top:80px; left:60%; animation-delay:-5s;"></div>
+        <div class="cloud" style="width:150px; height:75px; top:40px; left:10%"></div>
+        <div class="cloud" style="width:200px; height:100px; top:80px; left:60%; animation-delay:-5s;"></div>
 
         <header>
             <h1>🚂 El Tren de las Palabras</h1>
@@ -258,14 +261,14 @@
             </div>
 
         <div id="level-modal" class="modal-overlay">
-            <h1 style="font-size: 2.5rem;">🌟 ¡Nivel Completado! 🌟</h1>
-            <p style="font-size: 1.2rem;">¡Excelente trabajo!</p>
+            <h1 style="font-size: 3rem;">🌟 ¡Nivel Completado! 🌟</h1>
+            <p style="font-size: 1.5rem;">¡Excelente trabajo!</p>
             <button class="modal-btn" onclick="nextLevel()">Siguiente Nivel ➡️</button>
         </div>
 
         <div id="victory-modal" class="modal-overlay">
-            <h1 style="font-size: 2.5rem; color:#f1c40f">🏆 ¡GANASTE! 🏆</h1>
-            <p style="font-size: 1.2rem;">Eres un experto en oraciones.</p>
+            <h1 style="font-size: 3.5rem; color:#f1c40f">🏆 ¡GANASTE! 🏆</h1>
+            <p style="font-size: 1.5rem;">Eres un experto en oraciones.</p>
             <button class="modal-btn" onclick="location.reload()">Jugar de nuevo 🔄</button>
         </div>
     </div>
@@ -273,18 +276,18 @@
 <script>
     // --- BASE DE DATOS ---
     const gameData = {
-        1: [ // 3 Palabras
+        1: [
             "El sol brilla", "Ana lee mucho", "El pez nada", "Soy muy feliz", 
             "La flor crece", "El tren corre", "Leo un libro", "Veo un oso", 
             "El cielo azul", "Veo la luna"
         ],
-        2: [ // 4 Palabras
+        2: [
             "La vaca come pasto", "Mi auto es rojo", "El niño juega feliz", 
             "La abuela cocina rico", "El pájaro vuela alto", "Me gusta jugar mucho", 
             "El sapo salta lejos", "La mesa es marrón", "Tengo un perro fiel", 
             "El agua está fría"
         ],
-        3: [ // 5 Palabras
+        3: [
             "El auto rojo es nuevo", "Los niños juegan en plaza", "La lluvia moja el suelo", 
             "Mi amigo tiene un juguete", "El sol sale por mañana", "Me gusta comer frutas ricas", 
             "El barco navega en mar", "La escuela es muy grande", "Los patos nadan en lago", 
@@ -292,14 +295,12 @@
         ]
     };
 
-    // VARIABLES DE ESTADO
     let currentDifficulty = 1; 
     let currentRound = 0;      
     let targetSentence = [];
     let placedWords = [];
     let isAnimating = false;
 
-    // COLORES
     const trainColors = ['t-red', 't-blue', 't-green', 't-yellow', 't-purple', 't-orange'];
     
     function getRandomColor(excludeColor) {
@@ -310,7 +311,6 @@
         return newColor;
     }
 
-    // AUDIO
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playSound(type) {
         if(audioCtx.state === 'suspended') audioCtx.resume();
@@ -364,7 +364,7 @@
         const trainContainer = document.getElementById('train-container');
         trainContainer.classList.remove('train-exit');
         trainContainer.style.transition = 'none';
-        trainContainer.style.transform = 'translateX(-150vw)'; /* Ajustado para pantalla completa */
+        trainContainer.style.transform = 'translateX(-150vw)'; 
 
         buildTrain();
         buildPlatform();
@@ -381,15 +381,15 @@
 
         let lastColor = getRandomColor(null);
         
-        // Locomotora
+        // Locomotora con Ruedas Triplicadas (posiciones ajustadas)
         const loco = document.createElement('div');
         loco.className = `locomotive ${lastColor}`;
         loco.innerHTML = `
             <div class="chimney"><div class="smoke" style="animation-delay:0s"></div><div class="smoke" style="animation-delay:1s"></div></div>
             <div class="cabin-window"></div>
-            <div class="wheel" style="left: 8px; width: 26px; height: 26px; bottom: -13px;"></div>
-            <div class="wheel" style="left: 42px;"></div>
-            <div class="wheel" style="left: 72px;"></div>
+            <div class="wheel" style="left: 24px; width: 78px; height: 78px; bottom: -39px;"></div>
+            <div class="wheel" style="left: 126px;"></div>
+            <div class="wheel" style="left: 216px;"></div>
         `;
         container.appendChild(loco);
 
@@ -402,8 +402,9 @@
             wagon.className = `wagon ${wagonColor}`;
             wagon.onclick = () => returnWordToPlatform(index);
             
-            const w1 = document.createElement('div'); w1.className = 'wheel'; w1.style.left = '12px';
-            const w2 = document.createElement('div'); w2.className = 'wheel'; w2.style.right = '12px';
+            // Ruedas de vagones (posiciones triplicadas)
+            const w1 = document.createElement('div'); w1.className = 'wheel'; w1.style.left = '36px';
+            const w2 = document.createElement('div'); w2.className = 'wheel'; w2.style.right = '36px';
             
             wagon.appendChild(w1); wagon.appendChild(w2);
             container.appendChild(wagon);
