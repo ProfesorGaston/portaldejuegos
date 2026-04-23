@@ -3,23 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>¿Quién suena? - Prof. Gastón</title>
+    <title>¿Quién suena? - Prof. Gastón (Vibrante)</title>
 
     <script src="https://unpkg.com/twemoji@14.0.2/dist/twemoji.min.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --bg: #fdf2f2;
+            var(--bg-sky): #ade8f4; 
             --panel: #ffffff;
-            --primary: #9b59b6;
-            --accent: #8e44ad;
-            --correct: #27ae60;
-            --wrong: #e74c3c;
+            --primary: #9b59b6; 
+            --accent: #f1c40f;  
+            --correct: #2ecc71; 
+            --wrong: #e74c3c;   
+            --shadow-btn: #f39c12; 
+            --border-bubble: #8e44ad;
         }
 
         body {
-            background-color: var(--bg);
-            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background-color: #ade8f4; /* Cielo azul brillante */
+            font-family: 'Fredoka One', cursive; 
             margin: 0;
             display: flex;
             justify-content: center;
@@ -28,6 +32,11 @@
             width: 100vw;
             overflow: hidden;
             touch-action: none; 
+            
+            background-image: 
+                radial-gradient(circle at 10% 10%, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0) 20%),
+                radial-gradient(circle at 90% 80%, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0) 20%),
+                radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 30%);
         }
 
         #game-container {
@@ -35,75 +44,101 @@
             width: 100vw;
             height: 100vh;
             box-sizing: border-box;
-            padding: 24px 24px 78px 24px; 
+            padding: 30px; 
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             position: relative;
             text-align: center;
+            
+            border-radius: 50px;
+            border: 10px solid rgba(255, 255, 255, 0.5); 
         }
 
         #progress-wrapper {
             width: 90%; 
             max-width: 800px;
-            height: 24px; 
+            height: 30px; 
             background: #eee;
-            border-radius: 14px;
-            margin-bottom: 18px;
-            border: 4px solid #ddd;
+            border-radius: 20px;
+            margin-bottom: 22px;
+            border: 5px solid #ddd;
             overflow: hidden;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
         }
 
         #progress-bar {
             width: 0%; height: 100%;
-            background: var(--correct);
+            background: linear-gradient(90deg, #2ecc71 0%, #2ecc71 100%);
             transition: width 0.4s;
+            box-shadow: inset 0 -4px 0 rgba(0,0,0,0.1); 
         }
 
-        #message { font-size: 1.9rem; font-weight: bold; height: 54px; color: #555; margin-bottom: 6px; }
+        #message { font-size: 2.3rem; font-weight: bold; height: 65px; color: #555; margin-bottom: 8px; }
 
+        /* Botón de Sonido con animación de onda sonora (resplandor) */
         #sound-btn {
-            background: #f1c40f;
-            border: none;
-            width: 144px;
-            height: 144px;
+            background: radial-gradient(circle, #f1c40f 0%, #f39c12 100%); 
+            border: 6px solid #fff;
+            width: 172px; 
+            height: 172px;
             border-radius: 50%;
-            font-size: 72px;
+            font-size: 86px;
             cursor: pointer;
-            box-shadow: 0 10px 0 #f39c12;
-            margin: 12px auto;
+            margin: 15px auto;
             display: flex;
             justify-content: center;
             align-items: center;
             transition: 0.1s;
+            position: relative;
+            animation: ondaSonora 2s infinite;
         }
 
-        #sound-btn:active { transform: translateY(5px); box-shadow: 0 5px 0 #f39c12; }
+        /* Detalle visual nuevo: Una onda expansiva que invita a tocar el botón */
+        @keyframes ondaSonora {
+            0% { box-shadow: 0 10px 0 #f39c12, 0 0 0 0 rgba(241, 196, 15, 0.7); }
+            70% { box-shadow: 0 10px 0 #f39c12, 0 0 0 40px rgba(241, 196, 15, 0); }
+            100% { box-shadow: 0 10px 0 #f39c12, 0 0 0 0 rgba(241, 196, 15, 0); }
+        }
 
+        #sound-btn:active { 
+            transform: translateY(6px); 
+            animation: none; /* Detenemos la onda al pulsarlo */
+            box-shadow: 0 4px 0 #f39c12; 
+        }
+
+        /* Contenedor principal de opciones en forma de columna */
         #options-container {
             display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 18px; 
-            margin-top: 24px;
+            flex-direction: column; /* Para poner una fila debajo de la otra */
+            align-items: center;
+            gap: 22px; 
+            margin-top: 30px;
             width: 90%;
             max-width: 800px;
         }
 
-        .btn-picto {
-            background: #fff;
-            border: 5px solid #dcdde1;
-            border-radius: 24px;
-            font-size: 66px;
-            padding: 14px;
-            cursor: pointer;
-            transition: 0.2s;
-            box-shadow: 0 7px 0 #bdc3c7;
-            min-width: 120px;
+        /* Las filas internas para los botones */
+        .options-row {
+            display: flex;
+            justify-content: center;
+            gap: 22px;
         }
 
-        .btn-picto:hover { transform: scale(1.05); border-color: var(--primary); }
+        .btn-picto {
+            background: #fff;
+            border: 6px solid var(--border-bubble); 
+            border-radius: 30px;
+            font-size: 80px; 
+            padding: 18px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 8px 15px rgba(155, 89, 182, 0.3); 
+            min-width: 144px;
+        }
+
+        .btn-picto:hover { transform: scale(1.05); border-color: var(--correct); }
 
         img.emoji {
             width: 1em; 
@@ -124,28 +159,29 @@
             align-items: center;
         }
 
-        #overlay-emoji { font-size: 7.2rem; line-height: 1; margin-bottom: 24px; }
-        #overlay-title { font-size: 3.6rem; color: var(--primary); margin: 12px; font-weight: bold; }
-        #overlay p { font-size: 1.8rem; color: #333; }
+        #overlay-emoji { font-size: 8.6rem; line-height: 1; margin-bottom: 30px; }
+        #overlay-title { font-size: 4.3rem; color: var(--primary); margin: 15px; font-weight: bold; }
+        #overlay p { font-size: 2.2rem; color: #333; }
+        
         #overlay button {
-            padding: 18px 48px; font-size: 1.8rem;
+            padding: 22px 60px; font-size: 2.2rem;
             background: var(--correct); color: white;
-            border: none; border-radius: 24px; cursor: pointer;
-            box-shadow: 0 7px 0 #2d8a24;
-            margin-top: 24px;
+            border: none; border-radius: 30px; cursor: pointer;
+            box-shadow: 0 9px 0 #2d8a24;
+            margin-top: 30px;
             transition: transform 0.1s;
         }
         
         #overlay button:active {
-            transform: translateY(6px);
+            transform: translateY(7px);
             box-shadow: none;
         }
 
         #credits {
             position: absolute;
-            bottom: 18px;
-            right: 30px;
-            font-size: 1.1rem;
+            bottom: 22px;
+            right: 36px;
+            font-size: 1.3rem;
             color: #7f8c8d;
             font-style: italic;
             font-weight: bold;
@@ -155,8 +191,8 @@
         .shake { animation: shake 0.4s; }
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-12px); }
-            75% { transform: translateX(12px); }
+            25% { transform: translateX(-14px); }
+            75% { transform: translateX(14px); }
         }
     </style>
 </head>
@@ -168,7 +204,8 @@
     
     <button id="sound-btn" onclick="reproducir()">🔊</button>
 
-    <div id="options-container"></div>
+    <div id="options-container">
+        </div>
 
     <div id="overlay">
         <div id="overlay-emoji">🏆</div>
@@ -187,7 +224,7 @@
     const etapasMeta = 10;
     let animalCorrecto = null;
     let animalesDisponibles = [];
-    let bloqueado = false; // <-- ¡Este es el candado mágico!
+    let bloqueado = false; 
     const player = document.getElementById('player');
 
     const listaAnimales = [
@@ -220,7 +257,7 @@
     }
 
     function nuevaRonda() {
-        bloqueado = false; // <-- ¡Desbloqueamos al iniciar una nueva ronda!
+        bloqueado = false; 
 
         if (etapa >= etapasMeta) {
             document.getElementById('overlay').style.display = 'flex';
@@ -240,18 +277,29 @@
         otros.sort(() => Math.random() - 0.5);
         let distractores = otros.slice(0, 4);
 
+        // Tenemos 5 opciones totales (1 correcto + 4 distractores)
         let opcionesFinales = [animalCorrecto, ...distractores].sort(() => Math.random() - 0.5);
 
         const container = document.getElementById('options-container');
-        container.innerHTML = '';
+        
+        // Creamos la estructura de 2 filas
+        container.innerHTML = `
+            <div class="options-row" id="row-1"></div>
+            <div class="options-row" id="row-2"></div>
+        `;
 
-        opcionesFinales.forEach(a => {
+        opcionesFinales.forEach((a, index) => {
             const btn = document.createElement('button');
             btn.className = 'btn-picto';
             btn.innerText = a.picto;
-            
             btn.onclick = () => validar(a); 
-            container.appendChild(btn);
+            
+            // Los primeros 2 animales van a la fila 1, los otros 3 a la fila 2
+            if (index < 2) {
+                document.getElementById('row-1').appendChild(btn);
+            } else {
+                document.getElementById('row-2').appendChild(btn);
+            }
         });
 
         document.getElementById('message').innerText = "¡Toca para escuchar!";
@@ -261,11 +309,10 @@
     }
 
     function validar(elegido) {
-        // Si el candado está activado, ignoramos el clic por completo
         if (bloqueado) return; 
 
         if (elegido.picto === animalCorrecto.picto) {
-            bloqueado = true; // <-- Activamos el candado para que no sigan sumando puntos
+            bloqueado = true; 
             document.getElementById('message').innerText = "¡SÍ! ✨";
             document.getElementById('message').style.color = "var(--correct)";
             etapa++;
@@ -274,7 +321,6 @@
             
             setTimeout(nuevaRonda, 1200);
         } else {
-            // Ponemos el candado brevemente para que no aprieten rápido otra incorrecta mientras hace la animación
             bloqueado = true; 
             document.getElementById('message').innerText = "¡Intenta de nuevo! 👂";
             document.getElementById('message').style.color = "var(--wrong)";
@@ -284,7 +330,7 @@
             
             setTimeout(() => {
                 document.getElementById('game-container').classList.remove('shake');
-                bloqueado = false; // Desbloqueamos después de la animación de error
+                bloqueado = false; 
             }, 400);
             
             reproducir();
