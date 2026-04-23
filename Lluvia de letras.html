@@ -21,8 +21,8 @@
 
         #game-container {
             position: relative;
-            width: 100vw;  /* Ocupa el 100% del ancho */
-            height: 100vh; /* Ocupa el 100% del alto */
+            width: 100vw;  
+            height: 100vh; 
             background: linear-gradient(to bottom, #2980b9, #6dd5fa, #ffffff);
             overflow: hidden;
         }
@@ -155,7 +155,6 @@
     let spawnRate = 180;  
     
     let frameCount = 0;
-    // Aumentamos un poco la cantidad máxima de letras al haber más espacio en pantalla
     const MAX_LETTERS_ON_SCREEN = 6; 
 
     let letters = [];
@@ -166,7 +165,6 @@
     function createClouds() {
         const layer = document.getElementById('clouds-layer');
         layer.innerHTML = ''; 
-        // Generar más nubes para cubrir pantallas anchas
         const numClouds = Math.floor(window.innerWidth / 60); 
         for(let i=0; i<numClouds; i++) {
             let c = document.createElement('div');
@@ -218,22 +216,23 @@
     class Letter {
         constructor() {
             this.char = String.fromCharCode(65 + Math.floor(Math.random() * 26));
-            // Asegura que las letras aparezcan dentro del ancho dinámico de la pantalla
-            this.x = Math.random() * (canvas.width - 100) + 50;
-            this.y = -50;
+            // Margen ajustado para el nuevo tamaño de letra más grande
+            this.x = Math.random() * (canvas.width - 120) + 60;
+            this.y = -60;
             this.speed = baseSpeed + (score * 0.002); 
         }
 
         draw() {
-            ctx.font = "bold 50px 'Fredoka One'";
+            // Tamaño de letra incrementado un 15% (de 50px a 57.5px)
+            ctx.font = "bold 57.5px 'Fredoka One'";
             ctx.textAlign = "center";
             
-            // Sombra
+            // Sombra adaptada
             ctx.fillStyle = "rgba(0,0,0,0.1)";
-            ctx.fillText(this.char, this.x + 3, this.y + 3);
+            ctx.fillText(this.char, this.x + 4, this.y + 4);
 
             // Borde
-            ctx.lineWidth = 4;
+            ctx.lineWidth = 5; // Borde ligeramente más grueso para acompañar el tamaño
             ctx.strokeStyle = "#2980b9";
             ctx.strokeText(this.char, this.x, this.y);
 
@@ -325,7 +324,7 @@
             l.update(time);
             l.draw();
 
-            if (l.y > canvas.height + 20) {
+            if (l.y > canvas.height + 30) {
                 lives--;
                 playSound('miss');
                 letters.splice(i, 1);
