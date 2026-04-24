@@ -11,6 +11,13 @@
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Montserrat', sans-serif; }
 
+        /* --- MARCA DE AGUA --- */
+        #watermark {
+            position: absolute; bottom: 10px; right: 20px;
+            font-size: 14px; color: rgba(255,255,255,0.6); z-index: 150;
+            font-weight: bold; pointer-events: none;
+        }
+
         /* --- CANVAS --- */
         #game-canvas {
             position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -87,7 +94,7 @@
         <div class="instructions">
             Reglas: <span>MB</span>, <span>MP</span>, <span>NV</span><br>
             Usa las <span>FLECHAS ⬅ ➡</span> para virar el barco.<br>
-            Mantén <span>FLECHA ⬆</span> para ir a velocidad x1.5.<br>
+            Mantén <span>FLECHA ⬆</span> para ir a velocidad x2.5.<br>
             ¡Navega hacia el <span>cartel</span> correcto!
         </div>
     </div>
@@ -97,6 +104,8 @@
         <p style="color: #fff; font-size: 2.5rem; margin-bottom: 30px;">Puntuación Final: <span id="final-score" style="color:#f1c40f; font-weight:bold;">0</span></p>
         <button class="btn-play" onclick="location.reload()">REINTENTAR</button>
     </div>
+
+    <div id="watermark">Creado por el Prof. Gastón</div>
 
 <script>
     window.addEventListener('load', () => {
@@ -249,7 +258,7 @@
             if (!isPlaying) return;
             if ((e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') && targetLane > 0) targetLane--;
             else if ((e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') && targetLane < 2) targetLane++;
-            else if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') speedMultiplier = 1.5;
+            else if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') speedMultiplier = 2.5;
         });
 
         window.addEventListener('keyup', (e) => {
@@ -502,7 +511,7 @@
             // 2. BARCO DE PAPEL
             const targetX = lanes[targetLane];
             const difX = targetX - currentX;
-            currentX += difX * 0.08 * (speedMultiplier === 1.5 ? 1.2 : 1); 
+            currentX += difX * 0.08 * (speedMultiplier === 2.5 ? 1.2 : 1); 
             boatGroup.position.x = currentX;
             boatGroup.rotation.z = -difX * 0.15; 
             boatGroup.position.y = Math.sin(gameTime * 2) * 0.3; 
