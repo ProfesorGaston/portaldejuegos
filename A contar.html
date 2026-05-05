@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>A contar - Prof. Gastón</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Bubblegum+Sans&display=swap');
+
+        :root {
+            --sky: #AEE2FF;
+            --grass: #B5E48C;
+            --text-main: #2B2D42;
+            --crate: #D4A373;
+            --crate-dark: #A98467;
+            --accent: #FF477E;
+            --accent-dark: #D91054;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100dvh;
+            background: var(--sky);
+            font-family: 'Bubblegum Sans', cursive;
+            color: var(--text-main);
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
+            display: flex;
+            flex-direction: column;
+            text-transform: uppercase;
+        }
+
+        /* --- FONDO --- */
+        .landscape {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 45vh;
+            background: var(--grass);
+            z-index: -1;
+            border-top: 8px solid #93C669;
+        }
+
+        /* --- HEADER --- */
+        #header {
+            text-align: center;
+            margin-top: 2vh;
+            padding: 0 10px;
+            z-index: 10;
+        }
+
+        .cloud-board {
+            background: white;
+            border-radius: 40px;
+            display: inline-block;
+            padding: 1vh 4vw;
+            box-shadow: 0 8px 0 #E2E8F0;
+            border: 4px solid #FFF;
+            max-height: 25vh;
+        }
+
+        #instruction {
+            font-size: clamp(1rem, 3vh, 1.4rem);
+            color: #64748B;
+            margin: 0;
+            letter-spacing: 1px;
+        }
+
+        #target-number {
+            font-size: clamp(3rem, 10vh, 6rem);
+            color: var(--accent);
+            line-height: 1;
+            margin: 5px 0 0 0;
+            text-shadow: 3px 3px 0px rgba(0,0,0,0.05);
+        }
+
+        /* --- ÁREA JUEGO --- */
+        #play-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 10px 20px 3vh;
+            gap: 2vh;
+            position: relative;
+        }
+
+        #source-zone {
+            flex: 1;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-content: center;
+            gap: 15px;
+            padding-bottom: 6vh;
+        }
+
+        /* LA CAJA (Ahora elástica) */
+        #target-zone {
+            min-height: clamp(120px, 20vh, 200px); /* Cambiado a min-height */
+            height: auto; /* Permite que crezca si hay muchos elementos */
+            padding: 25px 10px 15px 10px; /* Espacio extra para que no rebalsen */
+            width: 95%;
+            max-width: 500px;
+            margin: 0 auto;
+            background: var(--crate);
+            border: 8px solid var(--crate-dark);
+            border-radius: 20px;
+            box-shadow: inset 0 15px 0 rgba(0,0,0,0.1);
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-content: center;
+            gap: 10px;
+            position: relative;
+        }
+
+        .crate-label {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #FFE6A7;
+            padding: 5px 30px;
+            border-radius: 15px;
+            border: 4px solid var(--crate-dark);
+            font-size: clamp(1.2rem, 3vh, 1.8rem);
+            color: var(--crate-dark);
+            font-weight: bold;
+        }
+
+        /* --- OBJETOS (Tamaño ajustado) --- */
+        .item {
+            width: clamp(2.8rem, 7vh, 5.5rem); /* Un poco más pequeños para asegurar que quepan */
+            height: clamp(2.8rem, 7vh, 5.5rem);
+            cursor: pointer;
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            animation: popIn 0.4s ease-out;
+            -webkit-tap-highlight-color: transparent;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .item img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+            filter: drop-shadow(0 6px 0 rgba(0,0,0,0.15));
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); }
+            100% { transform: scale(1); }
+        }
+
+        /* --- BOTÓN --- */
+        #btn-check {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 1.5vh 5vw;
+            font-size: clamp(1.5rem, 4vh, 2.5rem);
+            font-family: inherit;
+            border-radius: 40px;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #2E7D32;
+            margin: 0 auto;
+            display: block;
+            transition: all 0.1s;
+        }
+
+        #btn-check:active {
+            transform: translateY(6px);
+            box-shadow: 0 0 0 #2E7D32;
+        }
+
+        /* --- PANTALLAS --- */
+        .screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.98);
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .panel {
+            background: white;
+            border: 8px solid var(--accent);
+            border-radius: 30px;
+            padding: 40px 20px;
+            width: 85%;
+            max-width: 450px;
+            text-align: center;
+            box-shadow: 0 10px 0 var(--accent);
+        }
+
+        .panel h1 { font-size: clamp(2.5rem, 6vh, 3.5rem); margin: 0; color: var(--accent); }
+        .panel p { font-size: clamp(1.2rem, 3vh, 1.8rem); color: #64748B; margin: 15px 0 30px; }
+        
+        .emoji-big { 
+            display: flex;
+            justify-content: center;
+            margin-bottom: 15px; 
+        }
+
+        .emoji-big img {
+            width: clamp(4rem, 10vh, 7rem); 
+            height: clamp(4rem, 10vh, 7rem); 
+            object-fit: contain;
+        }
+
+        /* --- MARCA DE AGUA --- */
+        #watermark {
+            position: absolute;
+            bottom: 5px;
+            right: 15px;
+            font-size: 12px;
+            color: rgba(0,0,0,0.2);
+            font-family: sans-serif;
+            font-weight: bold;
+            pointer-events: none;
+        }
+
+        .shake-error { animation: shake 0.5s; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="landscape"></div>
+
+<div id="game-container" style="display: flex; flex-direction: column; height: 100%; width: 100%;">
+    <div id="header">
+        <div class="cloud-board">
+            <p id="instruction">COLOCA ESTA CANTIDAD:</p>
+            <div id="target-number">?</div>
+        </div>
+    </div>
+
+    <div id="play-area">
+        <div id="source-zone"></div>
+        
+        <div id="target-zone">
+            <div class="crate-label">CAJA</div>
+        </div>
+
+        <button id="btn-check" onclick="verifyCount()">¡LISTO!</button>
+    </div>
+
+    <div id="watermark">CREADO POR EL PROF. GASTÓN</div>
+</div>
+
+<div id="menu-screen" class="screen">
+    <div class="panel">
+        <div class="emoji-big"><img src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/svg/1f34e.svg" alt="🍎"></div>
+        <h1>¡A CONTAR!</h1>
+        <p>TOCA LOS OBJETOS PARA GUARDARLOS EN LA CAJA.</p>
+        <button id="btn-start" style="background: #4CAF50; box-shadow: 0 6px 0 #2E7D32; color: white; border: none; padding: 15px 40px; font-size: clamp(1.5rem, 4vh, 2.5rem); font-family: inherit; border-radius: 40px; cursor: pointer;" onclick="startGame()">¡JUGAR!</button>
+    </div>
+</div>
+
+<div id="result-screen" class="screen" style="display: none;">
+    <div class="panel" id="result-panel">
+        <div id="result-emoji" class="emoji-big"></div>
+        <h1 id="result-title">¡MUY BIEN!</h1>
+        <p id="result-msg">¡LO HICISTE GENIAL!</p>
+        <button id="btn-next" style="background: var(--accent); box-shadow: 0 6px 0 var(--accent-dark); color: white; border: none; padding: 15px 40px; font-size: clamp(1.2rem, 3vh, 2rem); font-family: inherit; border-radius: 40px; cursor: pointer;" onclick="startLevel()">SIGUIENTE</button>
+    </div>
+</div>
+
+<script>
+    let currentTarget = 0;
+    let level = 1;
+    
+    const baseUrl = "https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/svg/";
+    const itemCodes = ['1f34e', '1f36a', '1f388', '1f9f8', '1f697', '1f36c', '1f369', '1f436', '1f355', '26bd'];
+
+    const sourceZone = document.getElementById('source-zone');
+    const targetZone = document.getElementById('target-zone');
+    const targetNumberEl = document.getElementById('target-number');
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    function playSound(type) {
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        const now = audioCtx.currentTime;
+
+        if (type === 'pop') {
+            osc.frequency.setValueAtTime(500, now);
+            osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
+            gain.gain.setValueAtTime(0.2, now);
+            osc.start(now); osc.stop(now + 0.1);
+        } else if (type === 'win') {
+            osc.frequency.setValueAtTime(523, now);
+            osc.frequency.setValueAtTime(659, now + 0.2);
+            osc.frequency.setValueAtTime(783, now + 0.4);
+            gain.gain.setValueAtTime(0.1, now);
+            osc.start(now); osc.stop(now + 0.6);
+        } else if (type === 'error') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(120, now);
+            gain.gain.setValueAtTime(0.1, now);
+            osc.start(now); osc.stop(now + 0.3);
+        }
+    }
+
+    function startGame() {
+        document.getElementById('menu-screen').style.display = 'none';
+        startLevel();
+    }
+
+    function startLevel() {
+        document.getElementById('result-screen').style.display = 'none';
+        sourceZone.innerHTML = '';
+        
+        const items = targetZone.querySelectorAll('.item');
+        items.forEach(i => i.remove());
+        
+        let min = Math.min(1 + level, 7);
+        let max = Math.min(3 + level, 12);
+        currentTarget = Math.floor(Math.random() * (max - min + 1)) + min;
+        targetNumberEl.innerText = currentTarget;
+
+        let total = currentTarget + Math.floor(Math.random() * 3) + 2;
+        let imageCode = itemCodes[Math.floor(Math.random() * itemCodes.length)];
+
+        for (let i = 0; i < total; i++) {
+            let div = document.createElement('div');
+            div.className = 'item';
+            div.innerHTML = `<img src="${baseUrl}${imageCode}.svg" alt="item">`;
+            
+            div.onclick = function() {
+                playSound('pop');
+                if(this.parentElement.id === 'source-zone') targetZone.appendChild(this);
+                else sourceZone.appendChild(this);
+            };
+            sourceZone.appendChild(div);
+        }
+    }
+
+    function verifyCount() {
+        const count = targetZone.querySelectorAll('.item').length;
+        const panel = document.getElementById('result-panel');
+
+        if (count === currentTarget) {
+            playSound('win');
+            level++;
+            panel.style.borderColor = "#4CAF50";
+            panel.style.boxShadow = "0 10px 0 #4CAF50";
+            document.getElementById('result-title').innerText = "¡EXCELENTE!";
+            document.getElementById('result-title').style.color = "#4CAF50";
+            document.getElementById('result-emoji').innerHTML = `<img src="${baseUrl}1f389.svg" alt="🎉">`;
+            document.getElementById('result-msg').innerText = "HAS PUESTO " + count + " OBJETOS.";
+            document.getElementById('btn-next').innerText = "SIGUIENTE NIVEL";
+            document.getElementById('btn-next').style.background = "#4CAF50";
+            document.getElementById('btn-next').style.boxShadow = "0 6px 0 #2E7D32";
+            document.getElementById('btn-next').onclick = startLevel;
+            document.getElementById('result-screen').style.display = 'flex';
+        } else {
+            playSound('error');
+            document.getElementById('play-area').classList.add('shake-error');
+            setTimeout(() => document.getElementById('play-area').classList.remove('shake-error'), 500);
+            
+            panel.style.borderColor = "var(--accent)";
+            panel.style.boxShadow = "0 10px 0 var(--accent)";
+            document.getElementById('result-title').innerText = "¡UPS!";
+            document.getElementById('result-title').style.color = "var(--accent)";
+            document.getElementById('result-emoji').innerHTML = `<img src="${baseUrl}1f914.svg" alt="🤔">`;
+            document.getElementById('result-msg').innerText = count > currentTarget ? "HAY DEMASIADOS. QUITA ALGUNOS." : "FALTAN OBJETOS. SIGUE CONTANDO.";
+            document.getElementById('btn-next').innerText = "INTENTAR DE NUEVO";
+            document.getElementById('btn-next').style.background = "var(--accent)";
+            document.getElementById('btn-next').style.boxShadow = "0 6px 0 var(--accent-dark)";
+            document.getElementById('btn-next').onclick = () => document.getElementById('result-screen').style.display = 'none';
+            document.getElementById('result-screen').style.display = 'flex';
+        }
+    }
+</script>
+
+</body>
+</html>
