@@ -111,12 +111,44 @@
     window.addEventListener('load', () => {
 
         const words = [
-            { t: "TA _ _ OR", a: "MB", f: "TAMBOR" }, { t: "BO _ _ ERO", a: "MB", f: "BOMBERO" },
-            { t: "CA _ _ ANA", a: "MP", f: "CAMPANA" }, { t: "TRO _ _ ETA", a: "MP", f: "TROMPETA" },
-            { t: "CO _ _ RAR", a: "MP", f: "COMPRAR" }, { t: "I _ _ IERNO", a: "NV", f: "INVIERNO" },
-            { t: "E _ _ ASE", a: "NV", f: "ENVASE" }, { t: "I _ _ ITAR", a: "NV", f: "INVITAR" },
-            { t: "A _ _ ULANCIA", a: "MB", f: "AMBULANCIA" }, { t: "TIE _ _ O", a: "MP", f: "TIEMPO" },
-            { t: "E _ _ IAR", a: "NV", f: "ENVIAR" }, { t: "I _ _ ENTO", a: "NV", f: "INVENTO" }
+  // --- Regla: MB ---
+  { t: "TA _ _ OR", a: "MB", f: "TAMBOR" },
+  { t: "BO _ _ ERO", a: "MB", f: "BOMBERO" },
+  { t: "A _ _ ULANCIA", a: "MB", f: "AMBULANCIA" },
+  { t: "A _ _ OS", a: "MB", f: "AMBOS" },
+  { t: "SO _ _ RA", a: "MB", f: "SOMBRA" },
+  { t: "ALFO _ _ RA", a: "MB", f: "ALFOMBRA" },
+  { t: "ALA _ _ RE", a: "MB", f: "ALAMBRE" },
+  { t: "HO _ _ RE", a: "MB", f: "HOMBRE" },
+  { t: "HA _ _ URGUESA", a: "MB", f: "HAMBURGUESA" },
+  { t: "COSTU _ _ RE", a: "MB", f: "COSTUMBRE" },
+  { t: "CE _ _ ALLS", a: "MB", f: "CIMBALO" },
+
+  // --- Regla: MP ---
+  { t: "CA _ _ ANA", a: "MP", f: "CAMPANA" },
+  { t: "TRO _ _ ETA", a: "MP", f: "TROMPETA" },
+  { t: "CO _ _ RAR", a: "MP", f: "COMPRAR" },
+  { t: "TIE _ _ O", a: "MP", f: "TIEMPO" },
+  { t: "LI _ _ IO", a: "MP", f: "LIMPIO" },
+  { t: "SI _ _ LE", a: "MP", f: "SIMPLE" },
+  { t: "TRA _ _ A", a: "MP", f: "TRAMPA" },
+  { t: "CHA _ _ Ú", a: "MP", f: "CHAMPÚ" },
+  { t: "CO _ _ ETIR", a: "MP", f: "COMPETIR" },
+  { t: "E _ _ AJAR", a: "MP", f: "EMPAJAR" },
+  { t: "CO _ _ ANYERO", a: "MP", f: "COMPAÑERO" },
+
+  // --- Regla: NV ---
+  { t: "I _ _ IERNO", a: "NV", f: "INVIERNO" },
+  { t: "E _ _ ASE", a: "NV", f: "ENVASE" },
+  { t: "I _ _ ITAR", a: "NV", f: "INVITAR" },
+  { t: "E _ _ IAR", a: "NV", f: "ENVIAR" },
+  { t: "I _ _ ENTO", a: "NV", f: "INVENTO" },
+  { t: "CO _ _ EVIR", a: "NV", f: "CONVIVIR" },
+  { t: "I _ _ ESTIGAR", a: "NV", f: "INVESTIGAR" },
+  { t: "E _ _ IDIA", a: "NV", f: "ENVIDIA" },
+  { t: "CO _ _ ERTIR", a: "NV", f: "CONVERTIR" },
+  { t: "BI _ _ ENIDA", a: "NV", f: "BIENVENIDA" }
+];
         ];
 
         let currentWordObj = null;
