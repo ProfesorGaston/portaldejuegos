@@ -427,7 +427,6 @@ function shootBall(isGoal){
 // ══════════════════════════════════════════
 function spawnConfetti(x,y){
   const cols=['var(--yellow)','var(--green)','var(--cyan)','#fff','#ff00ff'];
-  // Cantidad reducida de 80 a 45 para aliviar la CPU
   for(let i=0;i<45;i++){ 
     const a=Math.random()*Math.PI*2,sp=Math.random()*14+4;
     parts.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-8,
@@ -438,7 +437,6 @@ function spawnConfetti(x,y){
   }
 }
 function spawnSparks(x,y,col){
-  // Cantidad reducida de 50 a 30
   for(let i=0;i<30;i++){
     const a=Math.random()*Math.PI*2,sp=Math.random()*10+3;
     parts.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-5,
@@ -478,9 +476,12 @@ function updateHintUI(){
 // ══════════════════════════════════════════
 function loop(){
   frame++;
-  cx.clearRect(0,0,W,H);
+  
+  // Limpiamos todo el canvas incluyendo los márgenes de sangrado
+  cx.clearRect(-100, -100, W+200, H+200);
 
   cx.save();
+  // Aplicamos Screen Shake
   if(screenShake > 0.5) {
       const dx = (Math.random()-0.5)*screenShake;
       const dy = (Math.random()-0.5)*screenShake;
@@ -523,9 +524,10 @@ function loop(){
     drawParts();
   }
 
+  // Flash con margen para evitar bordes blancos
   if(goalFlash > 0.01) {
       cx.fillStyle = `rgba(255,255,255,${goalFlash})`;
-      cx.fillRect(-50, -50, W+100, H+100);
+      cx.fillRect(-100, -100, W+200, H+200);
       goalFlash *= 0.85;
   }
 
@@ -538,13 +540,15 @@ function loop(){
 // ══════════════════════════════════════════
 function drawStadium() {
     cx.fillStyle = '#020408';
-    cx.fillRect(0,0,W,GRASSLINE);
+    // Dibujamos el cielo con margen de sangrado (-50)
+    cx.fillRect(-50, -50, W+100, GRASSLINE+50);
 
     cx.fillStyle = '#0a0a0a';
     cx.beginPath(); 
-    cx.moveTo(0, GRASSLINE*0.1); 
-    cx.bezierCurveTo(W*0.2, GRASSLINE*0.4, W*0.8, GRASSLINE*0.4, W, GRASSLINE*0.1);
-    cx.lineTo(W, GRASSLINE); cx.lineTo(0, GRASSLINE); 
+    // Dibujamos las gradas expandiendo los bordes (W+50, -50)
+    cx.moveTo(-50, GRASSLINE*0.1); 
+    cx.bezierCurveTo(W*0.2, GRASSLINE*0.4, W*0.8, GRASSLINE*0.4, W+50, GRASSLINE*0.1);
+    cx.lineTo(W+50, GRASSLINE+50); cx.lineTo(-50, GRASSLINE+50); 
     cx.fill();
 
     seats.forEach(s => {
@@ -561,15 +565,21 @@ function drawStadium() {
 }
 
 function drawGrass(){
-  const gH=H-GRASSLINE;
-  const gg=cx.createLinearGradient(0,GRASSLINE,0,H);
+  // Calculamos la altura de la grilla añadiendo 100px para evitar el sangrado abajo
+  const gH = (H+100)-GRASSLINE;
+  const gg=cx.createLinearGradient(0,GRASSLINE,0,H+100);
   gg.addColorStop(0,'#093815'); gg.addColorStop(1,'#020a04');
-  cx.fillStyle=gg; cx.fillRect(0,GRASSLINE,W,gH);
+  
+  // Rellenamos el césped extendido hacia los lados (-50) y hacia abajo
+  cx.fillStyle=gg; cx.fillRect(-50,GRASSLINE,W+100,gH);
+  
   const sw=W/14;
-  for(let i=0;i<15;i++){
+  // Aumentamos el loop para dibujar franjas fuera de la pantalla (desde -2 hasta 16)
+  for(let i=-2;i<17;i++){
     cx.fillStyle=i%2===0?'rgba(255,255,255,.04)':'rgba(0,0,0,.15)';
     cx.fillRect(i*sw,GRASSLINE,sw,gH);
   }
+  
   cx.strokeStyle='rgba(255,255,255,.3)'; cx.lineWidth=4; cx.shadowColor='#fff'; cx.shadowBlur=3;
   cx.strokeRect(W*.28,GRASSLINE+2,W*.44,gH*.4); 
   cx.beginPath(); cx.arc(W/2,GRASSLINE+gH*.45,W*.12,Math.PI,0); cx.stroke(); 
@@ -735,13 +745,12 @@ function drawBall(){
 }
 
 // ══════════════════════════════════════════
-//  RESTRUCTURACIÓN TOTAL DE PARTICULAS (ALTA EFICIENCIA)
+//  RESTRUCTURACIÓN TOTAL DE PARTICULAS
 // ══════════════════════════════════════════
 function drawParts(){
   cx.save();
   cx.globalCompositeOperation = "screen";
   
-  // SIN shadowBlur aquí dentro. 100% óptimo para CPU.
   parts.forEach(p=>{
     cx.save();
     cx.globalAlpha = p.life;
@@ -751,7 +760,6 @@ function drawParts(){
     cx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
     cx.restore();
     
-    // Físicas básicas integradas limpiamente
     p.x += p.vx; 
     p.y += p.vy; 
     p.vy += 0.4; 
