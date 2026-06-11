@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Laboratorio de Clasificación - Prof. Gastón</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+  body, html { width: 100%; height: 100%; background: #020308; overflow: hidden; font-family: 'Orbitron', sans-serif; touch-action: none; }
+  #gameCanvas { display: block; width: 100%; height: 100%; }
+  
+  /* --- HUD --- */
+  #ui { position: absolute; top: 20px; left: 20px; display: flex; gap: 20px; pointer-events: none; z-index: 10; }
+  .hud-box {
+    background: rgba(6, 8, 20, 0.85);
+    backdrop-filter: blur(8px);
+    border-left: 4px solid #00f0ff;
+    border-top: 1px solid rgba(0, 240, 255, 0.3);
+    border-bottom: 1px solid rgba(0, 240, 255, 0.3);
+    border-right: 1px solid rgba(0, 240, 255, 0.3);
+    padding: 10px 20px;
+    border-radius: 0 12px 12px 0;
+    color: #8fa3cc;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1.1rem;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.5);
+    text-transform: uppercase;
+  }
+  .hud-box span { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 1.8rem; color: #fff; display: block; }
+  .hud-box.coins { border-left-color: #ffb700; }
+  .hud-box.coins span { color: #ffb700; }
+  
+  /* --- OVERLAY --- */
+  #overlay {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: radial-gradient(circle at center, rgba(10, 13, 33, 0.9) 0%, rgba(4, 5, 12, 0.98) 100%);
+    display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: white;
+    z-index: 50; transition: opacity 0.3s;
+    background-image: linear-gradient(to right, rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+                      linear-gradient(to bottom, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+  }
+  h1 { font-size: clamp(2.5rem, 6.5vw, 5rem); font-weight: 900; color: #00f0ff; margin-bottom: 15px; letter-spacing: 4px; text-shadow: 0 0 20px rgba(0, 240, 255, 0.4); }
+  p { font-size: 1.1rem; color: #8ea3cb; margin-bottom: 40px; max-width: 650px; line-height: 1.6; font-family: 'Share Tech Mono', monospace; }
+  p strong { color: #ff3b70; }
+  button {
+    background: linear-gradient(135deg, #00f0ff 0%, #0066ff 100%);
+    color: #020308; font-family: 'Orbitron', sans-serif; font-weight: 900;
+    font-size: 1.7rem; padding: 16px 55px; border: none; border-radius: 8px;
+    cursor: pointer; box-shadow: 0 0 20px rgba(0, 240, 255, 0.3); transition: transform 0.1s;
+  }
+  button:active { transform: scale(0.95); }
+</style>
+</head>
+<body>
+
+<canvas id="gameCanvas"></canvas>
+
+<div id="ui" style="display: none;">
+  <div class="hud-box">Distancia<span id="dist-txt">0M</span></div>
+  <div class="hud-box coins">Aciertos<span id="coin-txt">0</span></div>
+</div>
+
+<div id="overlay">
+  <h1 id="title">GRAMMAR RUNNER</h1>
+  <p id="desc">MANTÉN PRESIONADO (O USA LA BARRA ESPACIADORA) PARA ENCENDER EL JETPACK.<br>SUELTA PARA DESCENDER.<br><strong>ALERTA DE SEGURIDAD:</strong> RED DE PLASMA Y PROYECTILES ACTIVOS.</p>
+  <button id="btn" onclick="startGame()">INICIAR ASALTO</button>
+</div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+let W, H, floorY;
+let bgGrad, floorGrad, ironGrad;
+
+function resize() {
+  W = window.innerWidth; H = window.innerHeight;
+  canvas.width = W; canvas.height = H;
+  floorY = H - 85; 
+  
+  bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+  bgGrad.addColorStop(0, '#040614'); bgGrad.addColorStop(0.5, '#0a102a'); bgGrad.addColorStop(1, '#020308');
+
+  floorGrad = ctx.createLinearGradient(0, floorY, 0, H);
+  floorGrad.addColorStop(0, '#1e293b'); floorGrad.addColorStop(0.3, '#0f172a'); floorGrad.addColorStop(1, '#020617');
+
+  ironGrad = ctx.createLinearGradient(-15, -15, 15, 15);
+  ironGrad.addColorStop(0, '#94a3b8'); ironGrad.addColorStop(0.5, '#475569'); ironGrad.addColorStop(1, '#1e293b');
+}
+window.addEventListener('resize', resize);
+resize();
+
+let frame = 0, phase = 'menu', distance = 0, coins = 0, gameSpeed = 4.125, screenShake = 0, isThrusting = false;
+let player = {}, bullets = [], zappers = [], missiles = [], coinList = [], scientists = [], sparks = [];
+
+// ══════════════════════════════════════════
+//  SISTEMA EDUCATIVO: LENGUA Y GRAMÁTICA (REPERTORIO AMPLIADO)
+// ══════════════════════════════════════════
+const wordCategories = [
+  { 
+    name: "SUSTANTIVO COMÚN", 
+    words: [
+      "PERRO", "MESA", "RELOJ", "AUTO", "LIBRO", "ÁRBOL", "SILLA", "GATO", "CASA", "LÁPIZ",
+      "VASO", "PUERTA", "VENTANA", "CAMA", "TAZA", "CALLE", "CIUDAD", "RÍO", "MONTAÑA", "NUBE",
+      "FLOR", "PLATO", "ZAPATO", "BOLSA", "TELÉFONO"
+    ] 
+  },
+  { 
+    name: "SUSTANTIVO PROPIO", 
+    words: [
+      "MARÍA", "PEDRO", "FRANCIA", "PARÍS", "LUCAS", "AMAZONAS", "CARLOS", "MADRID", "LAURA", "JÚPITER",
+      "LONDRES", "BRASIL", "ROMA", "DIEGO", "ANA", "TOKIO", "BERLÍN", "SOFÍA", "MARTÍN", "ANDES",
+      "MÉXICO", "COLOMBIA", "JULIA", "NILO", "VENUS"
+    ] 
+  },
+  { 
+    name: "ADJETIVO", 
+    words: [
+      "RÁPIDO", "FELIZ", "GRANDE", "LENTO", "ROJO", "SUAVE", "OSCURO", "FUERTE", "LINDO", "FRÍO",
+      "CALIENTE", "ALTO", "BAJO", "DULCE", "AMARGO", "BRILLANTE", "NUEVO", "VIEJO", "LIMPIO", "SUCIO",
+      "BLANDO", "DURO", "HERMOSO", "FEO", "TRISTE"
+    ] 
+  },
+  { 
+    name: "VERBO", 
+    words: [
+      "CORRER", "SALTAR", "JUGAR", "COMER", "VOLAR", "LEER", "DORMIR", "PENSAR", "HABLAR", "LLORAR",
+      "CANTAR", "BAILAR", "ESTUDIAR", "TRABAJAR", "DIBUJAR", "PINTAR", "ESCRIBIR", "MIRAR", "ESCUCHAR", "CAMINAR",
+      "REÍR", "GRITAR", "VIAJAR", "NADAR", "SOÑAR"
+    ] 
+  }
+];
+
+let missionText = "";
+let correctWord = "";
+
+// DOM Cache
+const distTxt = document.getElementById('dist-txt');
+const coinTxt = document.getElementById('coin-txt');
+
+// Entorno Parallax
+let layer1 = [], layer2 = [];
+function initParallax() {
+  layer1 = []; layer2 = [];
+  for(let i=0; i<12; i++) layer1.push({ x: Math.random() * 2500, w: Math.random() * 80 + 50, op: Math.random() * 0.03 + 0.01 });
+  for(let i=0; i<8; i++) layer2.push({ x: Math.random() * 2500, w: 90, h: Math.random() * 100 + 120, type: Math.random() > 0.5 ? 1 : 2 });
+}
+initParallax();
+
+// Input (Mouse / Touch)
+function press(e) { if (e.type === 'touchstart') e.preventDefault(); if (phase === 'playing') isThrusting = true; }
+function release(e) { if (e.type === 'touchend') e.preventDefault(); isThrusting = false; }
+window.addEventListener('mousedown', press); window.addEventListener('touchstart', press, {passive: false});
+window.addEventListener('mouseup', release); window.addEventListener('touchend', release);
+
+// Input (Teclado)
+window.addEventListener('keydown', (e) => { if (e.code === 'Space') { e.preventDefault(); if (phase === 'playing') isThrusting = true; }});
+window.addEventListener('keyup', (e) => { if (e.code === 'Space') { e.preventDefault(); isThrusting = false; }});
+
+function startGame() {
+  document.getElementById('overlay').style.opacity = '0';
+  setTimeout(() => document.getElementById('overlay').style.display = 'none', 300);
+  document.getElementById('ui').style.display = 'flex';
+  
+  distance = 0; coins = 0; gameSpeed = 4.125; frame = 0;
+  bullets = []; zappers = []; missiles = []; coinList = []; scientists = []; sparks = [];
+  coinTxt.innerText = coins;
+  
+  player = { x: W * 0.2, y: floorY - 50, vy: 0, gravity: 0.45, thrust: 0.98, isDead: false, rot: 0, legBend: 0, runFrame: 0 };
+  for(let i=0; i<4; i++) spawnScientist();
+  newGrammarProblem(); 
+  phase = 'playing';
+}
+
+function die() {
+  player.isDead = true; isThrusting = false; screenShake = 30;
+  for(let i=0; i<45; i++) sparks.push({ x: player.x, y: player.y, vx: (Math.random()-0.5)*18, vy: (Math.random()-0.5)*18, life: 1, color: Math.random() < 0.5 ? '#ff2a2a' : '#ffaa00', size: Math.random()*7+3, blend: true });
+  setTimeout(() => {
+    phase = 'menu';
+    const overlay = document.getElementById('overlay');
+    overlay.style.display = 'flex'; setTimeout(() => overlay.style.opacity = '1', 50);
+    document.getElementById('title').innerText = "SISTEMA COMPROMETIDO";
+    document.getElementById('title').style.color = "#ff3b3b";
+    document.getElementById('desc').innerHTML = `REPORTE DE RENDIMIENTO:<br><br>DISTANCIA: <span style="color:#00f0ff">${Math.floor(distance)}M</span><br>ACIERTOS: <span style="color:#ffb700">${coins}</span>`;
+    document.getElementById('btn').innerText = "REINICIAR PROTOCOLO";
+    document.getElementById('ui').style.display = 'none';
+  }, 1600);
+}
+
+// ══════════════════════════════════════════
+//  LÓGICA DEL PROBLEMA GRAMATICAL
+// ══════════════════════════════════════════
+function newGrammarProblem() {
+  let targetCatIndex = Math.floor(Math.random() * wordCategories.length);
+  let targetCat = wordCategories[targetCatIndex];
+  
+  missionText = `MISIÓN: BUSCA UN ${targetCat.name}`;
+  
+  let correctIdx = Math.floor(Math.random() * targetCat.words.length);
+  correctWord = targetCat.words[correctIdx];
+}
+
+function spawnGrammarWords() {
+  if(coinList.length > 0) return; 
+  if(!missionText) newGrammarProblem();
+  
+  let sx = W + 150; 
+
+  let targetName = missionText.replace("MISIÓN: BUSCA UN ", "");
+  let targetCatIndex = wordCategories.findIndex(c => c.name === targetName);
+  
+  let options = [correctWord];
+
+  let otherCategories = wordCategories.filter((c, i) => i !== targetCatIndex);
+  otherCategories.sort(() => Math.random() - 0.5); 
+
+  for(let i=0; i<2; i++) {
+    let wrongCat = otherCategories[i];
+    let wrongWord = wrongCat.words[Math.floor(Math.random() * wrongCat.words.length)];
+    options.push(wrongWord);
+  }
+
+  options.sort(() => Math.random() - 0.5); 
+
+  let lanes = [
+    110,                 
+    (floorY + 40) / 2,   
+    floorY - 45          
+  ];
+
+  for(let i=0; i<3; i++) {
+    coinList.push({ x: sx, y: lanes[i], pulse: i, val: options[i] });
+  }
+}
+
+// ══════════════════════════════════════════
+//  SPAWNERS DE ENEMIGOS
+// ══════════════════════════════════════════
+function spawnZapper() {
+  if(zappers.length > 3) return;
+  zappers.push({ x: W + 150, y: Math.random() * (floorY - 220) + 90, len: Math.random() * 110 + 100, ang: Math.random() * Math.PI, spin: (Math.random() - 0.5) * 0.03 });
+}
+function spawnMissile() {
+  if(missiles.length > 1) return;
+  missiles.push({ y: Math.max(90, Math.min(floorY - 90, player.y)), x: W + 200, state: 'warning', timer: 80, vx: 0 });
+}
+function spawnScientist() {
+  if(scientists.length > 5) return;
+  scientists.push({ x: W + Math.random()*300, y: floorY, vx: Math.random() * 2 + 1.5, f: Math.random()*20 });
+}
+
+// ══════════════════════════════════════════
+//  RENDER DE ENTIDADES 2D
+// ══════════════════════════════════════════
+function drawPlayer(ctx, p) {
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  ctx.rotate(p.rot);
+  ctx.scale(1.15, 1.15);
+  
+  if (!p.isDead) {
+    let pack = ctx.createLinearGradient(-24, -15, -12, 15);
+    pack.addColorStop(0, '#00f0ff'); pack.addColorStop(0.3, '#334155'); pack.addColorStop(1, '#0f172a');
+    ctx.fillStyle = pack; 
+    ctx.beginPath(); ctx.roundRect(-24, -16, 12, 30, 4); ctx.fill(); 
+    
+    ctx.fillStyle = '#64748b'; ctx.fillRect(-22, 14, 8, 6);
+    ctx.fillStyle = '#1e293b'; ctx.fillRect(-23, 18, 10, 4);
+
+    if (isThrusting) {
+      let fLength = Math.random() * 15 + 20;
+      ctx.globalCompositeOperation = 'screen';
+      let flame = ctx.createLinearGradient(0, 20, 0, 20 + fLength);
+      flame.addColorStop(0, '#ffffff'); flame.addColorStop(0.3, '#00f0ff'); flame.addColorStop(1, 'transparent');
+      ctx.fillStyle = flame;
+      ctx.beginPath(); ctx.moveTo(-23, 22); ctx.lineTo(-13, 22); ctx.lineTo(-18, 22 + fLength); ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+    }
+
+    if (p.y >= floorY - 26 && !isThrusting) {
+      p.runFrame += 0.4;
+      let swing = Math.sin(p.runFrame) * 12; 
+      ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      
+      ctx.strokeStyle = '#1e293b';
+      ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(swing, 23); ctx.lineTo(swing + 3, 33); ctx.stroke();
+      
+      ctx.strokeStyle = '#475569';
+      ctx.beginPath(); ctx.moveTo(4, 10); ctx.lineTo(-swing, 23); ctx.lineTo(-swing + 3, 33); ctx.stroke();
+      p.rot = 0.05;
+    } else {
+      ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      p.legBend = isThrusting ? Math.min(1, p.legBend + 0.1) : Math.max(0, p.legBend - 0.1);
+      
+      ctx.strokeStyle = '#1e293b';
+      ctx.beginPath(); ctx.moveTo(0, 10); 
+      ctx.lineTo(2 - p.legBend*6, 22 - p.legBend*3); 
+      ctx.lineTo(-2 - p.legBend*12, 32 - p.legBend*6); 
+      ctx.stroke();
+      
+      ctx.strokeStyle = '#475569';
+      ctx.beginPath(); ctx.moveTo(4, 10); 
+      ctx.lineTo(6 - p.legBend*8, 22 - p.legBend*3); 
+      ctx.lineTo(2 - p.legBend*14, 33 - p.legBend*6); 
+      ctx.stroke();
+    }
+
+    let suit = ctx.createLinearGradient(-10, -20, 10, 20);
+    suit.addColorStop(0, '#e2e8f0'); suit.addColorStop(0.7, '#64748b'); suit.addColorStop(1, '#334155');
+    ctx.fillStyle = suit;
+    ctx.beginPath(); ctx.moveTo(-8, -15); ctx.lineTo(8, -15); ctx.lineTo(10, 5); ctx.lineTo(-6, 12); ctx.closePath(); ctx.fill();
+    
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath(); ctx.moveTo(-6, -10); ctx.lineTo(6, -10); ctx.lineTo(7, -3); ctx.lineTo(-5, -2); ctx.fill();
+
+    ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(2, -12); ctx.lineTo(8, 0); ctx.lineTo(12, -4); ctx.stroke();
+
+    ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.arc(2, -22, 9, 0, Math.PI*2); ctx.fill(); 
+    
+    ctx.fillStyle = '#00f0ff';
+    ctx.beginPath(); ctx.moveTo(0, -28); ctx.quadraticCurveTo(12, -28, 11, -20); ctx.quadraticCurveTo(0, -18, -1, -20); ctx.fill();
+    
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.beginPath(); ctx.ellipse(5, -25, 3, 1, Math.PI/6, 0, Math.PI*2); ctx.fill();
+  } else {
+    ctx.fillStyle = '#111'; ctx.beginPath(); ctx.roundRect(-15, -20, 30, 40, 5); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawScientist(ctx, s) {
+  ctx.save(); ctx.translate(s.x, s.y);
+  let run1 = Math.sin(s.f * 1.5) * 12; let run2 = Math.cos(s.f * 1.5) * 12;
+  ctx.strokeStyle = '#334155'; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.beginPath(); ctx.moveTo(0, -15); ctx.lineTo(run1, -8); ctx.lineTo(run2, 0); ctx.stroke();
+  ctx.strokeStyle = '#64748b'; ctx.beginPath(); ctx.moveTo(0, -15); ctx.lineTo(-run1, -8); ctx.lineTo(-run2, 0); ctx.stroke();
+  ctx.fillStyle = '#f8fafc'; ctx.beginPath(); ctx.moveTo(-5, -30); ctx.lineTo(6, -30); ctx.lineTo(8, -15); ctx.quadraticCurveTo(15, -10, 8, -5); ctx.lineTo(-5, -12); ctx.quadraticCurveTo(-15, -15, -18, -8); ctx.lineTo(-8, -20); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,0.1)'; ctx.fillRect(-2, -30, 4, 20);
+  ctx.strokeStyle = '#f8fafc'; ctx.lineWidth = 3.5; let armSwing = Math.sin(s.f * 1.5) * 5;
+  ctx.beginPath(); ctx.moveTo(-2, -28); ctx.lineTo(-6 + armSwing, -40); ctx.lineTo(-10 + armSwing, -45); ctx.stroke();
+  ctx.strokeStyle = '#e2e8f0'; ctx.beginPath(); ctx.moveTo(4, -28); ctx.lineTo(10 - armSwing, -42); ctx.lineTo(14 - armSwing, -48); ctx.stroke();
+  ctx.fillStyle = '#ffcca4'; ctx.beginPath(); ctx.arc(2, -36, 6, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#cbd5e1'; ctx.beginPath(); ctx.arc(1, -38, 6.5, Math.PI, 0); ctx.fill();
+  ctx.fillStyle = '#0ea5e9'; ctx.fillRect(3, -38, 5, 3); ctx.restore();
+}
+
+function drawMissile(ctx, m) {
+  ctx.save(); ctx.translate(m.x, m.y);
+  let fire = ctx.createLinearGradient(30, 0, 70, 0); fire.addColorStop(0, '#ffffff'); fire.addColorStop(0.2, '#ffaa00'); fire.addColorStop(1, 'transparent');
+  ctx.fillStyle = fire; ctx.beginPath(); ctx.moveTo(35, -8); ctx.lineTo(75, 0); ctx.lineTo(35, 8); ctx.fill();
+  let pulse = (frame % 20) / 20; ctx.strokeStyle = `rgba(0, 240, 255, ${1 - pulse})`; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.scale(0.3, 1); ctx.arc(120, 0, 10 + pulse * 40, 0, Math.PI*2); ctx.stroke(); ctx.scale(1/0.3, 1);
+  let body = ctx.createLinearGradient(0, -12, 0, 12); body.addColorStop(0, '#64748b'); body.addColorStop(0.5, '#1e293b'); body.addColorStop(1, '#0f172a');
+  ctx.fillStyle = body; ctx.fillRect(-20, -10, 55, 20);
+  ctx.fillStyle = '#eab308'; for(let i=0; i<3; i++) { ctx.beginPath(); ctx.moveTo(-10 + i*12, -10); ctx.lineTo(-5 + i*12, -10); ctx.lineTo(0 + i*12, 10); ctx.lineTo(-5 + i*12, 10); ctx.fill(); }
+  ctx.fillStyle = '#b91c1c'; ctx.beginPath(); ctx.moveTo(25, -10); ctx.lineTo(15, -22); ctx.lineTo(35, -22); ctx.lineTo(35, -10); ctx.fill(); ctx.beginPath(); ctx.moveTo(25, 10); ctx.lineTo(15, 22); ctx.lineTo(35, 22); ctx.lineTo(35, 10); ctx.fill(); ctx.fillStyle = '#7f1d1d'; ctx.fillRect(15, -3, 20, 6); 
+  let head = ctx.createLinearGradient(-20, -10, -20, 10); head.addColorStop(0, '#ef4444'); head.addColorStop(1, '#7f1d1d'); ctx.fillStyle = head;
+  ctx.beginPath(); ctx.moveTo(-20, -10); ctx.quadraticCurveTo(-45, -5, -45, 0); ctx.quadraticCurveTo(-45, 5, -20, 10); ctx.fill();
+  ctx.fillStyle = (frame % 10 < 5) ? '#ffffff' : '#ff0000'; ctx.beginPath(); ctx.arc(-30, 0, 2.5, 0, Math.PI*2); ctx.fill(); ctx.restore();
+}
+
+function drawWordChip(ctx, c) {
+  ctx.save(); ctx.translate(c.x, c.y);
+  
+  let pulseScale = 1 + Math.sin(frame * 0.05 + c.pulse) * 0.05;
+  ctx.scale(pulseScale, pulseScale);
+
+  let width = 260; 
+  let height = 72;
+  
+  ctx.shadowColor = '#eab308';
+  ctx.shadowBlur = 15;
+
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+  ctx.strokeStyle = '#fef08a';
+  ctx.lineWidth = 3;
+
+  ctx.beginPath();
+  ctx.roundRect(-width/2, -height/2, width, height, 12);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.shadowBlur = 0;
+
+  ctx.fillStyle = '#fef08a'; 
+  ctx.font = 'bold 32px Orbitron'; 
+  ctx.textAlign = 'center'; 
+  ctx.textBaseline = 'middle';
+  ctx.fillText(c.val, 0, 4);
+  
+  ctx.restore();
+}
+
+// ══════════════════════════════════════════
+//  BUCLE PRINCIPAL
+// ══════════════════════════════════════════
+function loop() {
+  frame++;
+  ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, W, H);
+
+  ctx.save();
+  if (screenShake > 0) { ctx.translate((Math.random()-0.5)*screenShake, (Math.random()-0.5)*screenShake); screenShake *= 0.85; }
+
+  let sc = distance * 100;
+  layer1.forEach(g => {
+    let cx = (g.x - (sc * 0.15)) % 2500; if (cx < -150) cx += 2500;
+    ctx.fillStyle = `rgba(0, 200, 255, ${g.op})`; ctx.fillRect(cx, 0, g.w, floorY);
+  });
+  layer2.forEach((s, idx) => {
+    let cx = (s.x - (sc * 0.3)) % 2500; if (cx < -150) cx += 2500;
+    ctx.fillStyle = '#0b1120'; ctx.fillRect(cx, floorY - s.h, s.w, s.h);
+    ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 2; ctx.strokeRect(cx, floorY - s.h, s.w, s.h);
+    for(let ly = 20; ly < s.h - 10; ly += 20) {
+      ctx.fillStyle = ((frame + idx*15 + ly) % 60 < 30) ? '#00f0ff' : '#1e293b'; ctx.fillRect(cx + 15, floorY - s.h + ly, 6, 4);
+      ctx.fillStyle = ((frame + idx*5 + ly) % 40 < 20) ? '#ff0055' : '#1e293b'; ctx.fillRect(cx + s.w - 20, floorY - s.h + ly, 6, 4);
+    }
+  });
+
+  ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, W, 25);
+  ctx.fillStyle = '#00f0ff'; ctx.fillRect(0, 22, W, 3);
+  ctx.fillStyle = floorGrad; ctx.fillRect(0, floorY, W, H - floorY);
+  ctx.fillStyle = '#334155'; ctx.fillRect(0, floorY, W, 4);
+  
+  ctx.fillStyle = '#eab308'; let fScroll = (sc * 1.1) % 60; ctx.beginPath();
+  for(let i = -60; i < W + 60; i += 60) {
+    let x = i - fScroll; ctx.moveTo(x, floorY + 4); ctx.lineTo(x + 25, floorY + 4); ctx.lineTo(x + 15, floorY + 20); ctx.lineTo(x - 10, floorY + 20);
+  }
+  ctx.fill();
+
+  if (phase === 'playing' || phase === 'dead') {
+    
+    // UI EDUCATIVA (CAJA DINÁMICA CORREGIDA)
+    if (!player.isDead && missionText) {
+      ctx.font = 'bold 22px Orbitron';
+      let textWidth = ctx.measureText(missionText).width;
+      let boxWidth = textWidth + 80; // Margen adaptativo
+      let boxHeight = 50;
+      let boxX = W/2 - boxWidth/2;
+      let boxY = 30;
+
+      ctx.fillStyle = 'rgba(6, 8, 20, 0.85)'; 
+      ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+      ctx.strokeStyle = '#00f0ff'; 
+      ctx.lineWidth = 2; 
+      ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
+      
+      ctx.fillStyle = '#00f0ff'; 
+      ctx.textAlign = 'center'; 
+      ctx.textBaseline = 'middle';
+      ctx.fillText(missionText, W/2, boxY + boxHeight/2 + 2); // Centrado perfecto
+      ctx.textAlign = 'left'; 
+    }
+
+    if (!player.isDead) {
+      distance += gameSpeed * 0.012;
+      if(frame % 5 === 0) distTxt.innerText = Math.floor(distance) + "M";
+      gameSpeed += 0.00065; // Incremento acorde
+      
+      if (isThrusting) {
+        player.vy -= player.thrust; player.rot = Math.max(-0.15, player.rot - 0.02);
+        if (frame % 3 === 0) {
+          bullets.push({ x: player.x - 20, y: player.y + 10, vx: (Math.random()-0.5)*3-1, vy: 14, bounces: 0 });
+          sparks.push({ x: player.x - 20, y: player.y + 15, vx: (Math.random()-0.5)*5, vy: Math.random()*5+5, life: 1, color: '#00f0ff', size: Math.random()*4+2, blend: true });
+        }
+      } else if (player.y < floorY - 26) {
+        player.rot = Math.min(0.18, player.rot + 0.015);
+      }
+      
+      player.vy += player.gravity; player.y += player.vy;
+      if (player.y + 25 > floorY) { player.y = floorY - 25; player.vy = 0; }
+      if (player.y - 25 < 30) { player.y = 30 + 25; player.vy = 0; }
+      
+      if (frame % 220 === 0) spawnZapper();
+      if (frame % 600 === 0) spawnGrammarWords(); 
+      if (frame % 700 === 0) spawnMissile();
+      if (Math.random() < 0.007) spawnScientist();
+    } else {
+      player.vy += player.gravity; player.y += player.vy;
+      if (player.y + 25 > floorY) { player.y = floorY - 25; player.vy = 0; }
+      player.x -= gameSpeed * 0.4; player.rot += 0.1; gameSpeed *= 0.95;
+      if(frame % 3 === 0) sparks.push({ x: player.x, y: player.y, vx: Math.random()*2, vy: -Math.random()*4, life: 0.8, color: '#334155', size: Math.random()*6+4 });
+    }
+
+    for (let i = scientists.length - 1; i >= 0; i--) {
+      let s = scientists[i]; s.x -= (gameSpeed - s.vx); s.f += 0.25; drawScientist(ctx, s);
+      if (s.x < -50) scientists.splice(i, 1);
+    }
+
+    for (let i = coinList.length - 1; i >= 0; i--) {
+      let c = coinList[i]; c.x -= gameSpeed;
+      if (!player.isDead && Math.abs(player.x - c.x) < 140 && Math.abs(player.y - c.y) < 50) {
+        
+        if (c.val === correctWord) {
+          coins++; coinTxt.innerText = coins;
+          for(let j=0; j<20; j++) sparks.push({ x: c.x + (Math.random()-0.5)*100, y: c.y, vx:(Math.random()-0.5)*12, vy:(Math.random()-0.5)*12, life:1, color:'#00f0ff', size:4, blend:true });
+          coinList = []; 
+          newGrammarProblem(); 
+          break; 
+        } else {
+          screenShake = 15; 
+          coins = Math.max(0, coins - 1); 
+          coinTxt.innerText = coins;
+          for(let j=0; j<15; j++) sparks.push({ x: c.x + (Math.random()-0.5)*100, y: c.y, vx:(Math.random()-0.5)*10, vy:(Math.random()-0.5)*10, life:1, color:'#ff0055', size:3, blend:true });
+          coinList.splice(i, 1); 
+          continue;
+        }
+      }
+      drawWordChip(ctx, c);
+      if (c.x < -150) coinList.splice(i, 1);
+    }
+
+    // --- LÓGICA DE MISILES MODIFICADA PARA BAJAR DIFICULTAD ---
+    for (let i = missiles.length - 1; i >= 0; i--) {
+      let m = missiles[i];
+      if (m.state === 'warning') {
+        m.timer--;
+        if (frame % 8 < 5) {
+          ctx.fillStyle = 'rgba(255, 0, 85, 0.2)'; ctx.fillRect(W - 75, m.y - 20, 50, 40);
+          ctx.strokeStyle = '#ff0055'; ctx.strokeRect(W - 75, m.y - 20, 50, 40);
+          ctx.fillStyle = '#ff0055'; ctx.font = 'bold 20px Orbitron'; ctx.fillText("⚠", W - 58, m.y + 7);
+          ctx.beginPath(); ctx.moveTo(W - 75, m.y); ctx.lineTo(player.x, player.y); ctx.stroke();
+        }
+        if (m.timer <= 0) { m.state = 'firing'; m.vx = gameSpeed * 2.625; m.x = W + 60; }
+      } else {
+        m.x -= m.vx;
+        
+        // MODIFICACIÓN: Reducida la velocidad de giro (turnSpeed) y modificado el margen (W * 0.35) 
+        // para que el misil deje de seguirte mucho antes.
+        let yDiff = player.y - m.y; let turnSpeed = 0.015; 
+        if (m.x > W * 0.35) { m.y += yDiff * turnSpeed; }
+        
+        sparks.push({ x: m.x + 40, y: m.y + (Math.random()-0.5)*10, vx: Math.random()*3+3, vy: (Math.random()-0.5)*2, life: 0.7, color: 'rgba(255,255,255,0.4)', size: Math.random()*6+2, blend: true });
+        if (!player.isDead && Math.abs(player.x - m.x) < 35 && Math.abs(player.y - m.y) < 22) die();
+        drawMissile(ctx, m);
+        if (m.x < -120) missiles.splice(i, 1);
+      }
+    }
+
+    for (let i = zappers.length - 1; i >= 0; i--) {
+      let z = zappers[i]; z.x -= gameSpeed; z.ang += z.spin;
+      let cos = Math.cos(z.ang)*(z.len/2), sin = Math.sin(z.ang)*(z.len/2);
+      let x1 = z.x + cos, y1 = z.y + sin, x2 = z.x - cos, y2 = z.y - sin;
+      if (!player.isDead) {
+        let minX = Math.min(x1, x2) - 10, maxX = Math.max(x1, x2) + 10;
+        let minY = Math.min(y1, y2) - 10, maxY = Math.max(y1, y2) + 10;
+        if (player.x > minX && player.x < maxX && player.y > minY && player.y < maxY) die();
+      }
+      ctx.save(); ctx.translate(z.x, z.y); ctx.rotate(z.ang); ctx.fillStyle = ironGrad;
+      ctx.beginPath(); ctx.arc(-z.len/2, 0, 14, 0, Math.PI*2); ctx.arc(z.len/2, 0, 14, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#0f172a'; ctx.beginPath(); ctx.arc(-z.len/2, 0, 8, 0, Math.PI*2); ctx.arc(z.len/2, 0, 8, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#ff0055'; ctx.beginPath(); ctx.arc(-z.len/2, 0, 4, 0, Math.PI*2); ctx.arc(z.len/2, 0, 4, 0, Math.PI*2); ctx.fill();
+      ctx.globalCompositeOperation = 'screen'; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      for(let w = 0; w < 2; w++) {
+        ctx.beginPath(); ctx.moveTo(-z.len/2, 0); let segments = 5;
+        for(let j=1; j<segments; j++) { let lx = -z.len/2 + (z.len/segments)*j; let ly = (Math.random()-0.5)*18; ctx.lineTo(lx, ly); }
+        ctx.lineTo(z.len/2, 0); ctx.strokeStyle = w === 0 ? 'rgba(255, 0, 85, 0.6)' : 'rgba(0, 240, 255, 0.8)'; ctx.lineWidth = w === 0 ? 10 : 4; ctx.stroke();
+      }
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke(); ctx.restore();
+      if (z.x < -200) zappers.splice(i, 1);
+    }
+
+    for (let i = bullets.length - 1; i >= 0; i--) {
+      let b = bullets[i]; b.x -= gameSpeed * 0.4; b.x += b.vx; b.y += b.vy; b.vy += 0.6;
+      for (let j = scientists.length - 1; j >= 0; j--) {
+        let s = scientists[j];
+        if (Math.abs(b.x - s.x) < 20 && Math.abs(b.y - s.y) < 35) {
+          for(let k=0; k<12; k++) sparks.push({ x: s.x, y: s.y - 15, vx: (Math.random()-0.5)*12, vy: (Math.random()-0.5)*12, life: 1, color: '#ef4444', size: Math.random()*5+2, blend: false });
+          scientists.splice(j, 1); b.bounces = 99; break; 
+        }
+      }
+      if (b.y > floorY) { b.y = floorY; b.vy *= -0.4; b.bounces++; }
+      ctx.fillStyle = '#00f0ff'; ctx.fillRect(b.x, b.y, 3, 10);
+      if (b.bounces > 1 || b.x < -10) bullets.splice(i, 1);
+    }
+
+    for (let i = sparks.length - 1; i >= 0; i--) {
+      let p = sparks[i]; if(p.blend) ctx.globalCompositeOperation = 'screen';
+      ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, p.size, p.size);
+      p.x += p.vx - gameSpeed*0.2; p.y += p.vy; p.life -= 0.04; ctx.globalCompositeOperation = 'source-over';
+      if (p.life <= 0) sparks.splice(i, 1);
+    }
+    ctx.globalAlpha = 1;
+
+    drawPlayer(ctx, player);
+  }
+
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+  ctx.font = '14px "Share Tech Mono", monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText("Creado por el Prof. Gastón", W - 15, H - 15);
+  ctx.textAlign = 'left';
+
+  ctx.restore(); 
+  requestAnimationFrame(loop);
+}
+
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
