@@ -69,6 +69,58 @@
 </div>
 
 <script>
+// ══════════════════════════════════════════
+//  MOTOR DE AUDIO PROCEDURAL (SINTETIZADOR 8-BIT)
+// ══════════════════════════════════════════
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+const fx = {
+  play: (freq, type, dur, vol, slide=0) => {
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    let osc = audioCtx.createOscillator();
+    let gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    if(slide !== 0) osc.frequency.linearRampToValueAtTime(freq + slide, audioCtx.currentTime + dur);
+    
+    gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+    
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + dur);
+  },
+  noise: (dur, vol) => {
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    let bufSize = audioCtx.sampleRate * dur;
+    let buf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+    let data = buf.getChannelData(0);
+    for(let i=0; i<bufSize; i++) data[i] = Math.random() * 2 - 1;
+    let src = audioCtx.createBufferSource();
+    src.buffer = buf;
+    let gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+    src.connect(gain);
+    gain.connect(audioCtx.destination);
+    src.start();
+  }
+};
+
+const sfx = {
+  pew: () => { fx.play(400, 'square', 0.1, 0.015, -200); fx.noise(0.1, 0.01); }, // Jetpack + láser
+  win: () => { fx.play(523.25, 'sine', 0.1, 0.1); setTimeout(() => fx.play(659.25, 'sine', 0.2, 0.1), 100); }, // Arpegio feliz
+  error: () => fx.play(150, 'sawtooth', 0.3, 0.05, -50), // Zumbido grave
+  die: () => { fx.noise(0.6, 0.3); fx.play(100, 'sawtooth', 0.8, 0.15, -80); }, // Explosión grave
+  beep: () => fx.play(900, 'square', 0.1, 0.03), // Radar misil
+  hit: () => fx.noise(0.15, 0.05) // Impacto bala a científico
+};
+
+
+// ══════════════════════════════════════════
+//  MOTOR GRÁFICO Y VARIABLES
+// ══════════════════════════════════════════
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
@@ -96,47 +148,38 @@ let frame = 0, phase = 'menu', distance = 0, coins = 0, gameSpeed = 4.125, scree
 let player = {}, bullets = [], zappers = [], missiles = [], coinList = [], scientists = [], sparks = [];
 
 // ══════════════════════════════════════════
-//  SISTEMA EDUCATIVO: LENGUA Y GRAMÁTICA (REPERTORIO AMPLIADO)
+//  SISTEMA EDUCATIVO: LENGUA Y GRAMÁTICA 
 // ══════════════════════════════════════════
 const wordCategories = [
   { 
     name: "SUSTANTIVO COMÚN", 
-    words: [
-      "PERRO", "MESA", "RELOJ", "AUTO", "LIBRO", "ÁRBOL", "SILLA", "GATO", "CASA", "LÁPIZ",
-      "VASO", "PUERTA", "VENTANA", "CAMA", "TAZA", "CALLE", "CIUDAD", "RÍO", "MONTAÑA", "NUBE",
-      "FLOR", "PLATO", "ZAPATO", "BOLSA", "TELÉFONO"
-    ] 
+    words: ["PERRO", "MESA", "RELOJ", "AUTO", "LIBRO", "ÁRBOL", "SILLA", "GATO", "CASA", "LÁPIZ",
+            "VASO", "PUERTA", "VENTANA", "CAMA", "TAZA", "CALLE", "CIUDAD", "RÍO", "MONTAÑA", "NUBE",
+            "FLOR", "PLATO", "ZAPATO", "BOLSA", "TELÉFONO"] 
   },
   { 
     name: "SUSTANTIVO PROPIO", 
-    words: [
-      "MARÍA", "PEDRO", "FRANCIA", "PARÍS", "LUCAS", "AMAZONAS", "CARLOS", "MADRID", "LAURA", "JÚPITER",
-      "LONDRES", "BRASIL", "ROMA", "DIEGO", "ANA", "TOKIO", "BERLÍN", "SOFÍA", "MARTÍN", "ANDES",
-      "MÉXICO", "COLOMBIA", "JULIA", "NILO", "VENUS"
-    ] 
+    words: ["MARÍA", "PEDRO", "FRANCIA", "PARÍS", "LUCAS", "AMAZONAS", "CARLOS", "MADRID", "LAURA", "JÚPITER",
+            "LONDRES", "BRASIL", "ROMA", "DIEGO", "ANA", "TOKIO", "BERLÍN", "SOFÍA", "MARTÍN", "ANDES",
+            "MÉXICO", "COLOMBIA", "JULIA", "NILO", "VENUS"] 
   },
   { 
     name: "ADJETIVO", 
-    words: [
-      "RÁPIDO", "FELIZ", "GRANDE", "LENTO", "ROJO", "SUAVE", "OSCURO", "FUERTE", "LINDO", "FRÍO",
-      "CALIENTE", "ALTO", "BAJO", "DULCE", "AMARGO", "BRILLANTE", "NUEVO", "VIEJO", "LIMPIO", "SUCIO",
-      "BLANDO", "DURO", "HERMOSO", "FEO", "TRISTE"
-    ] 
+    words: ["RÁPIDO", "FELIZ", "GRANDE", "LENTO", "ROJO", "SUAVE", "OSCURO", "FUERTE", "LINDO", "FRÍO",
+            "CALIENTE", "ALTO", "BAJO", "DULCE", "AMARGO", "BRILLANTE", "NUEVO", "VIEJO", "LIMPIO", "SUCIO",
+            "BLANDO", "DURO", "HERMOSO", "FEO", "TRISTE"] 
   },
   { 
     name: "VERBO", 
-    words: [
-      "CORRER", "SALTAR", "JUGAR", "COMER", "VOLAR", "LEER", "DORMIR", "PENSAR", "HABLAR", "LLORAR",
-      "CANTAR", "BAILAR", "ESTUDIAR", "TRABAJAR", "DIBUJAR", "PINTAR", "ESCRIBIR", "MIRAR", "ESCUCHAR", "CAMINAR",
-      "REÍR", "GRITAR", "VIAJAR", "NADAR", "SOÑAR"
-    ] 
+    words: ["CORRER", "SALTAR", "JUGAR", "COMER", "VOLAR", "LEER", "DORMIR", "PENSAR", "HABLAR", "LLORAR",
+            "CANTAR", "BAILAR", "ESTUDIAR", "TRABAJAR", "DIBUJAR", "PINTAR", "ESCRIBIR", "MIRAR", "ESCUCHAR", "CAMINAR",
+            "REÍR", "GRITAR", "VIAJAR", "NADAR", "SOÑAR"] 
   }
 ];
 
 let missionText = "";
 let correctWord = "";
 
-// DOM Cache
 const distTxt = document.getElementById('dist-txt');
 const coinTxt = document.getElementById('coin-txt');
 
@@ -150,16 +193,34 @@ function initParallax() {
 initParallax();
 
 // Input (Mouse / Touch)
-function press(e) { if (e.type === 'touchstart') e.preventDefault(); if (phase === 'playing') isThrusting = true; }
-function release(e) { if (e.type === 'touchend') e.preventDefault(); isThrusting = false; }
-window.addEventListener('mousedown', press); window.addEventListener('touchstart', press, {passive: false});
-window.addEventListener('mouseup', release); window.addEventListener('touchend', release);
+function press(e) { 
+  if (e.type === 'touchstart') e.preventDefault(); 
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  if (phase === 'playing') isThrusting = true; 
+}
+function release(e) { 
+  if (e.type === 'touchend') e.preventDefault(); 
+  isThrusting = false; 
+}
+window.addEventListener('mousedown', press); 
+window.addEventListener('touchstart', press, {passive: false});
+window.addEventListener('mouseup', release); 
+window.addEventListener('touchend', release);
 
 // Input (Teclado)
-window.addEventListener('keydown', (e) => { if (e.code === 'Space') { e.preventDefault(); if (phase === 'playing') isThrusting = true; }});
-window.addEventListener('keyup', (e) => { if (e.code === 'Space') { e.preventDefault(); isThrusting = false; }});
+window.addEventListener('keydown', (e) => { 
+  if (e.code === 'Space') { 
+    e.preventDefault(); 
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    if (phase === 'playing') isThrusting = true; 
+  }
+});
+window.addEventListener('keyup', (e) => { 
+  if (e.code === 'Space') { e.preventDefault(); isThrusting = false; }
+});
 
 function startGame() {
+  if (audioCtx.state === 'suspended') audioCtx.resume();
   document.getElementById('overlay').style.opacity = '0';
   setTimeout(() => document.getElementById('overlay').style.display = 'none', 300);
   document.getElementById('ui').style.display = 'flex';
@@ -176,6 +237,7 @@ function startGame() {
 
 function die() {
   player.isDead = true; isThrusting = false; screenShake = 30;
+  sfx.die(); // Sonido de muerte
   for(let i=0; i<45; i++) sparks.push({ x: player.x, y: player.y, vx: (Math.random()-0.5)*18, vy: (Math.random()-0.5)*18, life: 1, color: Math.random() < 0.5 ? '#ff2a2a' : '#ffaa00', size: Math.random()*7+3, blend: true });
   setTimeout(() => {
     phase = 'menu';
@@ -189,15 +251,10 @@ function die() {
   }, 1600);
 }
 
-// ══════════════════════════════════════════
-//  LÓGICA DEL PROBLEMA GRAMATICAL
-// ══════════════════════════════════════════
 function newGrammarProblem() {
   let targetCatIndex = Math.floor(Math.random() * wordCategories.length);
   let targetCat = wordCategories[targetCatIndex];
-  
   missionText = `MISIÓN: BUSCA UN ${targetCat.name}`;
-  
   let correctIdx = Math.floor(Math.random() * targetCat.words.length);
   correctWord = targetCat.words[correctIdx];
 }
@@ -205,14 +262,10 @@ function newGrammarProblem() {
 function spawnGrammarWords() {
   if(coinList.length > 0) return; 
   if(!missionText) newGrammarProblem();
-  
   let sx = W + 150; 
-
   let targetName = missionText.replace("MISIÓN: BUSCA UN ", "");
   let targetCatIndex = wordCategories.findIndex(c => c.name === targetName);
-  
   let options = [correctWord];
-
   let otherCategories = wordCategories.filter((c, i) => i !== targetCatIndex);
   otherCategories.sort(() => Math.random() - 0.5); 
 
@@ -221,23 +274,11 @@ function spawnGrammarWords() {
     let wrongWord = wrongCat.words[Math.floor(Math.random() * wrongCat.words.length)];
     options.push(wrongWord);
   }
-
   options.sort(() => Math.random() - 0.5); 
-
-  let lanes = [
-    110,                 
-    (floorY + 40) / 2,   
-    floorY - 45          
-  ];
-
-  for(let i=0; i<3; i++) {
-    coinList.push({ x: sx, y: lanes[i], pulse: i, val: options[i] });
-  }
+  let lanes = [ 110, (floorY + 40) / 2, floorY - 45 ];
+  for(let i=0; i<3; i++) coinList.push({ x: sx, y: lanes[i], pulse: i, val: options[i] });
 }
 
-// ══════════════════════════════════════════
-//  SPAWNERS DE ENEMIGOS
-// ══════════════════════════════════════════
 function spawnZapper() {
   if(zappers.length > 3) return;
   zappers.push({ x: W + 150, y: Math.random() * (floorY - 220) + 90, len: Math.random() * 110 + 100, ang: Math.random() * Math.PI, spin: (Math.random() - 0.5) * 0.03 });
@@ -255,17 +296,11 @@ function spawnScientist() {
 //  RENDER DE ENTIDADES 2D
 // ══════════════════════════════════════════
 function drawPlayer(ctx, p) {
-  ctx.save();
-  ctx.translate(p.x, p.y);
-  ctx.rotate(p.rot);
-  ctx.scale(1.15, 1.15);
-  
+  ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.scale(1.15, 1.15);
   if (!p.isDead) {
     let pack = ctx.createLinearGradient(-24, -15, -12, 15);
     pack.addColorStop(0, '#00f0ff'); pack.addColorStop(0.3, '#334155'); pack.addColorStop(1, '#0f172a');
-    ctx.fillStyle = pack; 
-    ctx.beginPath(); ctx.roundRect(-24, -16, 12, 30, 4); ctx.fill(); 
-    
+    ctx.fillStyle = pack; ctx.beginPath(); ctx.roundRect(-24, -16, 12, 30, 4); ctx.fill(); 
     ctx.fillStyle = '#64748b'; ctx.fillRect(-22, 14, 8, 6);
     ctx.fillStyle = '#1e293b'; ctx.fillRect(-23, 18, 10, 4);
 
@@ -274,57 +309,30 @@ function drawPlayer(ctx, p) {
       ctx.globalCompositeOperation = 'screen';
       let flame = ctx.createLinearGradient(0, 20, 0, 20 + fLength);
       flame.addColorStop(0, '#ffffff'); flame.addColorStop(0.3, '#00f0ff'); flame.addColorStop(1, 'transparent');
-      ctx.fillStyle = flame;
-      ctx.beginPath(); ctx.moveTo(-23, 22); ctx.lineTo(-13, 22); ctx.lineTo(-18, 22 + fLength); ctx.fill();
+      ctx.fillStyle = flame; ctx.beginPath(); ctx.moveTo(-23, 22); ctx.lineTo(-13, 22); ctx.lineTo(-18, 22 + fLength); ctx.fill();
       ctx.globalCompositeOperation = 'source-over';
     }
 
     if (p.y >= floorY - 26 && !isThrusting) {
-      p.runFrame += 0.4;
-      let swing = Math.sin(p.runFrame) * 12; 
+      p.runFrame += 0.4; let swing = Math.sin(p.runFrame) * 12; 
       ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-      
-      ctx.strokeStyle = '#1e293b';
-      ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(swing, 23); ctx.lineTo(swing + 3, 33); ctx.stroke();
-      
-      ctx.strokeStyle = '#475569';
-      ctx.beginPath(); ctx.moveTo(4, 10); ctx.lineTo(-swing, 23); ctx.lineTo(-swing + 3, 33); ctx.stroke();
+      ctx.strokeStyle = '#1e293b'; ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(swing, 23); ctx.lineTo(swing + 3, 33); ctx.stroke();
+      ctx.strokeStyle = '#475569'; ctx.beginPath(); ctx.moveTo(4, 10); ctx.lineTo(-swing, 23); ctx.lineTo(-swing + 3, 33); ctx.stroke();
       p.rot = 0.05;
     } else {
       ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
       p.legBend = isThrusting ? Math.min(1, p.legBend + 0.1) : Math.max(0, p.legBend - 0.1);
-      
-      ctx.strokeStyle = '#1e293b';
-      ctx.beginPath(); ctx.moveTo(0, 10); 
-      ctx.lineTo(2 - p.legBend*6, 22 - p.legBend*3); 
-      ctx.lineTo(-2 - p.legBend*12, 32 - p.legBend*6); 
-      ctx.stroke();
-      
-      ctx.strokeStyle = '#475569';
-      ctx.beginPath(); ctx.moveTo(4, 10); 
-      ctx.lineTo(6 - p.legBend*8, 22 - p.legBend*3); 
-      ctx.lineTo(2 - p.legBend*14, 33 - p.legBend*6); 
-      ctx.stroke();
+      ctx.strokeStyle = '#1e293b'; ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(2 - p.legBend*6, 22 - p.legBend*3); ctx.lineTo(-2 - p.legBend*12, 32 - p.legBend*6); ctx.stroke();
+      ctx.strokeStyle = '#475569'; ctx.beginPath(); ctx.moveTo(4, 10); ctx.lineTo(6 - p.legBend*8, 22 - p.legBend*3); ctx.lineTo(2 - p.legBend*14, 33 - p.legBend*6); ctx.stroke();
     }
 
-    let suit = ctx.createLinearGradient(-10, -20, 10, 20);
-    suit.addColorStop(0, '#e2e8f0'); suit.addColorStop(0.7, '#64748b'); suit.addColorStop(1, '#334155');
-    ctx.fillStyle = suit;
-    ctx.beginPath(); ctx.moveTo(-8, -15); ctx.lineTo(8, -15); ctx.lineTo(10, 5); ctx.lineTo(-6, 12); ctx.closePath(); ctx.fill();
-    
-    ctx.fillStyle = '#1e293b';
-    ctx.beginPath(); ctx.moveTo(-6, -10); ctx.lineTo(6, -10); ctx.lineTo(7, -3); ctx.lineTo(-5, -2); ctx.fill();
-
-    ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.moveTo(2, -12); ctx.lineTo(8, 0); ctx.lineTo(12, -4); ctx.stroke();
-
+    let suit = ctx.createLinearGradient(-10, -20, 10, 20); suit.addColorStop(0, '#e2e8f0'); suit.addColorStop(0.7, '#64748b'); suit.addColorStop(1, '#334155');
+    ctx.fillStyle = suit; ctx.beginPath(); ctx.moveTo(-8, -15); ctx.lineTo(8, -15); ctx.lineTo(10, 5); ctx.lineTo(-6, 12); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.moveTo(-6, -10); ctx.lineTo(6, -10); ctx.lineTo(7, -3); ctx.lineTo(-5, -2); ctx.fill();
+    ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(2, -12); ctx.lineTo(8, 0); ctx.lineTo(12, -4); ctx.stroke();
     ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.arc(2, -22, 9, 0, Math.PI*2); ctx.fill(); 
-    
-    ctx.fillStyle = '#00f0ff';
-    ctx.beginPath(); ctx.moveTo(0, -28); ctx.quadraticCurveTo(12, -28, 11, -20); ctx.quadraticCurveTo(0, -18, -1, -20); ctx.fill();
-    
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.beginPath(); ctx.ellipse(5, -25, 3, 1, Math.PI/6, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#00f0ff'; ctx.beginPath(); ctx.moveTo(0, -28); ctx.quadraticCurveTo(12, -28, 11, -20); ctx.quadraticCurveTo(0, -18, -1, -20); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.beginPath(); ctx.ellipse(5, -25, 3, 1, Math.PI/6, 0, Math.PI*2); ctx.fill();
   } else {
     ctx.fillStyle = '#111'; ctx.beginPath(); ctx.roundRect(-15, -20, 30, 40, 5); ctx.fill();
   }
@@ -364,33 +372,13 @@ function drawMissile(ctx, m) {
 
 function drawWordChip(ctx, c) {
   ctx.save(); ctx.translate(c.x, c.y);
-  
-  let pulseScale = 1 + Math.sin(frame * 0.05 + c.pulse) * 0.05;
-  ctx.scale(pulseScale, pulseScale);
-
-  let width = 260; 
-  let height = 72;
-  
-  ctx.shadowColor = '#eab308';
-  ctx.shadowBlur = 15;
-
-  ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-  ctx.strokeStyle = '#fef08a';
-  ctx.lineWidth = 3;
-
-  ctx.beginPath();
-  ctx.roundRect(-width/2, -height/2, width, height, 12);
-  ctx.fill();
-  ctx.stroke();
-
+  let pulseScale = 1 + Math.sin(frame * 0.05 + c.pulse) * 0.05; ctx.scale(pulseScale, pulseScale);
+  let width = 260; let height = 72;
+  ctx.shadowColor = '#eab308'; ctx.shadowBlur = 15;
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.9)'; ctx.strokeStyle = '#fef08a'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.roundRect(-width/2, -height/2, width, height, 12); ctx.fill(); ctx.stroke();
   ctx.shadowBlur = 0;
-
-  ctx.fillStyle = '#fef08a'; 
-  ctx.font = 'bold 32px Orbitron'; 
-  ctx.textAlign = 'center'; 
-  ctx.textBaseline = 'middle';
-  ctx.fillText(c.val, 0, 4);
-  
+  ctx.fillStyle = '#fef08a'; ctx.font = 'bold 32px Orbitron'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(c.val, 0, 4);
   ctx.restore();
 }
 
@@ -405,10 +393,7 @@ function loop() {
   if (screenShake > 0) { ctx.translate((Math.random()-0.5)*screenShake, (Math.random()-0.5)*screenShake); screenShake *= 0.85; }
 
   let sc = distance * 100;
-  layer1.forEach(g => {
-    let cx = (g.x - (sc * 0.15)) % 2500; if (cx < -150) cx += 2500;
-    ctx.fillStyle = `rgba(0, 200, 255, ${g.op})`; ctx.fillRect(cx, 0, g.w, floorY);
-  });
+  layer1.forEach(g => { let cx = (g.x - (sc * 0.15)) % 2500; if (cx < -150) cx += 2500; ctx.fillStyle = `rgba(0, 200, 255, ${g.op})`; ctx.fillRect(cx, 0, g.w, floorY); });
   layer2.forEach((s, idx) => {
     let cx = (s.x - (sc * 0.3)) % 2500; if (cx < -150) cx += 2500;
     ctx.fillStyle = '#0b1120'; ctx.fillRect(cx, floorY - s.h, s.w, s.h);
@@ -425,43 +410,27 @@ function loop() {
   ctx.fillStyle = '#334155'; ctx.fillRect(0, floorY, W, 4);
   
   ctx.fillStyle = '#eab308'; let fScroll = (sc * 1.1) % 60; ctx.beginPath();
-  for(let i = -60; i < W + 60; i += 60) {
-    let x = i - fScroll; ctx.moveTo(x, floorY + 4); ctx.lineTo(x + 25, floorY + 4); ctx.lineTo(x + 15, floorY + 20); ctx.lineTo(x - 10, floorY + 20);
-  }
+  for(let i = -60; i < W + 60; i += 60) { let x = i - fScroll; ctx.moveTo(x, floorY + 4); ctx.lineTo(x + 25, floorY + 4); ctx.lineTo(x + 15, floorY + 20); ctx.lineTo(x - 10, floorY + 20); }
   ctx.fill();
 
   if (phase === 'playing' || phase === 'dead') {
-    
-    // UI EDUCATIVA (CAJA DINÁMICA CORREGIDA)
     if (!player.isDead && missionText) {
       ctx.font = 'bold 22px Orbitron';
-      let textWidth = ctx.measureText(missionText).width;
-      let boxWidth = textWidth + 80; // Margen adaptativo
-      let boxHeight = 50;
-      let boxX = W/2 - boxWidth/2;
-      let boxY = 30;
-
-      ctx.fillStyle = 'rgba(6, 8, 20, 0.85)'; 
-      ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
-      ctx.strokeStyle = '#00f0ff'; 
-      ctx.lineWidth = 2; 
-      ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
-      
-      ctx.fillStyle = '#00f0ff'; 
-      ctx.textAlign = 'center'; 
-      ctx.textBaseline = 'middle';
-      ctx.fillText(missionText, W/2, boxY + boxHeight/2 + 2); // Centrado perfecto
-      ctx.textAlign = 'left'; 
+      let textWidth = ctx.measureText(missionText).width; let boxWidth = textWidth + 80; let boxHeight = 50; let boxX = W/2 - boxWidth/2; let boxY = 30;
+      ctx.fillStyle = 'rgba(6, 8, 20, 0.85)'; ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+      ctx.strokeStyle = '#00f0ff'; ctx.lineWidth = 2; ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
+      ctx.fillStyle = '#00f0ff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(missionText, W/2, boxY + boxHeight/2 + 2); ctx.textAlign = 'left'; 
     }
 
     if (!player.isDead) {
       distance += gameSpeed * 0.012;
       if(frame % 5 === 0) distTxt.innerText = Math.floor(distance) + "M";
-      gameSpeed += 0.00065; // Incremento acorde
+      gameSpeed += 0.00065; 
       
       if (isThrusting) {
         player.vy -= player.thrust; player.rot = Math.max(-0.15, player.rot - 0.02);
         if (frame % 3 === 0) {
+          sfx.pew(); // Sonido Láser Jetpack
           bullets.push({ x: player.x - 20, y: player.y + 10, vx: (Math.random()-0.5)*3-1, vy: 14, bounces: 0 });
           sparks.push({ x: player.x - 20, y: player.y + 15, vx: (Math.random()-0.5)*5, vy: Math.random()*5+5, life: 1, color: '#00f0ff', size: Math.random()*4+2, blend: true });
         }
@@ -494,12 +463,14 @@ function loop() {
       if (!player.isDead && Math.abs(player.x - c.x) < 140 && Math.abs(player.y - c.y) < 50) {
         
         if (c.val === correctWord) {
+          sfx.win(); // Sonido Correcto
           coins++; coinTxt.innerText = coins;
           for(let j=0; j<20; j++) sparks.push({ x: c.x + (Math.random()-0.5)*100, y: c.y, vx:(Math.random()-0.5)*12, vy:(Math.random()-0.5)*12, life:1, color:'#00f0ff', size:4, blend:true });
           coinList = []; 
           newGrammarProblem(); 
           break; 
         } else {
+          sfx.error(); // Sonido Error
           screenShake = 15; 
           coins = Math.max(0, coins - 1); 
           coinTxt.innerText = coins;
@@ -512,11 +483,12 @@ function loop() {
       if (c.x < -150) coinList.splice(i, 1);
     }
 
-    // --- LÓGICA DE MISILES MODIFICADA PARA BAJAR DIFICULTAD ---
     for (let i = missiles.length - 1; i >= 0; i--) {
       let m = missiles[i];
       if (m.state === 'warning') {
         m.timer--;
+        if (frame % 8 === 0) sfx.beep(); // Sonido Alerta Misil
+        
         if (frame % 8 < 5) {
           ctx.fillStyle = 'rgba(255, 0, 85, 0.2)'; ctx.fillRect(W - 75, m.y - 20, 50, 40);
           ctx.strokeStyle = '#ff0055'; ctx.strokeRect(W - 75, m.y - 20, 50, 40);
@@ -526,12 +498,8 @@ function loop() {
         if (m.timer <= 0) { m.state = 'firing'; m.vx = gameSpeed * 2.625; m.x = W + 60; }
       } else {
         m.x -= m.vx;
-        
-        // MODIFICACIÓN: Reducida la velocidad de giro (turnSpeed) y modificado el margen (W * 0.35) 
-        // para que el misil deje de seguirte mucho antes.
         let yDiff = player.y - m.y; let turnSpeed = 0.015; 
         if (m.x > W * 0.35) { m.y += yDiff * turnSpeed; }
-        
         sparks.push({ x: m.x + 40, y: m.y + (Math.random()-0.5)*10, vx: Math.random()*3+3, vy: (Math.random()-0.5)*2, life: 0.7, color: 'rgba(255,255,255,0.4)', size: Math.random()*6+2, blend: true });
         if (!player.isDead && Math.abs(player.x - m.x) < 35 && Math.abs(player.y - m.y) < 22) die();
         drawMissile(ctx, m);
@@ -567,6 +535,7 @@ function loop() {
       for (let j = scientists.length - 1; j >= 0; j--) {
         let s = scientists[j];
         if (Math.abs(b.x - s.x) < 20 && Math.abs(b.y - s.y) < 35) {
+          sfx.hit(); // Sonido Científico Hit
           for(let k=0; k<12; k++) sparks.push({ x: s.x, y: s.y - 15, vx: (Math.random()-0.5)*12, vy: (Math.random()-0.5)*12, life: 1, color: '#ef4444', size: Math.random()*5+2, blend: false });
           scientists.splice(j, 1); b.bounces = 99; break; 
         }
