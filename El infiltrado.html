@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>El infiltrado - Prof. Gastón</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-matrix: #010409; --panel-cyber: rgba(2, 6, 12, 0.92);
+    --neon-cyber: #00ff66; --neon-core: #00e5ff; --neon-alert: #ff0055;
+    --neon-warn: #f1c40f; --grid-glow: rgba(0, 255, 102, 0.08);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+  body { background: var(--bg-matrix); color: #fff; font-family: 'Orbitron', sans-serif; overflow: hidden; display: flex; height: 100vh; position: relative; }
+  
+  /* --- MARCA DE AGUA DEL PROFESOR (SIEMPRE VISIBLE ABAJO DERECHA) --- */
+  body::before {
+    content: "Creado por el Prof. Gastón";
+    position: absolute;
+    bottom: 12px;
+    right: 25px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1.1rem;
+    color: rgba(0, 255, 102, 0.3);
+    z-index: 1001;
+    pointer-events: none;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  /* --- EFECTO CRT MONITOR --- */
+  body::after { content: " "; display: block; position: fixed; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); z-index: 999; background-size: 100% 4px, 6px 100%; pointer-events: none; opacity: 0.4; }
+
+  #main-layout { display: flex; width: 100%; height: 100%; padding: 25px; gap: 25px; flex-direction: row; }
+
+  /* --- NUEVA DISPOSICIÓN: PANEL COMPILADOR DE BUCLES A LA IZQUIERDA --- */
+  #ide-section { width: 450px; background: var(--panel-cyber); border: 1px solid rgba(0, 229, 255, 0.2); border-radius: 16px; display: flex; flex-direction: column; padding: 20px; box-shadow: 15px 0 40px rgba(0,0,0,0.8); position: relative; z-index: 50; }
+  #ide-section::before { content: 'PROG-TERMINAL v7.6 // IDE_LEFT_MODE'; position: absolute; top: -10px; left: 20px; background: #02060c; padding: 0 10px; font-family: 'Share Tech Mono'; color: var(--neon-core); font-size: 0.85rem; border: 1px solid rgba(0, 229, 255, 0.2); }
+
+  .section-label { font-size: 0.9rem; color: #627d98; font-family: 'Share Tech Mono', monospace; margin: 15px 0 8px 0; letter-spacing: 1px; display: flex; justify-content: space-between; }
+  
+  .palette-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .btn-ide { background: #09111e; border: 1px solid #1b2d42; color: #fff; padding: 12px; font-family: 'Orbitron'; font-weight: bold; border-radius: 6px; cursor: pointer; transition: 0.2s; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; }
+  .btn-ide:hover { background: #13233a; border-color: var(--neon-core); transform: translateY(-1px); }
+  .btn-ide.loop-maker { grid-column: span 2; background: rgba(241, 196, 15, 0.07); border-color: rgba(241, 196, 15, 0.4); color: var(--neon-warn); }
+  .btn-ide.loop-maker:hover { background: var(--neon-warn); color: #000; }
+  .btn-ide.loop-closer { grid-column: span 2; background: rgba(255,0,85,0.07); border-color: rgba(255,0,85,0.3); color: var(--neon-alert); display: none; }
+
+  /* --- BUFFER DE CONSOLA --- */
+  #workspace-buffer { flex: 1; background: rgba(1, 3, 7, 0.6); border: 1px solid #142337; border-radius: 8px; padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+  #workspace-buffer.loop-mode-active { border: 1px dashed var(--neon-warn); }
+
+  .ui-block { background: #0d1527; padding: 10px 14px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid #fff; font-family: 'Share Tech Mono', monospace; font-size: 1.05rem; }
+  .ui-block.active { background: #162642; border-left-color: var(--neon-cyber) !important; box-shadow: 0 0 12px rgba(0,255,102,0.25); }
+  .ui-block.error { background: #3d0c1b; border-left-color: var(--neon-alert) !important; animation: shake 0.3s ease; }
+  .ui-block.inside-loop { margin-left: 25px; background: #121b2d; border-left-style: dashed; }
+  .ui-block.loop-header { background: rgba(241, 196, 15, 0.12); border-left-color: var(--neon-warn); font-weight: bold; color: var(--neon-warn); }
+  
+  .btn-kill-block { background: transparent; border: none; color: #526477; font-size: 1rem; cursor: pointer; padding: 0 5px; }
+  .btn-kill-block:hover { color: var(--neon-alert); }
+
+  @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
+
+  .action-deck { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+  .btn-action { padding: 15px; font-family: 'Orbitron'; font-size: 1.1rem; font-weight: 900; border: none; border-radius: 6px; cursor: pointer; transition: 0.2s; }
+  .btn-action.run { background: var(--neon-cyber); color: #010409; box-shadow: 0 0 20px rgba(0, 255, 102, 0.3); grid-column: span 2; }
+  .btn-action.run:hover { background: #00cc52; box-shadow: 0 0 25px rgba(0, 255, 102, 0.5); }
+  .btn-action.clear { background: transparent; border: 1px solid #273e56; color: #7b95b0; font-size: 0.9rem; padding: 10px; grid-column: span 2; }
+  .btn-action.clear:hover { background: rgba(255,255,255,0.02); color: #fff; }
+
+  /* --- NUEVA DISPOSICIÓN: SECCIÓN INTERFAZ DE RED A LA DERECHA --- */
+  #network-section { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+  .header-terminal { text-align: center; margin-bottom: 20px; }
+  .header-terminal h1 { font-size: 2rem; color: var(--neon-cyber); text-shadow: 0 0 15px var(--neon-cyber); letter-spacing: 2px; font-weight: 900; }
+  .header-terminal p { font-family: 'Share Tech Mono', monospace; color: #526477; font-size: 1rem; margin-top: 5px; text-transform: uppercase; }
+  
+  .difficulty-bar { display: inline-flex; gap: 15px; margin-top: 8px; font-family: 'Share Tech Mono'; font-size: 0.9rem; padding: 4px 12px; background: rgba(0,0,0,0.4); border: 1px solid #142337; border-radius: 4px; }
+  .diff-tag { color: var(--neon-warn); }
+  .limit-tag { color: var(--neon-core); }
+
+  #grid-container { position: relative; padding: 15px; background: rgba(0,0,0,0.8); border: 2px dashed rgba(0, 255, 102, 0.3); box-shadow: 0 0 40px rgba(0, 255, 102, 0.1); border-radius: 12px; }
+  .matrix-grid { display: grid; background: linear-gradient(var(--grid-glow) 1px, transparent 1px), linear-gradient(90deg, var(--grid-glow) 1px, transparent 1px); background-size: 65px 65px; }
+  .node { width: 65px; height: 65px; display: flex; justify-content: center; align-items: center; font-size: 1.8rem; position: relative; border: 1px solid rgba(0,255,102,0.03); }
+  .node.firewall { background: rgba(255,0,85,0.12); box-shadow: inset 0 0 10px rgba(255,0,85,0.2); }
+  .node.core-data { text-shadow: 0 0 15px var(--neon-core); }
+  .node.decrypted { opacity: 0.4; filter: hue-rotate(120deg); transform: scale(0.9); transition: all 0.4s; }
+
+  #malware-node { position: absolute; width: 65px; height: 65px; display: flex; justify-content: center; align-items: center; font-size: 2rem; transition: all 0.25s cubic-bezier(0.19, 1, 0.22, 1); z-index: 10; filter: drop-shadow(0 0 12px var(--neon-cyber)); }
+
+  /* --- MODAL --- */
+  #system-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(1, 3, 7, 0.96); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(8px); }
+  .modal-frame { border: 1px solid rgba(0,255,102,0.3); background: #050b14; padding: 40px; border-radius: 12px; text-align: center; max-width: 550px; box-shadow: 0 0 50px rgba(0,255,102,0.15); }
+  .modal-frame h2 { font-size: 2.3rem; margin-bottom: 15px; letter-spacing: 2px; }
+  .modal-frame p { font-family: 'Share Tech Mono'; color: #a0aec0; font-size: 1.2rem; margin-bottom: 30px; line-height: 1.5; }
+  .modal-frame button { padding: 14px 40px; font-family: 'Orbitron'; font-size: 1.1rem; font-weight: bold; background: var(--neon-core); border: none; border-radius: 6px; color: #000; cursor: pointer; box-shadow: 0 0 15px var(--neon-core); }
+</style>
+</head>
+<body>
+
+<div id="main-layout">
+  <div id="ide-section">
+    <div class="section-label"><span>[ ENTRADA DE ALGORITMOS ]</span><span id="loop-indicator" style="color:var(--neon-warn); display:none;">● GRABANDO BUCLE</span></div>
+    <div class="palette-grid">
+      <button class="btn-ide" onclick="pushInstruction('UP', '⬆️ TRANSMITIR ARRIBA', '#3498db')">⬆️ Transmitir Arriba</button>
+      <button class="btn-ide" onclick="pushInstruction('DOWN', '⬇️ TRANSMITIR ABAJO', '#9b59b6')">⬇️ Transmitir Abajo</button>
+      <button class="btn-ide" onclick="pushInstruction('LEFT', '⬅️ TRANSMITIR IZQ', '#e67e22')">⬅️ Transmitir Izq</button>
+      <button class="btn-ide" onclick="pushInstruction('RIGHT', '➡️ TRANSMITIR DER', '#2ecc71')">➡️ Transmitir Der</button>
+      <button class="btn-ide" style="grid-column: span 2; border-color: var(--neon-core); color: var(--neon-core);" onclick="pushInstruction('DECRYPT', '🔓 DESENCRIPTAR NÚCLEO', '#00e5ff')">🔓 Desencriptar Núcleo</button>
+      
+      <button class="btn-ide loop-maker" id="btn-loop-setting" onclick="openLoop()">🔁 Estructura: Repetir N veces</button>
+      <button class="btn-ide loop-closer" id="btn-loop-close" onclick="closeLoop()">⏹️ Finalizar Estructura (Cerrar Bucle)</button>
+    </div>
+
+    <div class="section-label"><span>[ BUFFER DE INSTRUCCIONES ]</span></div>
+    <div id="workspace-buffer"></div>
+
+    <div class="action-deck">
+      <button class="btn-action run" onclick="compileAndRun()" id="btn-run-main">▶ Compilar y Ejecutar</button>
+      <button class="btn-action clear" onclick="hardResetWorkspace()">Limpiar Terminal</button>
+    </div>
+  </div>
+
+  <div id="network-section">
+    <div class="header-terminal">
+      <h1 id="lbl-level-name">LAYER_VIEWER // CAPA 01</h1>
+      <p id="lbl-level-title">Cargando base de datos...</p>
+      <div class="difficulty-bar">
+        <span class="diff-tag" id="lbl-diff-status">DIFICULTAD: INICIAL</span>
+        <span class="limit-tag" id="lbl-cmd-bounds">COMANDOS SUGERIDOS: 2 - 5</span>
+      </div>
+    </div>
+    <div id="grid-container">
+      <div id="matrix-board" class="matrix-grid"></div>
+      <div id="malware-node">👾</div>
+    </div>
+  </div>
+</div>
+
+<div id="system-modal">
+  <div class="modal-frame" id="modal-frame-box">
+    <h2 id="modal-title">SISTEMA COMPROMETIDO</h2>
+    <p id="modal-desc">Detalles operativos.</p>
+    <button id="modal-btn" onclick="advanceSector()">Siguiente Sector</button>
+  </div>
+</div>
+
+<script>
+// --- AUDIO SINTETIZADO ---
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function beep(f, t, d, v) {
+  if(audioCtx.state === 'suspended') audioCtx.resume();
+  let o = audioCtx.createOscillator(); let g = audioCtx.createGain(); o.type = t;
+  o.frequency.setValueAtTime(f, audioCtx.currentTime); g.gain.setValueAtTime(v, audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + d); o.connect(g); g.connect(audioCtx.destination);
+  o.start(); o.stop(audioCtx.currentTime + d);
+}
+const netSfx = {
+  click: () => beep(1000, 'sine', 0.05, 0.03),
+  loopOpen: () => { beep(500, 'triangle', 0.1, 0.05); setTimeout(() => beep(700, 'triangle', 0.1, 0.05), 60); },
+  step: () => beep(600, 'triangle', 0.08, 0.04),
+  decrypt: () => { beep(800, 'sine', 0.1, 0.05); setTimeout(() => beep(1600, 'sine', 0.2, 0.05), 100); },
+  crash: () => { beep(180, 'sawtooth', 0.2, 0.08); setTimeout(() => beep(90, 'sawtooth', 0.4, 0.08), 120); },
+  success: () => { [523, 659, 783, 1046].forEach((n,i)=>setTimeout(() => beep(n, 'sine', 0.2, 0.05), i*120)); }
+};
+
+// --- BASE DE DATOS DE 9 NIVELES (NIVEL 4 CORREGIDO MATEMÁTICAMENTE) ---
+const database = [
+  { // Lvl 1 (Recto)
+    title: "LÍNEA DE TRANSMISIÓN", cols: 5, rows: 5, start: {x:0, y:2}, loopReq: 3, minCmd: 2, maxCmd: 5, status: "APRENDIZAJE",
+    firewalls: [{x:0,y:1},{x:1,y:1},{x:2,y:1},{x:3,y:1},{x:4,y:1},{x:0,y:3},{x:1,y:3},{x:2,y:3},{x:3,y:3},{x:4,y:3}],
+    cores: [{x:1, y:2, solved: false}, {x:2, y:2, solved: false}, {x:3, y:2, solved: false}]
+  },
+  { // Lvl 2 (Vertical)
+    title: "PASILLO DE DATOS", cols: 5, rows: 5, start: {x:2, y:0}, loopReq: 3, minCmd: 3, maxCmd: 6, status: "APRENDIZAJE",
+    firewalls: [{x:1,y:1},{x:3,y:1},{x:1,y:2},{x:3,y:2},{x:1,y:3},{x:3,y:3}],
+    cores: [{x:2, y:1, solved: false}, {x:2, y:2, solved: false}, {x:2, y:3, solved: false}]
+  },
+  { // Lvl 3 (Escalera Diagonal)
+    title: "ESCALERA SIMPLE", cols: 5, rows: 5, start: {x:0, y:0}, loopReq: 3, minCmd: 3, maxCmd: 7, status: "INTERMEDIO",
+    firewalls: [{x:1,y:0},{x:2,y:0},{x:0,y:2},{x:0,y:3},{x:2,y:1},{x:3,y:2}],
+    cores: [{x:1, y:1, solved: false}, {x:2, y:2, solved: false}, {x:3, y:3, solved: false}]
+  },
+  { // Lvl 4 - ONDA DE DATOS (FUNCIONAL Y BALANCEADO)
+    title: "ONDA DE DATOS", cols: 5, rows: 4, start: {x:0, y:1}, loopReq: 2, minCmd: 6, maxCmd: 8, status: "INTERMEDIO",
+    firewalls: [
+      {x:0,y:0},{x:1,y:0},{x:2,y:0},{x:3,y:0},{x:4,y:0},
+      {x:0,y:2},
+      {x:0,y:3},{x:1,y:3},{x:2,y:3},{x:3,y:3},{x:4,y:3}
+    ],
+    cores: [{x:1, y:2, solved: false}, {x:2, y:1, solved: false}, {x:3, y:2, solved: false}, {x:4, y:1, solved: false}]
+  },
+  { // Lvl 5 (Caballo de Ajedrez)
+    title: "PATRÓN EN L", cols: 5, rows: 5, start: {x:0, y:4}, loopReq: 2, minCmd: 5, maxCmd: 9, status: "AVANZADO",
+    firewalls: [{x:1,y:4},{x:1,y:3},{x:0,y:1},{x:2,y:2},{x:2,y:1}],
+    cores: [{x:1, y:2, solved: false}, {x:2, y:0, solved: false}]
+  },
+  { // Lvl 6 (Zig Zag Grueso)
+    title: "ZIG-ZAG DOBLE", cols: 5, rows: 5, start: {x:0, y:0}, loopReq: 2, minCmd: 6, maxCmd: 12, status: "AVANZADO",
+    firewalls: [{x:0,y:1},{x:1,y:1},{x:3,y:0},{x:3,y:1},{x:0,y:3},{x:1,y:3}],
+    cores: [{x:2, y:0, solved: false}, {x:2, y:2, solved: false}, {x:4, y:2, solved: false}, {x:4, y:4, solved: false}]
+  },
+  { // Lvl 7 (Diagonal Larga)
+    title: "DIAGONAL EXTENDIDA", cols: 6, rows: 6, start: {x:0, y:5}, loopReq: 5, minCmd: 4, maxCmd: 10, status: "EXPERTO",
+    firewalls: [{x:0,y:3},{x:1,y:2},{x:2,y:1},{x:3,y:0},{x:2,y:5},{x:3,y:4},{x:4,y:3}],
+    cores: [{x:1, y:4, solved: false}, {x:2, y:3, solved: false}, {x:3, y:2, solved: false}, {x:4, y:1, solved: false}, {x:5, y:0, solved: false}]
+  },
+  { // Lvl 8 (Tubo Zig-Zag Vertical)
+    title: "EJE VERTICAL ZIG-ZAG", cols: 4, rows: 7, start: {x:1, y:0}, loopReq: 3, minCmd: 6, maxCmd: 10, status: "EXPERTO",
+    firewalls: [
+      {x:0,y:0},{x:0,y:1},{x:0,y:2},{x:0,y:3},{x:0,y:4},{x:0,y:5},{x:0,y:6},
+      {x:3,y:0},{x:3,y:1},{x:3,y:2},{x:3,y:3},{x:3,y:4},{x:3,y:5},{x:3,y:6},
+      {x:2,y:0}
+    ],
+    cores: [{x:2,y:1, solved: false}, {x:1,y:2, solved: false}, {x:2,y:3, solved: false}, {x:1,y:4, solved: false}, {x:2,y:5, solved: false}, {x:1,y:6, solved: false}]
+  },
+  { // Lvl 9 (Retroceso)
+    title: "INCURSIÓN PROFUNDA", cols: 8, rows: 7, start: {x:0, y:0}, loopReq: 3, minCmd: 6, maxCmd: 12, status: "HACKER",
+    firewalls: [
+      {x:4,y:0}, {x:1,y:1}, {x:4,y:1}, {x:1,y:2}, {x:6,y:2}, {x:3,y:3}, {x:6,y:3}, {x:3,y:4}, {x:5,y:5}, {x:7,y:6}
+    ],
+    cores: [{x:3, y:1, solved: false}, {x:5, y:3, solved: false}, {x:7, y:5, solved: false}]
+  }
+];
+
+let currentSector = 0;
+let mainProgram = [];
+let activeLoopContainer = null;
+let isCompiling = false;
+let malwarePos = {x:0, y:0};
+
+const cellSize = 65; 
+
+const boardEl = document.getElementById('matrix-board');
+const malwareEl = document.getElementById('malware-node');
+const workspaceEl = document.getElementById('workspace-buffer');
+
+function buildSector() {
+  const map = database[currentSector];
+  
+  document.getElementById('lbl-level-name').innerText = `LAYER_VIEWER // CAPA ${String(currentSector + 1).padStart(2, '0')}`;
+  document.getElementById('lbl-level-title').innerText = map.title;
+  document.getElementById('lbl-diff-status').innerText = `DIFICULTAD: ${map.status}`;
+  document.getElementById('lbl-cmd-bounds').innerText = `COMANDOS SUGERIDOS: ${map.minCmd} - ${map.maxCmd}`;
+  document.getElementById('btn-loop-setting').innerText = `🔁 Estructura: Repetir ${map.loopReq} veces`;
+
+  map.cores.forEach(c => c.solved = false);
+
+  boardEl.style.gridTemplateColumns = `repeat(${map.cols}, ${cellSize}px)`;
+  boardEl.style.gridTemplateRows = `repeat(${map.rows}, ${cellSize}px)`;
+  boardEl.innerHTML = '';
+
+  for (let y = 0; y < map.rows; y++) {
+    for (let x = 0; x < map.cols; x++) {
+      let node = document.createElement('div');
+      node.className = 'node';
+      node.id = `node-${x}-${y}`;
+      
+      if (map.firewalls.some(f => f.x === x && f.y === y)) {
+        node.classList.add('firewall');
+        node.innerText = '🛡️';
+      }
+      if (map.cores.some(c => c.x === x && c.y === y)) {
+        node.classList.add('core-data');
+        node.innerText = '💾';
+      }
+      boardEl.appendChild(node);
+    }
+  }
+
+  malwarePos = { ...map.start };
+  malwareEl.innerText = '👾';
+  refreshMalwareUI();
+  hardResetWorkspace();
+}
+
+function refreshMalwareUI() {
+  // Ajuste por el padding del contenedor
+  malwareEl.style.left = `${malwarePos.x * cellSize + 15}px`;
+  malwareEl.style.top = `${malwarePos.y * cellSize + 15}px`;
+}
+
+// --- TELETRANSPORTACIÓN PAD NUMÉRICO (SOLO 1 AL 9) ---
+window.addEventListener('keydown', (e) => {
+  if (isCompiling) return;
+  if (e.key >= '1' && e.key <= '9') {
+    let targetLvl = parseInt(e.key) - 1;
+    
+    if (targetLvl >= 0 && targetLvl < database.length) {
+      currentSector = targetLvl;
+      buildSector();
+      netSfx.success();
+      
+      const h = document.getElementById('lbl-level-name');
+      h.style.color = "var(--neon-core)";
+      setTimeout(() => h.style.color = "var(--neon-cyber)", 200);
+    }
+  }
+});
+
+// --- ESTRUCTURAS DE CONTROL ---
+function openLoop() {
+  if(isCompiling || activeLoopContainer) return;
+  netSfx.loopOpen();
+  
+  const map = database[currentSector];
+  activeLoopContainer = {
+    type: 'LOOP',
+    times: map.loopReq,
+    label: `🔁 REPETIR ${map.loopReq} VECES`,
+    color: 'var(--neon-warn)',
+    subBlocks: []
+  };
+  
+  mainProgram.push(activeLoopContainer);
+  
+  document.getElementById('btn-loop-setting').style.display = 'none';
+  document.getElementById('btn-loop-close').style.display = 'flex';
+  document.getElementById('loop-indicator').style.display = 'inline';
+  workspaceEl.classList.add('loop-mode-active');
+  
+  renderWorkspaceUI();
+}
+
+function closeLoop() {
+  if(!activeLoopContainer) return;
+  netSfx.click();
+  activeLoopContainer = null;
+  
+  document.getElementById('btn-loop-setting').style.display = 'flex';
+  document.getElementById('btn-loop-close').style.display = 'none';
+  document.getElementById('loop-indicator').style.display = 'none';
+  workspaceEl.classList.remove('loop-mode-active');
+}
+
+function pushInstruction(cmd, label, color) {
+  if (isCompiling) return;
+  netSfx.click();
+
+  let block = { type: 'COMMAND', cmd, label, color };
+
+  if (activeLoopContainer) {
+    activeLoopContainer.subBlocks.push(block);
+  } else {
+    mainProgram.push(block);
+  }
+  renderWorkspaceUI();
+}
+
+function removeLogic(idx) {
+  if (isCompiling) return;
+  netSfx.click();
+  mainProgram.splice(idx, 1);
+  renderWorkspaceUI();
+}
+
+function renderWorkspaceUI() {
+  workspaceEl.innerHTML = '';
+  let globalIndex = 0;
+
+  mainProgram.forEach((block, idx) => {
+    if (block.type === 'LOOP') {
+      let header = document.createElement('div');
+      header.className = 'ui-block loop-header';
+      header.innerHTML = `<span>${block.label}</span> <button class="btn-kill-block" onclick="removeLogic(${idx})">✖</button>`;
+      workspaceEl.appendChild(header);
+
+      block.subBlocks.forEach((subBlock) => {
+        let subDiv = document.createElement('div');
+        subDiv.className = 'ui-block inside-loop';
+        subDiv.id = `block-runtime-${globalIndex}`;
+        subDiv.style.borderLeftColor = subBlock.color;
+        subDiv.innerHTML = `<span>${subBlock.label}</span>`;
+        workspaceEl.appendChild(subDiv);
+        globalIndex++;
+      });
+    } else {
+      let div = document.createElement('div');
+      div.className = 'ui-block';
+      div.id = `block-runtime-${globalIndex}`;
+      div.style.borderLeftColor = block.color;
+      div.innerHTML = `<span>${block.label}</span> <button class="btn-kill-block" onclick="removeLogic(${idx})">✖</button>`;
+      workspaceEl.appendChild(div);
+      globalIndex++;
+    }
+  });
+  workspaceEl.scrollTop = workspaceEl.scrollHeight;
+}
+
+function hardResetWorkspace() {
+  if (isCompiling) return;
+  mainProgram = [];
+  activeLoopContainer = null;
+  closeLoop();
+  renderWorkspaceUI();
+  
+  const map = database[currentSector];
+  malwarePos = { ...map.start };
+  malwareEl.innerText = '👾';
+  refreshMalwareUI();
+  map.cores.forEach(c => {
+    let node = document.getElementById(`node-${c.x}-${c.y}`);
+    if(node) { node.classList.remove('decrypted'); node.innerText = '💾'; }
+  });
+}
+
+// --- PROCESAMIENTO Y EJECUCIÓN ---
+const wait = ms => new Promise(res => setTimeout(res, ms));
+
+async function compileAndRun() {
+  if (isCompiling || mainProgram.length === 0) return;
+  closeLoop(); 
+  isCompiling = true;
+  document.getElementById('btn-run-main').style.opacity = '0.3';
+
+  const map = database[currentSector];
+  malwarePos = { ...map.start };
+  malwareEl.innerText = '👾';
+  refreshMalwareUI();
+  map.cores.forEach(c => { c.solved = false; let n = document.getElementById(`node-${c.x}-${c.y}`); if(n){ n.classList.remove('decrypted'); n.innerText = '💾'; } });
+  
+  document.querySelectorAll('.ui-block').forEach(b => b.classList.remove('active', 'error'));
+  await wait(400);
+
+  let executionSequence = [];
+  mainProgram.forEach(block => {
+    if (block.type === 'LOOP') {
+      for (let r = 0; r < block.times; r++) {
+        block.subBlocks.forEach(sub => { executionSequence.push(sub); });
+      }
+    } else {
+      executionSequence.push(block);
+    }
+  });
+
+  let firewallCrash = false;
+  let crashReason = "";
+
+  for (let i = 0; i < executionSequence.length; i++) {
+    document.querySelectorAll('.ui-block').forEach(b => b.classList.remove('active'));
+    let currentUiBlock = document.getElementById(`block-runtime-${i}`);
+    if(currentUiBlock) currentUiBlock.classList.add('active');
+
+    let instruction = executionSequence[i];
+
+    if (instruction.cmd === 'DECRYPT') {
+      let core = map.cores.find(c => c.x === malwarePos.x && c.y === malwarePos.y);
+      if (core && !core.solved) {
+        core.solved = true;
+        netSfx.decrypt();
+        let node = document.getElementById(`node-${malwarePos.x}-${malwarePos.y}`);
+        if(node) {
+          node.classList.add('decrypted');
+          node.innerText = '🔓';
+        }
+      } else {
+        firewallCrash = true;
+        crashReason = "BUG CRÍTICO: Inyección de desencriptado en coordenadas vacías.";
+      }
+    } else {
+      let tx = malwarePos.x;
+      let ty = malwarePos.y;
+
+      if (instruction.cmd === 'UP') ty--;
+      if (instruction.cmd === 'DOWN') ty++;
+      if (instruction.cmd === 'LEFT') tx--;
+      if (instruction.cmd === 'RIGHT') tx++;
+
+      if (tx < 0 || tx >= map.cols || ty < 0 || ty >= map.rows) {
+        firewallCrash = true; crashReason = "SECURITY BREACH: Desbordamiento fuera del mainframe.";
+      } else if (map.firewalls.some(f => f.x === tx && f.y === ty)) {
+        firewallCrash = true; crashReason = "FIREWALL DETECTED: Colisión con cortafuegos de seguridad.";
+      }
+
+      if (!firewallCrash) {
+        netSfx.step();
+        malwarePos.x = tx;
+        malwarePos.y = ty;
+        refreshMalwareUI();
+      }
+    }
+
+    if (firewallCrash) {
+      if(currentUiBlock) currentUiBlock.classList.replace('active', 'error');
+      netSfx.crash();
+      malwareEl.innerText = '💥';
+      break;
+    }
+
+    await wait(400);
+  }
+
+  isCompiling = false;
+  document.getElementById('btn-run-main').style.opacity = '1';
+
+  await wait(300);
+
+  if (!firewallCrash) {
+    let allCleared = map.cores.every(c => c.solved);
+    if (allCleared) {
+      netSfx.success();
+      triggerModal(true, "SISTEMA COMPROMETIDO", `Capa vulnerada con éxito empleando una secuencia limpia de instrucciones.`);
+    } else {
+      netSfx.crash();
+      triggerModal(false, "ALGORITMO INCOMPLETO", "El script finalizó su ejecución, pero dejó terminales de datos bloqueadas en la red.");
+    }
+  } else {
+    triggerModal(false, "EXPLOIT ABORTADO", crashReason);
+  }
+}
+
+function advanceSector() {
+  const modal = document.getElementById('system-modal');
+  modal.style.display = 'none';
+  if (currentSector < database.length - 1) {
+    currentSector++;
+  } else {
+    currentSector = 0;
+  }
+  buildSector();
+}
+
+function triggerModal(isWin, title, text) {
+  const modal = document.getElementById('system-modal');
+  const t = document.getElementById('modal-title');
+  const d = document.getElementById('modal-desc');
+  const btn = document.getElementById('modal-btn');
+  const frame = document.getElementById('modal-frame-box');
+
+  t.innerText = title;
+  d.innerText = text;
+
+  if (isWin) {
+    t.style.color = "var(--neon-cyber)";
+    frame.style.borderColor = "var(--neon-cyber)";
+    btn.onclick = () => advanceSector();
+    if (currentSector < database.length - 1) {
+      btn.innerText = "Siguiente Capa";
+    } else {
+      btn.innerText = "Reiniciar Desde Capa 01";
+    }
+  } else {
+    t.style.color = "var(--neon-alert)";
+    frame.style.borderColor = "var(--neon-alert)";
+    btn.innerText = "Modificar Algoritmo";
+    btn.onclick = () => {
+      modal.style.display = 'none';
+      const map = database[currentSector];
+      malwarePos = { ...map.start };
+      malwareEl.innerText = '👾';
+      refreshMalwareUI();
+      document.querySelectorAll('.ui-block').forEach(b => b.classList.remove('active', 'error'));
+    };
+  }
+  setTimeout(() => { modal.style.display = 'flex'; }, 300);
+}
+
+buildSector();
+</script>
+</body>
+</html>
