@@ -2,34 +2,22 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Flappy Fractions - Prof. Gastón</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
-        body {
-            margin: 0; padding: 0; 
-            background: radial-gradient(circle at center, #1a252c 0%, #000000 100%);
-            font-family: 'Press Start 2P', cursive;
-            display: flex; justify-content: center; align-items: center;
-            height: 100vh; color: white; user-select: none; overflow: hidden;
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background: #000; font-family: 'Press Start 2P', cursive;
+            overflow: hidden; user-select: none; touch-action: none;
         }
 
-        .arcade-machine {
-            background: #222;
-            padding: 30px 20px;
-            border-radius: 15px 15px 5px 5px;
-            box-shadow: 0 0 40px rgba(0,0,0,1), inset 0 5px 15px rgba(255,255,255,0.05);
-            border: 4px solid #111;
-            border-bottom-width: 10px;
-            display: flex; flex-direction: column; align-items: center;
-        }
-
+        /* Ocupa el 100% real de la ventana de lado a lado */
         #game-container {
-            position: relative; width: 720px; height: 480px;
-            background-color: #4ec0ca; border: 8px solid #000;
-            box-shadow: inset 0 0 30px rgba(0,0,0,0.5), 0 10px 20px rgba(0,0,0,0.8); 
-            overflow: hidden; border-radius: 8px; cursor: pointer;
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: #4ec0ca; 
+            overflow: hidden; cursor: pointer;
         }
 
         #game-container::after {
@@ -43,7 +31,7 @@
 
         .watermark {
             position: absolute; bottom: 10px; right: 15px;
-            font-size: 9px; color: rgba(255, 255, 255, 0.9);
+            font-size: 1.5vmin; color: rgba(255, 255, 255, 0.9);
             text-shadow: 1px 1px 2px #000; z-index: 60; pointer-events: none;
         }
 
@@ -54,41 +42,40 @@
             backdrop-filter: blur(3px);
         }
 
-        h1 { font-size: 32px; color: #f1c40f; margin-bottom: 20px; text-shadow: 4px 4px 0 #d35400; line-height: 1.5; }
-        p { font-size: 12px; line-height: 1.8; margin-bottom: 20px; text-shadow: 2px 2px 0 #000; color: #ecf0f1; }
+        /* Tipografías escalables usando 'vmin' para que luzcan bien en resoluciones grandes o móviles */
+        h1 { font-size: 6vmin; color: #f1c40f; margin-bottom: 3vmin; text-shadow: 0.5vmin 0.5vmin 0 #d35400; line-height: 1.5; }
+        p { font-size: 2.5vmin; line-height: 1.8; margin-bottom: 4vmin; text-shadow: 0.3vmin 0.3vmin 0 #000; color: #ecf0f1; }
         
         .btn {
             background: linear-gradient(to bottom, #f1c40f, #f39c12); color: #000; font-family: 'Press Start 2P', cursive;
-            font-size: 16px; padding: 15px 25px; margin: 10px; border: 4px solid #fff; border-radius: 8px;
-            cursor: pointer; box-shadow: 0 6px 0 #d35400, 0 10px 10px rgba(0,0,0,0.5); transition: all 0.1s;
+            font-size: 3vmin; padding: 2.5vmin 4vmin; margin: 10px; border: 0.5vmin solid #fff; border-radius: 8px;
+            cursor: pointer; box-shadow: 0 1vmin 0 #d35400, 0 1.5vmin 1.5vmin rgba(0,0,0,0.5); transition: all 0.1s;
         }
-        .btn:active { transform: translateY(6px); box-shadow: 0 0px 0 #d35400, 0 2px 5px rgba(0,0,0,0.5); }
+        .btn:active { transform: translateY(1vmin); box-shadow: 0 0 0 #d35400, 0 0.5vmin 0.5vmin rgba(0,0,0,0.5); }
         
         #score-display {
-            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-            font-size: 40px; color: white; text-shadow: 4px 4px 0 #000, 0 0 10px rgba(255,255,255,0.5); z-index: 60; pointer-events: none;
+            position: absolute; top: 5vmin; left: 50%; transform: translateX(-50%);
+            font-size: 8vmin; color: white; text-shadow: 0.5vmin 0.5vmin 0 #000, 0 0 2vmin rgba(255,255,255,0.5); z-index: 60; pointer-events: none;
         }
     </style>
 </head>
 <body>
 
-<div class="arcade-machine">
-    <div id="game-container">
-        <div id="score-display">0</div>
-        <div class="watermark">Creado por el Prof. Gastón</div>
-        <canvas id="gameCanvas" width="572" height="540"></canvas>
+<div id="game-container">
+    <div id="score-display">0</div>
+    <div class="watermark">Creado por el Prof. Gastón</div>
+    <canvas id="gameCanvas"></canvas>
 
-        <div id="menu" class="screen">
-            <h1>FLAPPY<br>FRACCIONES</h1>
-            <p>Toca la pantalla o usa<br>ESPACIO para volar.<br><br>¡Elige la gráfica<br>correcta!</p>
-            <button class="btn" onclick="startGame()">JUGAR</button>
-        </div>
+    <div id="menu" class="screen">
+        <h1>FLAPPY<br>FRACCIONES</h1>
+        <p>Toca la pantalla o usa<br>ESPACIO para volar.<br><br>¡Elige la gráfica<br>correcta!</p>
+        <button class="btn" onclick="startGame()">JUGAR</button>
+    </div>
 
-        <div id="game-over" class="screen" style="display: none;">
-            <h1 id="go-title">¡CRASH!</h1>
-            <p id="go-score" style="color: #f1c40f; font-size: 20px; margin-bottom: 30px; text-shadow: 2px 2px 0 #000;"></p>
-            <button class="btn" onclick="location.reload()">REINTENTAR</button>
-        </div>
+    <div id="game-over" class="screen" style="display: none;">
+        <h1 id="go-title">¡CRASH!</h1>
+        <p id="go-score" style="color: #f1c40f; font-size: 4vmin; margin-bottom: 5vmin; text-shadow: 0.3vmin 0.3vmin 0 #000;"></p>
+        <button class="btn" onclick="location.reload()">REINTENTAR</button>
     </div>
 </div>
 
@@ -96,24 +83,32 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     
-    // --- NUEVO SISTEMA DE SONIDO CON ARCHIVOS ORIGINALES ---
+    // --- NUEVO REDIMENSIONAMIENTO 100% DINÁMICO ---
+    function resizeGame() {
+        const aspect = window.innerWidth / window.innerHeight;
+        // Mantenemos la altura lógica en 540 para no romper la velocidad de caída ni la gravedad
+        // Pero calculamos la anchura dinámicamente según la resolución actual
+        canvas.width = 540 * aspect;
+        canvas.height = 540;
+    }
+    window.addEventListener('resize', resizeGame);
+    resizeGame(); // Llamada inicial
+
     const sounds = {
         flap: new Audio('https://raw.githubusercontent.com/samuelcust/flappy-bird-assets/master/audio/wing.wav'),
         score: new Audio('https://raw.githubusercontent.com/samuelcust/flappy-bird-assets/master/audio/point.wav'),
         crash: new Audio('https://raw.githubusercontent.com/samuelcust/flappy-bird-assets/master/audio/hit.wav')
     };
 
-    // Pre-cargar los sonidos
     Object.values(sounds).forEach(audio => {
         audio.preload = 'auto';
-        audio.volume = 0.5; // Ajuste de volumen (0.0 a 1.0)
+        audio.volume = 0.5; 
     });
 
     function playSound(type) {
         if (sounds[type]) {
-            // Reinicia el sonido al principio por si se llama varias veces rápido
             sounds[type].currentTime = 0; 
-            sounds[type].play().catch(e => console.log("Audio interact requires user gesture first."));
+            sounds[type].play().catch(e => console.log("Audio require interacción previa."));
         }
     }
 
@@ -140,7 +135,7 @@
     ];
 
     let clouds = [];
-    for(let i=0; i<8; i++) clouds.push({ x: Math.random() * 572, y: Math.random() * 250, s: Math.random() * 0.6 + 0.4 });
+    for(let i=0; i<8; i++) clouds.push({ x: Math.random() * 2000, y: Math.random() * 250, s: Math.random() * 0.6 + 0.4 });
 
     function createParticles(x, y, count, color) {
         for(let i=0; i<count; i++) {
@@ -156,7 +151,7 @@
     function flap() {
         if (!game.active) return;
         bird.vy = bird.jump;
-        playSound('flap'); // Ejecuta el archivo wing.wav
+        playSound('flap'); 
         createParticles(bird.x - 10, bird.y + 5, 5, "#fff");
     }
 
@@ -165,7 +160,6 @@
     document.getElementById('game-container').addEventListener('touchstart', e => { e.preventDefault(); flap(); }, {passive: false});
 
     function startGame() {
-        // Truco para habilitar el audio en móviles con el primer tap
         playSound('flap'); 
         setTimeout(() => { sounds.flap.pause(); sounds.flap.currentTime = 0; }, 10);
 
@@ -188,13 +182,14 @@
         let correctIndex = options.findIndex(o => o.n === target.n && o.d === target.d);
 
         walls.push({
-            x: canvas.width, w: wallWidth, target: target, options: options,
+            x: canvas.width, // Ahora spawnean exactamente en el borde derecho sin importar lo ancha que sea la pantalla
+            w: wallWidth, target: target, options: options,
             correctIndex: correctIndex, passed: false,
             scored: false, scoreTextY: 0, scoreTextAlpha: 1 
         });
     }
 
-    function drawPie(x, y, radius, num, den, isTarget = false) {
+    function drawPie(x, y, radius, num, den) {
         ctx.save();
         ctx.translate(x, y);
 
@@ -284,17 +279,22 @@
             ctx.arc(c.x + 60*c.s, c.y, 35 * c.s, 0, Math.PI * 2); ctx.fill();
         });
 
+        // Montañas dinámicas basadas en el ancho real
         ctx.fillStyle = "#73bf2e"; 
-        for(let i=0; i<4; i++) {
+        let calcMountains = Math.ceil(canvas.width / 300) + 2; 
+        for(let i=0; i<calcMountains; i++) {
             let mx = ((game.parallax * 0.2) % 600) * -1 + (i * 300);
             ctx.beginPath(); ctx.moveTo(mx, 520); ctx.lineTo(mx + 150, 350); ctx.lineTo(mx + 300, 520); ctx.fill();
         }
 
+        // Arbustos dinámicos basados en el ancho real
         ctx.fillStyle = "#53a221";
-        for(let i=0; i<7; i++) {
+        let calcTrees = Math.ceil(canvas.width / 120) + 2;
+        for(let i=0; i<calcTrees; i++) {
             let cx = ((game.parallax * 0.5) % 200) * -1 + (i * 120);
             ctx.fillRect(cx, 400, 60, 120); ctx.fillRect(cx + 60, 430, 60, 90);
         }
+        
         game.parallax += wallSpeed;
 
         if (game.flashAlpha > 0) {
@@ -390,13 +390,11 @@
 
             let passedPie = bird.x > w.x + w.w / 2 - 10;
             if (passedPie && !w.passed && !hit) {
-                w.passed = true; 
-                w.scored = true; 
-                w.scoreTextY = gaps[w.correctIndex].centerY; 
+                w.passed = true; w.scored = true; w.scoreTextY = gaps[w.correctIndex].centerY; 
                 
                 game.score++;
                 document.getElementById('score-display').innerText = game.score;
-                playSound('score'); // Ejecuta el archivo point.wav
+                playSound('score'); 
                 createParticles(bird.x, bird.y, 20, "#f1c40f"); 
                 
                 game.parallax = 0; 
@@ -412,8 +410,7 @@
         drawBird();
 
         for(let i = particles.length-1; i>=0; i--) {
-            let p = particles[i];
-            p.x += p.vx; p.y += p.vy; p.life -= 0.04;
+            let p = particles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.04;
             if(p.life <= 0) { particles.splice(i, 1); continue; }
             ctx.fillStyle = p.color; ctx.globalAlpha = p.life;
             ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI*2); ctx.fill();
@@ -422,7 +419,10 @@
 
         ctx.fillStyle = "#ded895"; ctx.fillRect(0, canvas.height - 25, canvas.width, 25);
         ctx.fillStyle = "#c5b967"; 
-        for(let x=0; x<canvas.width; x+=20) ctx.fillRect(x - (game.parallax % 20), canvas.height - 20, 10, 5);
+        // Suelo dinámico basado en el ancho real
+        for(let x = 0; x < canvas.width + 50; x += 20) {
+            ctx.fillRect(x - (game.parallax % 20), canvas.height - 20, 10, 5);
+        }
         
         ctx.fillStyle = "#5c9c1e"; ctx.fillRect(0, canvas.height - 30, canvas.width, 5);
 
@@ -430,7 +430,7 @@
 
         if (hit) {
             game.active = false;
-            playSound('crash'); // Ejecuta el archivo hit.wav
+            playSound('crash'); 
             
             ctx.fillStyle = "rgba(231, 76, 60, 0.4)";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -445,9 +445,7 @@
             
             requestAnimationFrame(() => {
                 ctx.save();
-                if (game.shakeTime > 0) {
-                    ctx.translate((Math.random() - 0.5) * 15, (Math.random() - 0.5) * 15);
-                }
+                if (game.shakeTime > 0) ctx.translate((Math.random() - 0.5) * 15, (Math.random() - 0.5) * 15);
                 drawBackground();
                 drawBird();
                 for(let i = particles.length-1; i>=0; i--) {
