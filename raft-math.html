@@ -9,7 +9,7 @@
     * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; touch-action: none; }
     
     body {
-        background-color: #0f171e;
+        background-color: #000;
         font-family: 'Fredoka One', cursive;
         display: flex; justify-content: center; align-items: center;
         height: 100vh; width: 100vw; overflow: hidden; color: white;
@@ -19,10 +19,8 @@
         position: relative;
         background: #000;
         width: 100vw;
-        height: 56.25vw; 
-        max-height: 100vh;
-        max-width: 177.78vh; 
-        box-shadow: 0 0 50px rgba(0,0,0,0.9);
+        height: 100vh; /* Ajustado para ocupar toda la altura */
+        /* Se eliminaron max-height y max-width para forzar el estiramiento y quitar las franjas */
         overflow: hidden;
         container-type: size; 
     }
@@ -361,8 +359,6 @@
             ctx.strokeStyle = '#bdc3c7'; ctx.lineWidth = 4;
             ctx.beginPath(); ctx.arc(t.x - 25, floatY - 10, 8, Math.PI/2, Math.PI*1.5); ctx.stroke();
 
-            // Cartel de número movido hacia arriba (ya no se hunde con el barco tan rápido o se mantiene flotando)
-            // Se moverá con el barco pero por encima del agua
             let boardY = floatY - 120;
             ctx.fillStyle = '#ecf0f1'; ctx.beginPath(); ctx.roundRect(t.x - 30, boardY, 60, 50, 8); ctx.fill();
             ctx.strokeStyle = '#7f8c8d'; ctx.lineWidth = 3; ctx.stroke();
