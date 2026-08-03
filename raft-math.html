@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Raft Math - Prof. Gastón</title>
+<title>Raft Math - Prof. Gastón </title>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
 <style>
     * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; touch-action: none; }
@@ -19,8 +19,7 @@
         position: relative;
         background: #000;
         width: 100vw;
-        height: 100vh; /* Ajustado para ocupar toda la altura */
-        /* Se eliminaron max-height y max-width para forzar el estiramiento y quitar las franjas */
+        height: 100vh;
         overflow: hidden;
         container-type: size; 
     }
@@ -109,6 +108,20 @@
 </div>
 
 <script>
+    // --- CACHÉ DE NODOS DOM (Optimización) ---
+    const elMenu = document.getElementById('menu');
+    const elHudIngame = document.getElementById('hud-ingame');
+    const elGameOver = document.getElementById('game-over');
+    const elDivisionText = document.getElementById('division-text');
+    const elScore = document.getElementById('score');
+    const elLives = document.getElementById('lives');
+    const elFinalScore = document.getElementById('final-score');
+    const elDragHint = document.getElementById('drag-hint');
+    const elDamageFlash = document.getElementById('damage-flash');
+    
+    // --- CONSTANTES MATEMÁTICAS ---
+    const PI2 = Math.PI * 2;
+
     const ac = new (window.AudioContext || window.webkitAudioContext)();
     function playSfx(type, f1, f2, dur, vol=0.1) {
         if(ac.state === 'suspended') ac.resume();
@@ -131,6 +144,17 @@
     const ctx = canvas.getContext('2d');
     const W = 1280; const H = 720; const WATER_LEVEL = 480;
     
+    // --- CACHÉ DE GRADIENTES ESTÁTICOS (Optimización) ---
+    const skyGrd = ctx.createLinearGradient(0, 0, 0, WATER_LEVEL);
+    skyGrd.addColorStop(0, "#2c3e50"); skyGrd.addColorStop(0.5, "#4a90e2"); skyGrd.addColorStop(1, "#87ceeb");
+    
+    const sunGrd = ctx.createRadialGradient(150, 150, 10, 150, 150, 150);
+    sunGrd.addColorStop(0, "rgba(255, 234, 112, 1)"); sunGrd.addColorStop(0.3, "rgba(255, 234, 112, 0.8)"); sunGrd.addColorStop(1, "rgba(255, 234, 112, 0)");
+
+    const vignetteGrd = ctx.createRadialGradient(W/2, H/2, H/3, W/2, H/2, W/1.2);
+    vignetteGrd.addColorStop(0, 'rgba(0,0,0,0)');
+    vignetteGrd.addColorStop(1, 'rgba(0,0,0,0.6)');
+
     let gameState = 'menu'; let difficulty = 1; let score = 0; let lives = 3; let correctAnswer = 0;
     let time = 0; let shakeTimer = 0;
 
@@ -142,14 +166,15 @@
 
     const birds = [{x: 300, y: 100, s: 1}, {x: 800, y: 80, s: 1.2}, {x: 1100, y: 150, s: 0.8}];
 
+    // Ahora acepta colores CSS puros (ej: "#ff0000") en lugar de strings con "ALPHA"
     function spawnSplash(x, y, colorStr, isExplosion = false) {
         let count = isExplosion ? 50 : 30;
         for(let i=0; i<count; i++) {
             let c = colorStr;
             if (isExplosion) {
                 let r = Math.random();
-                if (r < 0.3) c = "rgba(255, 69, 0, ALPHA)"; 
-                else if (r < 0.6) c = "rgba(100, 100, 100, ALPHA)"; 
+                if (r < 0.3) c = "#ff4500"; 
+                else if (r < 0.6) c = "#646464"; 
             }
             particles.push({ 
                 x: x, y: y, 
@@ -168,8 +193,8 @@
     function startGame(level) {
         difficulty = level; score = 0; lives = 3;
         player.sinking = false; player.sinkOffset = 0;
-        document.getElementById('menu').classList.add('hidden');
-        document.getElementById('hud-ingame').classList.remove('hidden');
+        elMenu.classList.add('hidden');
+        elHudIngame.classList.remove('hidden');
         updateHUD(); nextProblem(); gameLoop();
     }
 
@@ -182,7 +207,7 @@
         let maxAns = 10;
         correctAnswer = Math.floor(Math.random() * maxAns) + 1;
         
-        document.getElementById('division-text').innerText = `${divisor * correctAnswer} ÷ ${divisor}`;
+        elDivisionText.innerText = `${divisor * correctAnswer} ÷ ${divisor}`;
 
         let options = [correctAnswer];
         while(options.length < 3) {
@@ -200,29 +225,24 @@
         ];
 
         projectiles = [];
-        document.getElementById('drag-hint').style.display = 'block';
+        elDragHint.style.display = 'block';
         gameState = 'aiming'; aimAngle = -Math.PI / 8;
     }
 
     function drawEnvironment() {
-        let skyGrd = ctx.createLinearGradient(0, 0, 0, WATER_LEVEL);
-        skyGrd.addColorStop(0, "#2c3e50"); skyGrd.addColorStop(0.5, "#4a90e2"); skyGrd.addColorStop(1, "#87ceeb");
-        ctx.fillStyle = skyGrd; ctx.fillRect(0, 0, W, H);
-        
-        let sunGrd = ctx.createRadialGradient(150, 150, 10, 150, 150, 150);
-        sunGrd.addColorStop(0, "rgba(255, 234, 112, 1)"); sunGrd.addColorStop(0.3, "rgba(255, 234, 112, 0.8)"); sunGrd.addColorStop(1, "rgba(255, 234, 112, 0)");
-        ctx.fillStyle = sunGrd; ctx.beginPath(); ctx.arc(150, 150, 150, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(150, 150, 40, 0, Math.PI*2); ctx.fill();
+        // Uso de gradientes cacheados
+        ctx.fillStyle = skyGrd; ctx.fillRect(0, 0, W, WATER_LEVEL);
+        ctx.fillStyle = sunGrd; ctx.beginPath(); ctx.arc(150, 150, 150, 0, PI2); ctx.fill();
+        ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(150, 150, 40, 0, PI2); ctx.fill();
 
         ctx.fillStyle = "rgba(255,255,255,0.4)";
         let cx1 = 700 - (time*4)%1500;
-        ctx.beginPath(); ctx.arc(cx1, 200, 50, 0, Math.PI*2); ctx.arc(cx1+60, 180, 70, 0, Math.PI*2); ctx.arc(cx1+130, 210, 45, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx1, 200, 50, 0, PI2); ctx.arc(cx1+60, 180, 70, 0, PI2); ctx.arc(cx1+130, 210, 45, 0, PI2); ctx.fill();
         
         ctx.fillStyle = "rgba(255,255,255,0.9)";
         let cx2 = 900 - (time*8)%1500;
-        ctx.shadowColor = "rgba(0,0,0,0.1)"; ctx.shadowBlur = 20;
-        ctx.beginPath(); ctx.arc(cx2, 120, 40, 0, Math.PI*2); ctx.arc(cx2+50, 100, 60, 0, Math.PI*2); ctx.arc(cx2+110, 130, 35, 0, Math.PI*2); ctx.fill();
-        ctx.shadowBlur = 0;
+        // Eliminado shadowBlur de las nubes (mejora de rendimiento), simulado con círculos más suaves o simplemente dibujándolas claras.
+        ctx.beginPath(); ctx.arc(cx2, 120, 40, 0, PI2); ctx.arc(cx2+50, 100, 60, 0, PI2); ctx.arc(cx2+110, 130, 35, 0, PI2); ctx.fill();
 
         ctx.strokeStyle = "rgba(255,255,255,0.6)"; ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.lineJoin = "round";
         birds.forEach(b => {
@@ -245,13 +265,13 @@
     function drawWaveLayer(baseY, ampX, speedMult, color, heightAmp, drawFoam = false) {
         ctx.fillStyle = color; 
         ctx.beginPath();
-        for(let x=0; x<=W; x+=20) ctx.lineTo(x, baseY + Math.sin(x/ampX + time*speedMult)*15*heightAmp);
+        for(let x=0; x<=W; x+=40) ctx.lineTo(x, baseY + Math.sin(x/ampX + time*speedMult)*15*heightAmp); // Paso de 20 a 40 (x2 de rendimiento en olas sin impacto visual)
         ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.fill();
 
         if (drawFoam) {
             ctx.strokeStyle = "rgba(255,255,255,0.3)"; ctx.lineWidth = 4;
             ctx.beginPath();
-            for(let x=0; x<=W; x+=20) ctx.lineTo(x, baseY + Math.sin(x/ampX + time*speedMult)*15*heightAmp);
+            for(let x=0; x<=W; x+=40) ctx.lineTo(x, baseY + Math.sin(x/ampX + time*speedMult)*15*heightAmp);
             ctx.stroke();
         }
     }
@@ -259,19 +279,17 @@
     function drawForegroundWater() { drawWaveLayer(WATER_LEVEL + 15, 90, 1.5, "rgba(21, 67, 96, 0.95)", 1, true); }
 
     function drawPlayer() {
-        if(player.sinking) {
-            player.sinkOffset += 3;
-        }
+        if(player.sinking) player.sinkOffset += 3;
 
         let bobY = player.y + Math.sin(time*2)*5 + player.sinkOffset;
         let px = player.x; let py = bobY - 20;
 
-        ctx.fillStyle = "rgba(0,0,0,0.4)"; ctx.beginPath(); ctx.ellipse(px, bobY + 30, 60, 10, 0, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = "rgba(0,0,0,0.4)"; ctx.beginPath(); ctx.ellipse(px, bobY + 30, 60, 10, 0, 0, PI2); ctx.fill();
 
         let ringGrd = ctx.createLinearGradient(px-60, bobY-20, px+60, bobY+30);
         ringGrd.addColorStop(0, "#ff7675"); ringGrd.addColorStop(0.5, "#d63031"); ringGrd.addColorStop(1, "#8e44ad");
-        ctx.fillStyle = ringGrd; ctx.beginPath(); ctx.ellipse(px, bobY + 15, 65, 25, 0, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.ellipse(px, bobY + 15, 45, 15, 0, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = ringGrd; ctx.beginPath(); ctx.ellipse(px, bobY + 15, 65, 25, 0, 0, PI2); ctx.fill();
+        ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.ellipse(px, bobY + 15, 45, 15, 0, 0, PI2); ctx.fill();
         
         ctx.strokeStyle = "#f1c40f"; ctx.lineWidth = 4;
         ctx.beginPath(); ctx.moveTo(px-55, bobY+5); ctx.lineTo(px-40, bobY+35); ctx.stroke();
@@ -279,10 +297,10 @@
 
         let skin = ctx.createRadialGradient(px, py-10, 5, px, py+10, 30);
         skin.addColorStop(0, "#ffeaa7"); skin.addColorStop(1, "#e1b12c");
-        ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(px, py, 30, 0, Math.PI*2); ctx.fill(); 
+        ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(px, py, 30, 0, PI2); ctx.fill(); 
         
-        ctx.fillStyle = "rgba(255,100,100,0.4)"; ctx.beginPath(); ctx.arc(px+15, py+5, 6, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = '#2f3542'; ctx.beginPath(); ctx.arc(px + 12, py - 2, 4, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = "rgba(255,100,100,0.4)"; ctx.beginPath(); ctx.arc(px+15, py+5, 6, 0, PI2); ctx.fill();
+        ctx.fillStyle = '#2f3542'; ctx.beginPath(); ctx.arc(px + 12, py - 2, 4, 0, PI2); ctx.fill();
         
         ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(px, py - 25, 20, Math.PI, 0); ctx.fill();
         ctx.fillStyle = '#0984e3'; ctx.fillRect(px - 22, py - 28, 44, 6);
@@ -297,11 +315,11 @@
         gunGrd.addColorStop(0, "#2ecc71"); gunGrd.addColorStop(1, "#27ae60");
         ctx.fillStyle = gunGrd; ctx.fillRect(0, -10, 45, 16); 
         ctx.fillStyle = '#0984e3'; ctx.beginPath(); ctx.arc(22, -15, 12, Math.PI, 0); ctx.fill(); 
-        ctx.fillStyle = '#74b9ff'; ctx.beginPath(); ctx.arc(18, -18, 4, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#74b9ff'; ctx.beginPath(); ctx.arc(18, -18, 4, 0, PI2); ctx.fill();
         ctx.fillStyle = '#e67e22'; ctx.fillRect(40, -7, 12, 10); 
         ctx.fillStyle = '#f1c40f'; ctx.fillRect(10, 6, 10, 18); 
         
-        ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(12, 6, 8, 0, Math.PI*2); ctx.fill(); 
+        ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(12, 6, 8, 0, PI2); ctx.fill(); 
         ctx.restore();
     }
 
@@ -311,14 +329,12 @@
             
             if(t.sinking) {
                 t.sinkOffset += 3;
-                if(t.sinkOffset > 250) {
-                    t.active = false;
-                }
+                if(t.sinkOffset > 250) t.active = false;
             }
 
             let floatY = t.y + Math.sin(time * 1.5 + t.x)*8 + t.sinkOffset;
 
-            ctx.fillStyle = "rgba(0,0,0,0.4)"; ctx.beginPath(); ctx.ellipse(t.x, floatY + 30, 65, 12, 0, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = "rgba(0,0,0,0.4)"; ctx.beginPath(); ctx.ellipse(t.x, floatY + 30, 65, 12, 0, 0, PI2); ctx.fill();
 
             ctx.fillStyle = "#5c3a21"; ctx.fillRect(t.x + 30, floatY - 80, 8, 90);
             ctx.fillStyle = "#c0392b"; ctx.beginPath(); ctx.moveTo(t.x + 38, floatY - 80); ctx.lineTo(t.x + 80, floatY - 65); ctx.lineTo(t.x + 38, floatY - 50); ctx.fill();
@@ -336,23 +352,23 @@
             let metalGrd = ctx.createLinearGradient(t.x - 60, floatY - 10, t.x - 60, floatY + 10);
             metalGrd.addColorStop(0, "#95a5a6"); metalGrd.addColorStop(0.5, "#34495e"); metalGrd.addColorStop(1, "#2c3e50");
             ctx.fillStyle = metalGrd; ctx.fillRect(t.x - 60, floatY - 5, 50, 16); 
-            ctx.fillStyle = '#1a252f'; ctx.beginPath(); ctx.ellipse(t.x - 60, floatY + 3, 6, 12, 0, 0, Math.PI*2); ctx.fill(); 
-            ctx.fillStyle = '#7f8c8d'; ctx.beginPath(); ctx.arc(t.x - 30, floatY + 6, 14, 0, Math.PI*2); ctx.fill(); 
-            ctx.fillStyle = '#bdc3c7'; ctx.beginPath(); ctx.arc(t.x - 30, floatY + 6, 4, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#1a252f'; ctx.beginPath(); ctx.ellipse(t.x - 60, floatY + 3, 6, 12, 0, 0, PI2); ctx.fill(); 
+            ctx.fillStyle = '#7f8c8d'; ctx.beginPath(); ctx.arc(t.x - 30, floatY + 6, 14, 0, PI2); ctx.fill(); 
+            ctx.fillStyle = '#bdc3c7'; ctx.beginPath(); ctx.arc(t.x - 30, floatY + 6, 4, 0, PI2); ctx.fill();
 
             let skin = ctx.createRadialGradient(t.x, floatY-25, 5, t.x, floatY-25, 25);
             skin.addColorStop(0, "#ffeaa7"); skin.addColorStop(1, "#e1b12c");
             
-            ctx.fillStyle = '#ecf0f1'; ctx.beginPath(); ctx.arc(t.x, floatY - 15, 20, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#ecf0f1'; ctx.beginPath(); ctx.arc(t.x, floatY - 15, 20, 0, PI2); ctx.fill();
             ctx.fillStyle = '#c0392b'; ctx.fillRect(t.x - 20, floatY - 20, 40, 5); ctx.fillRect(t.x - 20, floatY - 10, 40, 5);
 
-            ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(t.x, floatY - 35, 22, 0, Math.PI*2); ctx.fill(); 
+            ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(t.x, floatY - 35, 22, 0, PI2); ctx.fill(); 
             
-            ctx.fillStyle = '#2f3542'; ctx.beginPath(); ctx.arc(t.x - 10, floatY - 35, 6, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#2f3542'; ctx.beginPath(); ctx.arc(t.x - 10, floatY - 35, 6, 0, PI2); ctx.fill();
             ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(t.x-22, floatY-40); ctx.lineTo(t.x+22, floatY-25); ctx.stroke();
             
             ctx.fillStyle = '#222'; 
-            ctx.beginPath(); ctx.ellipse(t.x, floatY-50, 38, 14, 0, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(t.x, floatY-50, 38, 14, 0, 0, PI2); ctx.fill();
             ctx.beginPath(); ctx.arc(t.x, floatY-55, 22, Math.PI, 0); ctx.fill();
             ctx.strokeStyle = '#f1c40f'; ctx.lineWidth = 4; ctx.stroke(); 
 
@@ -379,34 +395,44 @@
         let px = player.x + 15 + Math.cos(aimAngle)*45;
         let py = player.y + Math.sin(time*2)*5 - 10 + Math.sin(aimAngle)*45;
 
+        ctx.fillStyle = "#fff";
         for(let i=0; i<30; i++) {
             px += vx * 2.5; py += vy * 2.5; vy += GRAVITY * 2.5;
             let alpha = 1 - i/30;
-            ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-            ctx.shadowColor = "rgba(255,255,255,1)"; ctx.shadowBlur = 10 * alpha;
-            ctx.beginPath(); ctx.arc(px, py, 6 - (i*0.1), 0, Math.PI*2); ctx.fill();
-            ctx.shadowBlur = 0;
+            let r = 6 - (i*0.1);
+            
+            // Reemplazo de shadowBlur (pesado) por círculos opacos superpuestos (muy ligero)
+            ctx.globalAlpha = alpha * 0.3;
+            ctx.beginPath(); ctx.arc(px, py, r + 4, 0, PI2); ctx.fill();
+            
+            ctx.globalAlpha = alpha;
+            ctx.beginPath(); ctx.arc(px, py, r, 0, PI2); ctx.fill();
         }
+        ctx.globalAlpha = 1.0; // Reset
     }
 
     function drawProjectiles() {
         projectiles.forEach(p => {
             p.history.push({x: p.x, y: p.y}); if(p.history.length > 6) p.history.shift();
+            
+            // Historial/estela optimizado con globalAlpha
+            ctx.fillStyle = p.type === 'tennis' ? "#adff2f" : "#e74c3c";
             for(let i=0; i<p.history.length; i++) {
-                ctx.fillStyle = p.type === 'tennis' ? `rgba(173, 255, 47, ${i/12})` : `rgba(231, 76, 60, ${i/12})`;
-                ctx.beginPath(); ctx.arc(p.history[i].x, p.history[i].y, p.radius * (i/6), 0, Math.PI*2); ctx.fill();
+                ctx.globalAlpha = i/12;
+                ctx.beginPath(); ctx.arc(p.history[i].x, p.history[i].y, p.radius * (i/6), 0, PI2); ctx.fill();
             }
+            ctx.globalAlpha = 1.0;
 
             if(p.type === 'tennis') {
                 let rGrd = ctx.createRadialGradient(p.x-3, p.y-3, 2, p.x, p.y, p.radius);
                 rGrd.addColorStop(0, "#e0ff4f"); rGrd.addColorStop(1, "#99cc00");
-                ctx.fillStyle = rGrd; ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = rGrd; ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, PI2); ctx.fill();
                 ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(p.x-5, p.y, p.radius-3, -Math.PI/2.5, Math.PI/2.5); ctx.stroke();
             } else if(p.type === 'cannon') {
                 let rGrd = ctx.createRadialGradient(p.x-5, p.y-5, 3, p.x, p.y, p.radius);
                 rGrd.addColorStop(0, "#95a5a6"); rGrd.addColorStop(1, "#2c3e50");
-                ctx.fillStyle = rGrd; ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = "rgba(231, 76, 60, 0.4)"; ctx.beginPath(); ctx.arc(p.x, p.y, p.radius + 10, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = rGrd; ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, PI2); ctx.fill();
+                ctx.fillStyle = "rgba(231, 76, 60, 0.4)"; ctx.beginPath(); ctx.arc(p.x, p.y, p.radius + 10, 0, PI2); ctx.fill();
             }
         });
     }
@@ -414,31 +440,33 @@
     function drawParticles() {
         for(let i = particles.length-1; i>=0; i--) {
             let p = particles[i];
-            ctx.fillStyle = p.color.replace('ALPHA', p.life);
-            ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
+            ctx.globalAlpha = p.life; // Optimización masiva: sin reemplazo de strings
+            ctx.fillStyle = p.color;
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, PI2); ctx.fill();
+            
             p.x += p.vx; p.y += p.vy; p.vy += 0.5; p.life -= p.decay;
             if(p.life <= 0) particles.splice(i, 1);
         }
+        ctx.globalAlpha = 1.0;
     }
 
     function drawFloatingTexts() {
+        ctx.font = '900 40px Fredoka One'; ctx.textAlign = 'center';
+        // Desactivado shadowBlur aquí también para máximo rendimiento
         for(let i = floatingTexts.length-1; i>=0; i--) {
             let ft = floatingTexts[i];
-            ctx.fillStyle = ft.color.replace('ALPHA', ft.life / 60);
-            ctx.font = '900 40px Fredoka One'; ctx.textAlign = 'center';
-            ctx.shadowColor = "rgba(0,0,0,0.8)"; ctx.shadowBlur = 5;
-            ctx.fillText(ft.text, ft.x, ft.y);
-            ctx.shadowBlur = 0;
+            ctx.globalAlpha = ft.life / 60;
+            ctx.fillStyle = '#000'; ctx.fillText(ft.text, ft.x + 2, ft.y + 2); // Sombra falsa ligera
+            ctx.fillStyle = ft.color; ctx.fillText(ft.text, ft.x, ft.y);
+            
             ft.y -= 1.5; ft.life--;
             if(ft.life <= 0) floatingTexts.splice(i, 1);
         }
+        ctx.globalAlpha = 1.0;
     }
 
     function drawVignette() {
-        let grad = ctx.createRadialGradient(W/2, H/2, H/3, W/2, H/2, W/1.2);
-        grad.addColorStop(0, 'rgba(0,0,0,0)');
-        grad.addColorStop(1, 'rgba(0,0,0,0.6)');
-        ctx.fillStyle = grad;
+        ctx.fillStyle = vignetteGrd;
         ctx.fillRect(0, 0, W, H);
     }
 
@@ -454,7 +482,7 @@
         let p = getPointer(e);
         if(Math.hypot(p.x - player.x, p.y - player.y) < 180) {
             isDragging = true; dragStart = { x: player.x, y: player.y - 15 }; dragCurrent = p;
-            sfx.stretch(); document.getElementById('drag-hint').style.display = 'none';
+            sfx.stretch(); elDragHint.style.display = 'none';
         }
     }
 
@@ -487,7 +515,7 @@
             p.x += p.vx; p.y += p.vy; p.vy += GRAVITY;
 
             if(p.y > WATER_LEVEL + 40) {
-                sfx.splash(); spawnSplash(p.x, p.y, "rgba(173, 216, 230, ALPHA)"); projectiles.splice(i, 1);
+                sfx.splash(); spawnSplash(p.x, p.y, "#add8e6"); projectiles.splice(i, 1);
                 if(gameState === 'player_shoot') initiateEnemyTurn(); else if(gameState === 'enemy_shoot') gameState = 'aiming';
                 continue;
             }
@@ -505,13 +533,13 @@
                         projectiles.splice(i, 1);
                         if(t.value === correctAnswer) {
                             t.sinking = true; sfx.hitCorrect(); 
-                            spawnSplash(t.x, floatY, "rgba(255, 215, 0, ALPHA)", true);
-                            spawnFloatingText(t.x, floatY - 50, "+10", "rgba(46, 204, 113, ALPHA)");
+                            spawnSplash(t.x, floatY, "#ffd700", true);
+                            spawnFloatingText(t.x, floatY - 50, "+10", "#2ecc71");
                             score += 10 * difficulty; updateHUD(); gameState = 'resolving'; setTimeout(nextProblem, 2000);
                         } else {
                             sfx.hitWrong(); 
-                            spawnSplash(t.x, floatY, "rgba(231, 76, 60, ALPHA)", true); 
-                            spawnFloatingText(t.x, floatY - 50, "¡Fallo!", "rgba(231, 76, 60, ALPHA)");
+                            spawnSplash(t.x, floatY, "#e74c3c", true); 
+                            spawnFloatingText(t.x, floatY - 50, "¡Fallo!", "#e74c3c");
                             initiateEnemyTurn(t);
                         }
                         break;
@@ -522,7 +550,7 @@
             if(p.type === 'cannon') {
                 if(Math.hypot(p.x - player.x, p.y - player.y) < p.radius + player.radius && !player.sinking) {
                     projectiles.splice(i, 1); sfx.splash(); 
-                    spawnSplash(player.x, player.y, "rgba(231, 76, 60, ALPHA)", true); 
+                    spawnSplash(player.x, player.y, "#e74c3c", true); 
                     takeDamage();
                 }
             }
@@ -541,7 +569,7 @@
             setTimeout(() => {
                 sfx.cannon(); 
                 let floatY = shooter.y + Math.sin(time * 1.5 + shooter.x)*8;
-                spawnSplash(shooter.x - 70, floatY, "rgba(200, 200, 200, ALPHA)"); 
+                spawnSplash(shooter.x - 70, floatY, "#c8c8c8"); 
                 
                 let dx = player.x - (shooter.x - 60); let dy = player.y - floatY;
                 let T = 65; let vx = dx / T; let vy = (dy - 0.5 * GRAVITY * T * T) / T;
@@ -552,7 +580,7 @@
 
     function takeDamage() {
         sfx.hitWrong(); shakeTimer = 25;
-        let flash = document.getElementById('damage-flash'); flash.style.opacity = '0.6'; setTimeout(() => flash.style.opacity = '0', 200);
+        elDamageFlash.style.opacity = '0.6'; setTimeout(() => elDamageFlash.style.opacity = '0', 200);
         lives--; updateHUD();
         if(lives <= 0) { 
             gameState = 'resolving'; 
@@ -564,7 +592,7 @@
     }
 
     function updateHUD() {
-        document.getElementById('score').innerText = score;
+        elScore.innerText = score;
         
         let fullHeart = `<svg viewBox="0 0 32 32" width="1em" height="1em" fill="#ff4757" style="filter: drop-shadow(0 4px 4px rgba(0,0,0,0.8));"><path d="M16 28.72l-1.42-1.28C7.5 21.05 3 17 3 11.5 3 7.28 6.28 4 10.5 4c2.38 0 4.67 1.12 6.13 3.09C17.61 5.48 19.5 4 22 4 26.28 4 29.5 7.28 29.5 11.5c0 5.5-4.5 9.55-11.58 15.94L16 28.72z"/></svg>`;
         let emptyHeart = `<svg viewBox="0 0 32 32" width="1em" height="1em" fill="#2d3436" style="filter: drop-shadow(0 4px 4px rgba(0,0,0,0.8));"><path d="M16 28.72l-1.42-1.28C7.5 21.05 3 17 3 11.5 3 7.28 6.28 4 10.5 4c2.38 0 4.67 1.12 6.13 3.09C17.61 5.48 19.5 4 22 4 26.28 4 29.5 7.28 29.5 11.5c0 5.5-4.5 9.55-11.58 15.94L16 28.72z"/></svg>`;
@@ -572,12 +600,12 @@
         let c = ""; 
         for(let i=0; i<lives; i++) c += fullHeart; 
         for(let i=lives; i<3; i++) c += emptyHeart;
-        document.getElementById('lives').innerHTML = c;
+        elLives.innerHTML = c;
     }
 
     function showGameOver() {
-        document.getElementById('hud-ingame').classList.add('hidden');
-        document.getElementById('game-over').classList.remove('hidden'); document.getElementById('final-score').innerText = score;
+        elHudIngame.classList.add('hidden');
+        elGameOver.classList.remove('hidden'); elFinalScore.innerText = score;
     }
 
     function gameLoop() {
