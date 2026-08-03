@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Pizzería lo del Pipe - Fracciones</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@800;900&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --primary: #ff4757;
+        --secondary: #ffa502;
+        --diner-red: #d63031;
+        --diner-cyan: #00cec9;
+        --chrome: #dfe6e9;
+        --wood-dark: #2d3436;
+        --crust: #eccc68;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+
+    body {
+        font-family: 'Nunito', sans-serif;
+        height: 100vh;
+        width: 100vw;
+        overflow: hidden;
+        background-color: #0f1319;
+        color: #fff;
+    }
+
+    .watermark { position: absolute; bottom: 1vh; right: 1vw; font-size: clamp(0.7rem, 1.5vh, 1rem); font-family: 'Fredoka One'; color: rgba(255,255,255,0.7); z-index: 1000; text-shadow: 1px 1px 0 #000; background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 10px;}
+    .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 20; transition: opacity 0.4s ease; }
+    .hidden { opacity: 0; pointer-events: none; display: none !important; }
+
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.5vh); } }
+    @keyframes pulse { 0% { transform: scale(1); } 100% { transform: scale(1.1); } }
+    @keyframes neonPulse { 0%, 100% { filter: drop-shadow(0 0 1vh var(--primary)); } 50% { filter: drop-shadow(0 0 3vh var(--primary)); } }
+
+    @keyframes neonRedBlink {
+        0%, 90%, 94%, 98%, 100% { opacity: 1; text-shadow: 0 0 0.5vh #fff, 0 0 1vh #ff4757, 0 0 2vh #ff0000, 0 0 4vh #ff0000, 0 0 6vh #ff0000; }
+        91%, 93%, 95%, 97% { opacity: 0.3; text-shadow: none; }
+    }
+
+    /* --- MENÚ PRINCIPAL --- */
+    #menu { background: radial-gradient(circle at center, #2d3436, #000000); z-index: 100;}
+    #menu h1 {
+        font-family: 'Fredoka One', cursive; font-size: clamp(3rem, 9vh, 6.5rem); color: #fff;
+        text-align: center; margin-bottom: 5vh; letter-spacing: 3px; line-height: 1.1;
+        transform: rotate(-2deg);
+        animation: neonRedBlink 4s infinite;
+    }
+    .btn {
+        background: linear-gradient(180deg, #00cec9, #00b894); border: clamp(2px, 0.5vh, 4px) solid #fff; border-radius: 4vh;
+        padding: 2vh 4vw; margin: 1.5vh; font-family: 'Fredoka One', cursive; font-size: clamp(1.2rem, 3vh, 2rem);
+        color: #fff; cursor: pointer; text-transform: uppercase;
+        box-shadow: 0 1vh 0 #01908c, 0 2vh 2.5vh rgba(0,0,0,0.6); transition: all 0.15s; width: clamp(250px, 40vw, 400px);
+        text-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+    }
+    .btn:hover { filter: brightness(1.15); transform: translateY(-3px) scale(1.02); box-shadow: 0 1.2vh 0 #01908c, 0 2.5vh 3vh rgba(0,0,0,0.8); }
+    .btn:active { transform: translateY(1vh); box-shadow: 0 0 0 #01908c; }
+
+    /* --- HUD --- */
+    #hud {
+        position: absolute; top: 1.5vh; left: 0; width: 100%; padding: 0 3vw;
+        display: flex; justify-content: space-between; z-index: 50; pointer-events: none;
+        font-family: 'Fredoka One', cursive; font-size: clamp(2rem, 5vh, 3rem); text-shadow: 0 0.5vh 1vh rgba(0,0,0,0.8);
+    }
+    .vidas { color: #ff4757; filter: drop-shadow(0 2px 4px #000); }
+
+    /* --- SALA DEL RESTAURANTE --- */
+    #restaurant-view {
+        background-color: #cccccc;
+        background-image: 
+            linear-gradient(45deg, #999999 25%, transparent 25%, transparent 75%, #999999 75%, #999999),
+            linear-gradient(45deg, #999999 25%, transparent 25%, transparent 75%, #999999 75%, #999999);
+        background-size: 80px 80px; 
+        background-position: 0 0, 40px 40px;
+        perspective: 1000px;
+    }
+    
+    .wall-bg {
+        position: absolute; top: 0; left: 0; width: 100%; height: 35%;
+        background: linear-gradient(to bottom, #ffeaa7, #fab1a0);
+        border-bottom: 2.5vh solid var(--chrome);
+        box-shadow: 0 3vh 5vh rgba(0,0,0,0.6);
+        z-index: 5;
+    }
+    
+    .neon-sign {
+        position: absolute; top: 22%; left: 28%; /* MODIFICADO: ajustado a 28% para centrarlo más */
+        font-family: 'Fredoka One'; font-size: clamp(2.5rem, 6vh, 5rem);
+        color: #fff; transform: rotate(-5deg); 
+        animation: neonRedBlink 5s infinite;
+        line-height: 1; z-index: 6;
+    }
+
+    .retro-sign {
+        position: absolute; top: 12%; left: 4%; width: 12vw; height: 12vh;
+        background: #fff; border: clamp(4px, 1vh, 8px) solid var(--chrome); border-radius: 1vh;
+        box-shadow: 0 0 2vh rgba(255, 71, 87, 0.8), inset 0 0 3vh rgba(255, 71, 87, 0.4), 0 1vh 2vh rgba(0,0,0,0.5);
+        transform: rotate(2deg); z-index: 6; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        color: var(--primary); font-family: 'Fredoka One'; font-size: clamp(1rem, 2.5vh, 2rem); line-height: 1.1; text-align: center;
+        text-shadow: 0 0 10px var(--primary);
+    }
+    .retro-sign span { font-size: clamp(0.7rem, 1.5vh, 1.2rem); color: #2d3436; text-shadow: none;}
+
+    .wall-menu {
+        position: absolute; top: 10%;
+        width: 14vw; height: 55%;
+        background: #2d3436; border: clamp(4px, 1vh, 8px) solid var(--chrome); border-radius: 1vh;
+        box-shadow: 0 1.5vh 2vh rgba(0,0,0,0.6), inset 0 0 2vh rgba(0,0,0,0.8);
+        padding: 1vh 0.5vw; display: flex; flex-direction: column; align-items: center;
+        color: rgba(255,255,255,0.9); font-family: 'Fredoka One'; z-index: 6;
+    }
+    .wall-menu h3 { font-size: clamp(0.7rem, 2vh, 1.5rem); color: var(--diner-cyan); border-bottom: 2px dashed rgba(255,255,255,0.5); width: 90%; text-align: center; padding-bottom: 0.5vh; margin-bottom: 1vh; }
+    .wall-menu ul { list-style: none; width: 100%; text-align: center; }
+    .wall-menu li { font-family: 'Nunito'; font-weight: 900; font-size: clamp(0.6rem, 1.5vh, 1.2rem); margin-bottom: 0.8vh; }
+    .menu-2 { left: 52%; transform: rotate(-1.5deg); }
+
+    .restaurant-window {
+        position: absolute; top: 15%; right: 8%; width: 20vw; height: 65%;
+        background: linear-gradient(to bottom, #090a0f, #1b2735);
+        border: 1.5vh solid var(--chrome); border-radius: 2vh; box-shadow: inset 0 0 4vh #000, 0 2vh 4vh rgba(0,0,0,0.6);
+        overflow: hidden;
+    }
+    .moon { position: absolute; top: 20%; left: 70%; width: 6vh; height: 6vh; background: #f1c40f; border-radius: 50%; box-shadow: 0 0 3vh #f1c40f, 0 0 6vh #f1c40f; }
+    
+    .counter-back {
+        position: absolute; bottom: 0; left: 0; width: 100%; height: 28%;
+        background: linear-gradient(to bottom, var(--diner-cyan), #01908c); border-top: 1.5vh solid var(--chrome);
+        box-shadow: 0 -1vh 3vh rgba(0,0,0,0.7); display: flex; align-items: flex-start; justify-content: flex-end; padding-right: 12vw;
+    }
+    
+    .cash-register {
+        margin-top: -4vh; width: 10vh; height: 8vh;
+        background: linear-gradient(to bottom, #ecf0f1, #bdc3c7);
+        border-radius: 1vh; border: 3px solid #7f8c8d;
+        box-shadow: 0 1vh 2vh rgba(0,0,0,0.5);
+        position: relative; z-index: 7;
+        display: flex; flex-direction: column; align-items: center; justify-content: space-evenly;
+    }
+    .cash-register::before { content: ''; width: 80%; height: 40%; background: #2ecc71; border: 2px solid #27ae60; border-radius: 4px; box-shadow: inset 0 0 1vh rgba(0,0,0,0.3); }
+    .cash-register::after { content: ''; width: 80%; height: 30%; background: repeating-linear-gradient(90deg, #95a5a6, #95a5a6 20%, transparent 20%, transparent 25%); }
+
+    .plant { position: absolute; width: 9vw; height: 18vh; z-index: 8; transition: all 0.5s ease; }
+    .pot { position: absolute; bottom: 0; left: 25%; width: 50%; height: 35%; background: linear-gradient(to right, #b71c1c, var(--primary), #b71c1c); border-radius: 0 0 1.5vh 1.5vh; border-top: 1.5vh solid var(--chrome); box-shadow: 1vh 1vh 2vh rgba(0,0,0,0.4); }
+    .leaves { position: absolute; bottom: 30%; left: 10%; width: 80%; height: 70%; }
+    .leaf { position: absolute; background: linear-gradient(135deg, #2ecc71, #27ae60); border-radius: 0 50% 0 50%; box-shadow: inset 2px 2px 4px rgba(255,255,255,0.3), 0 1vh 1vh rgba(0,0,0,0.4); }
+    .leaf-1 { bottom: 0; left: 15%; width: 60%; height: 80%; transform: rotate(-20deg); }
+    .leaf-2 { bottom: 10%; right: 10%; width: 50%; height: 70%; transform: rotate(40deg); background: linear-gradient(135deg, #27ae60, #1e8449); }
+    .leaf-3 { bottom: 20%; left: 30%; width: 45%; height: 90%; transform: rotate(10deg); background: linear-gradient(135deg, #2ecc71, #229954); }
+
+    .lamp {
+        position: absolute; width: 6vh; height: 4vh; background: var(--primary);
+        border-radius: 3vh 3vh 0 0; border-bottom: 3px solid var(--chrome); z-index: 12; transform: translate(-50%, -20vh);
+        box-shadow: 0 1vh 2vh rgba(255, 255, 255, 0.5); pointer-events: none;
+    }
+    .lamp::before { content:''; position: absolute; bottom: -6vh; left: 10%; width: 80%; height: 6vh; background: linear-gradient(to bottom, rgba(255,255,255,0.3), transparent); clip-path: polygon(20% 0, 80% 0, 100% 100%, 0% 100%); }
+    .lamp::after { content:''; position: absolute; top: -15vh; left: 45%; width: 10%; height: 15vh; background: var(--chrome); }
+
+    .table-container { position: absolute; width: clamp(80px, 13vh, 140px); height: clamp(80px, 13vh, 140px); transform: translate(-50%, -50%); z-index: 10; }
+    .table-shadow { position: absolute; bottom: -20%; left: 10%; width: 80%; height: 30%; background: rgba(0,0,0,0.5); border-radius: 50%; filter: blur(8px); }
+    .chair {
+        position: absolute; width: 30%; height: 30%; background: radial-gradient(circle at 30% 30%, #ff4757, #b71c1c);
+        border-radius: 50%; border: clamp(3px, 0.6vh, 5px) solid var(--chrome);
+        box-shadow: inset 0 -1vh 0 rgba(0,0,0,0.4), 0 2vh 2vh rgba(0,0,0,0.8); z-index: 1;
+    }
+    .top-chair { top: -20%; left: 35%; }
+    .bottom-chair { bottom: -20%; left: 35%; }
+    .left-chair { top: 35%; left: -20%; }
+    .right-chair { top: 35%; right: -20%; }
+    .table {
+        position: absolute; width: 100%; height: 100%; background-color: #f5f6fa;
+        border-radius: 50%; border: clamp(6px, 1.2vh, 12px) solid var(--chrome); 
+        box-shadow: 0 1.5vh 0 #b2bec3, 0 3vh 3vh rgba(0,0,0,0.6), inset 0 0 4vh rgba(0,0,0,0.1);
+        display: flex; justify-content: center; align-items: center; z-index: 2;
+    }
+
+    .character-svg { position: absolute; top: -85%; width: 130%; height: 130%; filter: drop-shadow(0 2vh 1.5vh rgba(0,0,0,0.7)); opacity: 0; transform: translateY(2vh); transition: 0.4s ease-out; pointer-events: none; z-index: 11;}
+    .character-svg.active { opacity: 1; transform: translateY(0); animation: float 3s infinite ease-in-out; }
+    .order-alert {
+        position: absolute; top: -100%; right: -30%; background: #fff; border: clamp(4px, 0.8vh, 8px) solid var(--diner-cyan); color: var(--diner-cyan);
+        border-radius: 50%; width: clamp(40px, 7vh, 70px); height: clamp(40px, 7vh, 70px); display: flex; justify-content: center; align-items: center;
+        font-family: 'Fredoka One'; font-size: clamp(1.8rem, 4vh, 3rem); box-shadow: 0 1.5vh 2.5vh rgba(0,0,0,0.5); opacity: 0; transform: scale(0); transition: 0.3s; pointer-events: none; z-index: 12;
+    }
+    .order-alert.active { opacity: 1; transform: scale(1); animation: pulse 0.8s infinite alternate; }
+    
+    #player-chef { position: absolute; width: clamp(80px, 14vh, 130px); height: clamp(90px, 17vh, 150px); z-index: 15; transform: translate(-50%, -80%); filter: drop-shadow(0 2.5vh 1.5vh rgba(0,0,0,0.6)); pointer-events: none; will-change: left, top; }
+    .walking { animation: walk 0.3s infinite alternate; }
+    @keyframes walk { 0% { transform: translate(-50%, -85%) rotate(-8deg); } 100% { transform: translate(-50%, -75%) rotate(8deg); } }
+    
+    #action-prompt { position: absolute; background: rgba(0, 0, 0, 0.8); color: #fff; border: 3px solid #2ed573; padding: 1vh 2vw; border-radius: 2vh; font-family: 'Fredoka One'; font-size: clamp(0.9rem, 2vh, 1.5rem); top: -40%; left: 50%; transform: translateX(-50%); display: none; white-space: nowrap; box-shadow: 0 1vh 2vh rgba(0,0,0,0.5); z-index: 20; animation: pulse 1s infinite alternate; }
+    #action-prompt span { color: #2ed573; }
+    #movement-hint { position: absolute; bottom: 3vh; left: 50%; transform: translateX(-50%); font-family: 'Fredoka One'; font-size: clamp(1rem, 2.5vh, 2rem); color: rgba(255,255,255,0.8); background: rgba(0,0,0,0.6); padding: 1vh 2vw; border-radius: 2vh; z-index: 10; pointer-events: none; }
+
+    /* --- VISTA COCINA --- */
+    #kitchen-view { background: #dfe4ea; flex-direction: row; }
+    #order-panel { flex: 1; min-width: 280px; max-width: 35vw; height: 100%; background: rgba(255,255,255,0.95); backdrop-filter: blur(20px); border-right: 1vh solid #2d3436; display: flex; flex-direction: column; padding: 10vh 2vw 4vh 2vw; align-items: center; box-shadow: 2vw 0 4vw rgba(0,0,0,0.2); z-index: 2;}
+    #ticket { background: #f1f2f6; border: clamp(2px, 0.5vh, 4px) solid #ced6e0; border-radius: 10px; width: 100%; padding: 3vh 2vw; box-shadow: 1vh 1vh 2vh rgba(0,0,0,0.1); font-size: clamp(1rem, 2.5vh, 1.8rem); color: #2d3436; font-weight: 900; position: relative;}
+    #ticket::before { content:'PEDIDO MESA'; position: absolute; top: -15px; left: 50%; transform: translateX(-50%); background: var(--primary); color: white; padding: 0.5vh 2vw; border-radius: 20px; font-family: 'Fredoka One'; font-size: clamp(0.8rem, 2vh, 1.5rem); box-shadow: 0 0.5vh 1vh rgba(0,0,0,0.2);}
+    .order-item { display: flex; align-items: center; gap: 1vw; margin: 2vh 0; border-bottom: 2px dashed #ced6e0; padding-bottom: 1.5vh;}
+    .order-icon { width: clamp(30px, 5.5vh, 50px); height: clamp(30px, 5.5vh, 50px); border-radius: 50%; background: #fff; box-shadow: 0 0.5vh 1vh rgba(0,0,0,0.1); display: flex; justify-content: center; align-items: center;}
+    .order-icon svg { width: 70%; height: 70%; pointer-events: none; }
+    #prep-panel { flex: 2; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: url('data:image/svg+xml;utf8,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="%23a4b0be"/><path d="M0 100 L100 0" stroke="%23747d8c" stroke-width="2" opacity="0.3"/></svg>'); position: relative; box-shadow: inset 5vw 0 5vw rgba(0,0,0,0.1);}
+    #cutting-board { width: min(45vh, 480px); height: min(45vh, 480px); background: #c23616; border-radius: 50%; box-shadow: 0 4vh 5vh rgba(0,0,0,0.6), inset 0 1vh 2vh rgba(255,255,255,0.3); display: flex; justify-content: center; align-items: center; margin-bottom: 4vh; position: relative; border: clamp(6px, 1.5vh, 15px) solid #8c1c0a;}
+    svg.pizza { width: 92%; height: 92%; border-radius: 50%; background: var(--crust); box-shadow: inset 0 0 3vh rgba(0,0,0,0.5), 0 1vh 3vh rgba(0,0,0,0.6);}
+    .slice { stroke: #d35400; stroke-width: 4; cursor: pointer; transition: 0.2s; }
+    .slice:hover { filter: brightness(1.2) drop-shadow(0 0 1vh rgba(255,255,255,0.8)); }
+    #ingredients-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: clamp(10px, 2vh, 25px); background: rgba(255,255,255,0.7); backdrop-filter: blur(15px); padding: 2vh 3vw; border-radius: 3vh; border: 3px solid rgba(255,255,255,0.9); box-shadow: 0 3vh 4vh rgba(0,0,0,0.3); }
+    .ing-btn { width: clamp(55px, 9vh, 85px); height: clamp(55px, 9vh, 85px); border-radius: 50%; border: clamp(3px, 0.6vh, 6px) solid #fff; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 1.5vh 2vh rgba(0,0,0,0.2); background: #f1f2f6; position: relative; }
+    .ing-btn svg { width: 65%; height: 65%; pointer-events: none; }
+    .ing-btn:active { transform: scale(0.9); }
+    .ing-btn.selected { transform: scale(1.15) translateY(-5px); border-color: var(--diner-cyan); box-shadow: 0 2vh 3vh rgba(0, 206, 201,0.5); z-index: 10; }
+    #kitchen-actions { display: flex; gap: 2vw; margin-top: 3vh; }
+    .k-btn { font-family: 'Fredoka One'; font-size: clamp(1.2rem, 3vh, 2.5rem); padding: 2vh 4vw; border-radius: 3vh; border: none; color: white; cursor: pointer; box-shadow: 0 1vh 0 rgba(0,0,0,0.4); transition: 0.1s; text-transform: uppercase;}
+    .k-btn:active { transform: translateY(1vh); box-shadow: 0 0 0 rgba(0,0,0,0.4); }
+    .shake { animation: shake-anim 0.4s ease-in-out; }
+    @keyframes shake-anim { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-20px); } 50% { transform: translateX(20px); } 75% { transform: translateX(-20px); } }
+
+</style>
+</head>
+<body>
+
+    <div class="watermark">Creado por el Prof. Gastón</div>
+
+    <div id="menu" class="screen">
+        <h1>PIZZERÍA<br>LO DEL PIPE</h1>
+        <button class="btn" onclick="startRandomGame()">Jugar</button>
+    </div>
+
+    <div id="hud" class="hidden">
+        <div>⭐ <span id="score">0</span></div>
+        <div class="vidas" id="lives">❤️❤️❤️</div>
+    </div>
+
+    <div id="restaurant-view" class="screen hidden">
+        <div class="wall-bg">
+            <div class="neon-sign">PIZZERÍA<br>LO DEL PIPE</div>
+            <div class="retro-sign">OPEN<br><span>24 HR</span></div>
+
+            <div class="wall-menu menu-2">
+                <h3>ESPECIALES</h3>
+                <ul>
+                    <li>Pepperoni</li>
+                    <li>Champiñones</li>
+                    <li>Salch. Especial</li>
+                    <li>Hawaiana</li>
+                </ul>
+            </div>
+
+            <div class="restaurant-window">
+                <div class="stars" style="position: absolute; width: 100%; height: 100%; background: radial-gradient(white 1px, transparent 2px); background-size: 30px 30px; opacity: 0.5;"></div>
+                <div class="moon"></div>
+            </div>
+            
+            <div class="counter-back">
+                <div class="cash-register"></div>
+            </div>
+        </div>
+
+        <div class="plant" style="bottom: 35%; left: 3%; transform: scaleX(-1);">
+            <div class="leaves">
+                <div class="leaf leaf-1"></div>
+                <div class="leaf leaf-2"></div>
+                <div class="leaf leaf-3"></div>
+            </div>
+            <div class="pot"></div>
+        </div>
+        
+        <div class="table-container" id="table-0" style="top: 55%; left: 20%;">
+            <div class="lamp" style="left: 50%;"></div>
+            <div class="table-shadow"></div>
+            <div class="chair top-chair"></div><div class="chair bottom-chair"></div><div class="chair left-chair"></div><div class="chair right-chair"></div>
+            <div class="table">
+                <div id="cust-0" class="character-svg"></div>
+                <div class="order-alert" id="alert-0">!</div>
+            </div>
+        </div>
+        
+        <div class="table-container" id="table-1" style="top: 55%; left: 50%;">
+            <div class="lamp" style="left: 50%;"></div>
+            <div class="table-shadow"></div>
+            <div class="chair top-chair"></div><div class="chair bottom-chair"></div><div class="chair left-chair"></div><div class="chair right-chair"></div>
+            <div class="table">
+                <div id="cust-1" class="character-svg"></div>
+                <div class="order-alert" id="alert-1">!</div>
+            </div>
+        </div>
+        
+        <div class="table-container" id="table-2" style="top: 55%; left: 80%;">
+            <div class="lamp" style="left: 50%;"></div>
+            <div class="table-shadow"></div>
+            <div class="chair top-chair"></div><div class="chair bottom-chair"></div><div class="chair left-chair"></div><div class="chair right-chair"></div>
+            <div class="table">
+                <div id="cust-2" class="character-svg"></div>
+                <div class="order-alert" id="alert-2">!</div>
+            </div>
+        </div>
+
+        <div class="table-container" id="table-3" style="top: 85%; left: 20%;">
+            <div class="table-shadow"></div>
+            <div class="chair top-chair"></div><div class="chair bottom-chair"></div><div class="chair left-chair"></div><div class="chair right-chair"></div>
+            <div class="table">
+                <div id="cust-3" class="character-svg"></div>
+                <div class="order-alert" id="alert-3">!</div>
+            </div>
+        </div>
+
+        <div class="table-container" id="table-4" style="top: 85%; left: 50%;">
+            <div class="table-shadow"></div>
+            <div class="chair top-chair"></div><div class="chair bottom-chair"></div><div class="chair left-chair"></div><div class="chair right-chair"></div>
+            <div class="table">
+                <div id="cust-4" class="character-svg"></div>
+                <div class="order-alert" id="alert-4">!</div>
+            </div>
+        </div>
+
+        <div class="table-container" id="table-5" style="top: 85%; left: 80%;">
+            <div class="table-shadow"></div>
+            <div class="chair top-chair"></div><div class="chair bottom-chair"></div><div class="chair left-chair"></div><div class="chair right-chair"></div>
+            <div class="table">
+                <div id="cust-5" class="character-svg"></div>
+                <div class="order-alert" id="alert-5">!</div>
+            </div>
+        </div>
+
+        <div id="movement-hint">Usa W, A, S, D o FLECHAS para moverte</div>
+
+        <div id="player-chef" style="top: 85%; left: 50%;">
+            <div id="action-prompt">Presiona <span>[ESPACIO]</span></div>
+            <svg viewBox="0 0 100 120" width="100%" height="100%">
+                <ellipse cx="50" cy="115" rx="25" ry="8" fill="rgba(0,0,0,0.5)"/>
+                <rect x="25" y="55" width="50" height="50" fill="#ecf0f1" rx="15"/>
+                <circle cx="50" cy="65" r="4" fill="#2d3436"/><circle cx="50" cy="80" r="4" fill="#2d3436"/><circle cx="50" cy="95" r="4" fill="#2d3436"/>
+                <circle cx="50" cy="40" r="22" fill="#ffcca2"/>
+                <circle cx="42" cy="35" r="3" fill="#2d3436"/><circle cx="58" cy="35" r="3" fill="#2d3436"/>
+                <path d="M 35 45 Q 50 35 65 45 Q 50 55 35 45 Z" fill="#2d3436"/>
+                <path d="M 20 25 C 20 -5, 80 -5, 80 25 L 75 40 L 25 40 Z" fill="#fff" filter="drop-shadow(0 0.5vh 0.5vh rgba(0,0,0,0.2))"/>
+            </svg>
+        </div>
+    </div>
+
+    <!-- VISTA COCINA -->
+    <div id="kitchen-view" class="screen hidden">
+        <div id="order-panel">
+            <h2 style="font-family:'Fredoka One'; font-size:clamp(1.5rem, 3vh, 3rem); margin-bottom: 2vh; color:#2d3436; text-align:center;">📋 Mesa <span id="kitchen-table-id">1</span></h2>
+            <div id="ticket"></div>
+            <button class="k-btn" style="background: #a4b0be; margin-top: auto; border-bottom-color: #747d8c; width:100%;" onclick="closeKitchen()">VOLVER</button>
+        </div>
+
+        <div id="prep-panel">
+            <div id="cutting-board">
+                <svg class="pizza" viewBox="0 0 100 100" id="svg-pizza">
+                    <defs>
+                        <pattern id="pat-queso" width="100" height="100" patternUnits="userSpaceOnUse">
+                            <rect width="100" height="100" fill="#f1c40f"/>
+                            <circle cx="20" cy="20" r="8" fill="#f39c12" opacity="0.4"/>
+                            <circle cx="70" cy="35" r="12" fill="#f39c12" opacity="0.3"/>
+                            <circle cx="40" cy="75" r="10" fill="#f39c12" opacity="0.4"/>
+                            <circle cx="85" cy="80" r="6" fill="#f39c12" opacity="0.3"/>
+                        </pattern>
+                        <pattern id="pat-salchicha" width="100" height="100" patternUnits="userSpaceOnUse">
+                            <rect width="100" height="100" fill="#ffdd59"/>
+                            <circle cx="30" cy="30" r="10" fill="#fab1a0" stroke="#e17055" stroke-width="2" />
+                            <circle cx="75" cy="25" r="12" fill="#fab1a0" stroke="#e17055" stroke-width="2" />
+                            <circle cx="20" cy="75" r="11" fill="#fab1a0" stroke="#e17055" stroke-width="2" />
+                            <circle cx="65" cy="80" r="9" fill="#fab1a0" stroke="#e17055" stroke-width="2" />
+                        </pattern>
+                        <pattern id="pat-pepperoni" width="40" height="40" patternUnits="userSpaceOnUse"><rect width="40" height="40" fill="#ffdd59"/><circle cx="20" cy="20" r="14" fill="#c0392b"/><circle cx="16" cy="16" r="2" fill="#922b21"/><circle cx="24" cy="22" r="2" fill="#922b21"/></pattern>
+                        <pattern id="pat-champi" width="30" height="30" patternUnits="userSpaceOnUse"><rect width="30" height="30" fill="#ffdd59"/><path d="M 10 15 Q 15 5 20 15 L 17 15 L 17 20 L 13 20 L 13 15 Z" fill="#d1ccc0"/></pattern>
+                        <pattern id="pat-aceituna" width="25" height="25" patternUnits="userSpaceOnUse"><rect width="25" height="25" fill="#ffdd59"/><circle cx="12" cy="12" r="6" fill="#2d3436"/><circle cx="12" cy="12" r="2" fill="#ffdd59"/></pattern>
+                        <pattern id="pat-cebolla" width="35" height="35" patternUnits="userSpaceOnUse"><rect width="35" height="35" fill="#ffdd59"/><circle cx="17" cy="17" r="10" fill="none" stroke="#9b59b6" stroke-width="3"/><circle cx="17" cy="17" r="5" fill="none" stroke="#9b59b6" stroke-width="2"/></pattern>
+                        <pattern id="pat-morron" width="30" height="30" patternUnits="userSpaceOnUse"><rect width="30" height="30" fill="#ffdd59"/><rect x="10" y="5" width="6" height="15" fill="#27ae60" rx="3" transform="rotate(45 12 12)"/><rect x="5" y="15" width="15" height="6" fill="#2ecc71" rx="3"/></pattern>
+                        <pattern id="pat-tocino" width="35" height="35" patternUnits="userSpaceOnUse"><rect width="35" height="35" fill="#ffdd59"/><path d="M 5 15 Q 15 5 25 15 T 45 15" fill="none" stroke="#d35400" stroke-width="5"/></pattern>
+                        <pattern id="pat-anana" width="25" height="25" patternUnits="userSpaceOnUse"><rect width="25" height="25" fill="#ffdd59"/><rect x="8" y="8" width="10" height="10" fill="#f1c40f" stroke="#e67e22" stroke-width="2"/></pattern>
+                        <pattern id="pat-tomate" width="35" height="35" patternUnits="userSpaceOnUse"><rect width="35" height="35" fill="#ffdd59"/><circle cx="17" cy="17" r="12" fill="#e74c3c"/><path d="M 12 17 L 22 17 M 17 12 L 17 22" stroke="#ff7979" stroke-width="2"/></pattern>
+                        <pattern id="pat-huevo" width="40" height="40" patternUnits="userSpaceOnUse"><rect width="40" height="40" fill="#ffdd59"/><ellipse cx="20" cy="20" rx="14" ry="10" fill="#fff"/><circle cx="20" cy="20" r="5" fill="#ffa502"/></pattern>
+                    </defs>
+                    <g id="pizza-slices"></g>
+                </svg>
+            </div>
+
+            <div id="ingredients-grid"></div>
+
+            <div id="kitchen-actions">
+                <button class="k-btn" style="background: #ff4757; border-bottom-color: #c0392b;" onclick="clearPizza()">LIMPIAR</button>
+                <button class="k-btn" style="background: #2ed573; border-bottom-color: #009432;" onclick="servePizza()">ENTREGAR</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-over" class="screen hidden" style="background: rgba(0,0,0,0.95); z-index: 100;">
+        <h1 style="color: #ff4757; font-family:'Fredoka One'; font-size:clamp(4rem, 10vh, 6rem); text-shadow:0 1vh 2vh #000;">¡PIZZERÍA CERRADA!</h1>
+        <h2 style="font-family: 'Fredoka One'; font-size: clamp(2rem, 5vh, 4rem); color: #ffa502; margin-bottom: 5vh;">Puntaje: ⭐ <span id="final-score">0</span></h2>
+        <button class="btn" onclick="location.reload()">Volver al Menú</button>
+    </div>
+
+<script>
+    const ac = new (window.AudioContext || window.webkitAudioContext)();
+    function playSfx(type, f1, f2, dur) {
+        if(ac.state === 'suspended') ac.resume();
+        let osc = ac.createOscillator(); let gain = ac.createGain();
+        osc.type = type; osc.frequency.setValueAtTime(f1, ac.currentTime);
+        if(f2) osc.frequency.exponentialRampToValueAtTime(f2, ac.currentTime + dur);
+        gain.gain.setValueAtTime(0.1, ac.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ac.currentTime + dur);
+        osc.connect(gain); gain.connect(ac.destination);
+        osc.start(); osc.stop(ac.currentTime + dur);
+    }
+    const sfx = {
+        step: () => playSfx('sine', 300, 200, 0.05),
+        bell: () => { playSfx('sine', 1500, 1500, 0.2); setTimeout(()=>playSfx('sine', 2000, 2000, 0.3), 100); },
+        pop: () => playSfx('sine', 500, 300, 0.1),
+        success: () => { playSfx('square', 600, 800, 0.1); setTimeout(()=>playSfx('square', 800, 1200, 0.3), 100); },
+        error: () => playSfx('sawtooth', 200, 100, 0.5),
+        gameOver: () => playSfx('square', 200, 50, 2.0)
+    };
+
+    const ingredientsDB = {
+        'salchicha': { label: 'Salchicha', svg: '<svg viewBox="0 0 40 40"><circle cx="15" cy="15" r="10" fill="#fab1a0" stroke="#e17055" stroke-width="2"/><circle cx="28" cy="25" r="8" fill="#fab1a0" stroke="#e17055" stroke-width="2"/></svg>' },
+        'pepperoni': { label: 'Pepperoni', svg: '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="#c0392b"/><circle cx="15" cy="15" r="3" fill="#922b21"/><circle cx="25" cy="25" r="3" fill="#922b21"/></svg>' },
+        'champi': { label: 'Champiñón', svg: '<svg viewBox="0 0 40 40"><path d="M 10 25 Q 20 10 30 25 L 25 25 L 25 35 L 15 35 L 15 25 Z" fill="#d1ccc0"/></svg>' },
+        'aceituna': { label: 'Aceituna', svg: '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="12" fill="#2d3436"/><circle cx="20" cy="20" r="4" fill="#fff"/></svg>' },
+        'cebolla': { label: 'Cebolla', svg: '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="none" stroke="#9b59b6" stroke-width="4"/><circle cx="20" cy="20" r="8" fill="none" stroke="#9b59b6" stroke-width="3"/></svg>' },
+        'morron': { label: 'Morrón', svg: '<svg viewBox="0 0 40 40"><rect x="15" y="5" width="10" height="25" fill="#27ae60" rx="4" transform="rotate(45 20 20)"/><rect x="5" y="15" width="25" height="10" fill="#2ecc71" rx="4"/></svg>' },
+        'tocino': { label: 'Tocino', svg: '<svg viewBox="0 0 40 40"><path d="M 5 20 Q 15 5 25 20 T 45 20" fill="none" stroke="#d35400" stroke-width="8"/></svg>' },
+        'anana': { label: 'Ananá', svg: '<svg viewBox="0 0 40 40"><rect x="10" y="10" width="20" height="20" fill="#f1c40f" stroke="#e67e22" stroke-width="3"/></svg>' },
+        'tomate': { label: 'Tomate', svg: '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="#e74c3c"/><path d="M 12 20 L 28 20 M 20 12 L 20 28" stroke="#ff7979" stroke-width="3"/></svg>' },
+        'huevo': { label: 'Huevo', svg: '<svg viewBox="0 0 40 40"><ellipse cx="20" cy="20" rx="18" ry="14" fill="#fff" stroke="#ccc" stroke-width="1"/><circle cx="20" cy="20" r="7" fill="#ffa502"/></svg>' }
+    };
+    const ingredientKeys = Object.keys(ingredientsDB);
+
+    const tables = [
+        { id: 0, x: 20, y: 55, active: false }, { id: 1, x: 50, y: 55, active: false }, { id: 2, x: 80, y: 55, active: false },
+        { id: 3, x: 20, y: 85, active: false }, { id: 4, x: 50, y: 85, active: false }, { id: 5, x: 80, y: 85, active: false }
+    ];
+
+    let gameState = {
+        score: 0, lives: 3,
+        playerPos: { x: 50, y: 85 },
+        orders: {}, currentKitchenTable: null,
+        pizzaBuilder: [],
+        currentSlices: 4, 
+        selectedIngredient: null,
+        spawnRate: 4000, gameInterval: null
+    };
+
+    function eById(id) { return document.getElementById(id); }
+
+    function startRandomGame() {
+        eById('menu').classList.add('hidden');
+        eById('restaurant-view').classList.remove('hidden');
+        eById('hud').classList.remove('hidden');
+        initKitchenUI(); 
+        gameState.gameInterval = setInterval(spawnOrder, gameState.spawnRate);
+        requestAnimationFrame(updatePlayerPosition);
+    }
+
+    function initKitchenUI() {
+        const grid = eById('ingredients-grid');
+        grid.innerHTML = '';
+        ingredientKeys.forEach(key => {
+            let btn = document.createElement('div');
+            btn.className = 'ing-btn'; btn.innerHTML = ingredientsDB[key].svg;
+            btn.onclick = () => selectIngredient(key, btn);
+            grid.appendChild(btn);
+        });
+    }
+
+    function initPizzaSVG(numSlices) {
+        let svg = eById('pizza-slices');
+        svg.innerHTML = '';
+        const cx=50, cy=50, r=46;
+        let angleStep = 360 / numSlices;
+        
+        for(let i=0; i<numSlices; i++) {
+            let a1 = (i*angleStep)*Math.PI/180;
+            let a2 = ((i+1)*angleStep)*Math.PI/180;
+            let x1 = cx + r*Math.cos(a1), y1 = cy + r*Math.sin(a1);
+            let x2 = cx + r*Math.cos(a2), y2 = cy + r*Math.sin(a2);
+            let path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', `M${cx},${cy} L${x1},${y1} A${r},${r} 0 0,1 ${x2},${y2} Z`);
+            path.setAttribute('class', 'slice');
+            path.setAttribute('fill', 'url(#pat-queso)');
+            path.onclick = () => placeIngredientOnSlice(i);
+            svg.appendChild(path);
+        }
+    }
+
+    function selectIngredient(key, btnElem) {
+        document.querySelectorAll('.ing-btn').forEach(b => b.classList.remove('selected'));
+        btnElem.classList.add('selected');
+        gameState.selectedIngredient = key;
+        sfx.pop();
+    }
+
+    function placeIngredientOnSlice(index) {
+        if (!gameState.selectedIngredient) return;
+        gameState.pizzaBuilder[index] = gameState.selectedIngredient;
+        const slices = eById('pizza-slices').children;
+        slices[index].setAttribute('fill', `url(#pat-${gameState.selectedIngredient})`);
+        sfx.step();
+    }
+
+    function clearPizza() {
+        gameState.pizzaBuilder = new Array(gameState.currentSlices).fill(null);
+        const slices = eById('pizza-slices').children;
+        for(let i=0; i<gameState.currentSlices; i++) {
+            if(slices[i]) slices[i].setAttribute('fill', 'url(#pat-queso)');
+        }
+        sfx.pop();
+    }
+
+    function createCustomerSVG() {
+        const skins = ['#ffcca2', '#f1c27d', '#e0ac69', '#8d5524', '#c68642'];
+        const hairs = ['#2d3436', '#633914', '#e67e22', '#f1c40f', '#a93226', '#bdc3c7'];
+        const shirts = ['#3498db', '#e74c3c', '#9b59b6', '#2ecc71', '#f39c12', '#1abc9c', '#ecf0f1', '#34495e'];
+        
+        let skin = skins[Math.floor(Math.random()*skins.length)];
+        let hair = hairs[Math.floor(Math.random()*hairs.length)];
+        let shirt = shirts[Math.floor(Math.random()*shirts.length)];
+        let accent = shirts[Math.floor(Math.random()*shirts.length)]; 
+        let style = Math.floor(Math.random() * 7);
+        let accessory = '';
+        
+        if (style === 0) {
+            accessory = `<path d="M 28 40 C 25 10, 75 10, 72 40 C 72 25, 28 25, 28 40" fill="${hair}"/><rect x="34" y="32" width="13" height="9" fill="none" stroke="#2d3436" stroke-width="2" rx="2"/><rect x="53" y="32" width="13" height="9" fill="none" stroke="#2d3436" stroke-width="2" rx="2"/><line x1="47" y1="36" x2="53" y2="36" stroke="#2d3436" stroke-width="2"/>`;
+        } else if (style === 1) {
+            accessory = `<path d="M 25 45 C 20 -5, 80 -5, 75 45 C 75 20, 60 10, 50 15 C 40 20, 25 25, 25 45 Z" fill="${hair}"/><path d="M 15 95 L 35 65 L 50 80 L 65 65 L 85 95 Z" fill="#2d3436"/>`;
+        } else if (style === 2) {
+            accessory = `<path d="M 24 50 C 22 10, 78 10, 76 50 C 78 20, 22 20, 24 50" fill="${hair}"/><path d="M 45 10 L 30 0 L 35 20 Z" fill="${accent}"/><path d="M 55 10 L 70 0 L 65 20 Z" fill="${accent}"/><circle cx="50" cy="10" r="5" fill="${accent}"/><circle cx="40" cy="65" r="2" fill="#fff"/><circle cx="45" cy="67" r="2" fill="#fff"/><circle cx="50" cy="68" r="2" fill="#fff"/><circle cx="55" cy="67" r="2" fill="#fff"/><circle cx="60" cy="65" r="2" fill="#fff"/>`;
+        } else if (style === 3) {
+            accessory = `<path d="M 28 40 C 28 70, 72 70, 72 40 C 72 55, 28 55, 28 40 Z" fill="${hair}"/><path d="M 26 30 C 26 -5, 74 -5, 74 30 Z" fill="${accent}"/><rect x="24" y="27" width="52" height="7" fill="${accent}" rx="3"/>`;
+        } else if (style === 4) {
+            accessory = `<path d="M 20 28 C 20 28, 50 15, 80 28 L 75 30 L 25 30 Z" fill="#2d3436"/><path d="M 30 28 C 30 10, 70 10, 70 28 Z" fill="#2d3436"/><rect x="30" y="24" width="40" height="4" fill="${accent}"/><path d="M 15 95 L 35 70 L 45 85 L 35 95 Z" fill="#bdc3c7"/><path d="M 85 95 L 65 70 L 55 85 L 65 95 Z" fill="#bdc3c7"/>`;
+        } else if (style === 5) {
+            accessory = `<path d="M 24 50 C 22 10, 78 10, 76 50 C 78 20, 22 20, 24 50" fill="${hair}"/><rect x="23" y="20" width="54" height="6" fill="${accent}" rx="2"/><path d="M 28 35 Q 35 45 45 35 Q 50 35 55 35 Q 65 45 72 35 Z" fill="#fff" stroke="${accent}" stroke-width="2"/>`;
+        } else {
+            accessory = `<path d="M 40 18 L 45 0 L 50 15 L 55 0 L 60 18 Z" fill="${hair}"/><path d="M 25 45 C 25 15, 75 15, 75 45" fill="${hair}"/><rect x="28" y="32" width="18" height="10" fill="#2d3436" rx="2"/><rect x="54" y="32" width="18" height="10" fill="#2d3436" rx="2"/><line x1="46" y1="36" x2="54" y2="36" stroke="#2d3436" stroke-width="2"/>`;
+        }
+        
+        return `<svg viewBox="0 0 100 100"><path d="M 15 95 C 15 45, 85 45, 85 95 Z" fill="${shirt}" /><circle cx="50" cy="40" r="22" fill="${skin}" /><circle cx="42" cy="38" r="3" fill="#2d3436" /><circle cx="58" cy="38" r="3" fill="#2d3436" /><path d="M 46 48 Q 50 51 54 48" fill="none" stroke="#2d3436" stroke-width="2" stroke-linecap="round"/>${accessory}</svg>`;
+    }
+
+    function spawnOrder() {
+        let inactive = tables.filter(t => !t.active);
+        if (inactive.length === 0) return;
+        let table = inactive[Math.floor(Math.random() * inactive.length)];
+        table.active = true;
+
+        let denominadores = [4, 6, 8, 10, 12];
+        let numSlices = denominadores[Math.floor(Math.random() * denominadores.length)];
+        
+        let numIng = Math.floor(Math.random() * 3) + 1; 
+        let order = [];
+        for(let i=0; i<numSlices; i++) {
+            order.push(ingredientKeys[Math.floor(Math.random() * numIng)]);
+        }
+        
+        gameState.orders[table.id] = { slices: numSlices, ingredients: order };
+
+        let cust = eById(`cust-${table.id}`);
+        cust.innerHTML = createCustomerSVG();
+        cust.classList.add('active');
+        eById(`alert-${table.id}`).classList.add('active');
+        sfx.bell();
+    }
+
+    const keys = { w:false, a:false, s:false, d:false, space:false, up:false, down:false, left:false, right:false };
+    window.onkeydown = e => { 
+        if(e.key.toLowerCase() in keys) keys[e.key.toLowerCase()] = true; 
+        if(e.key === 'ArrowUp') keys.up = true; if(e.key === 'ArrowDown') keys.down = true;
+        if(e.key === 'ArrowLeft') keys.left = true; if(e.key === 'ArrowRight') keys.right = true;
+        if(e.key === ' ') { keys.space = true; handleAction(); }
+    };
+    window.onkeyup = e => { 
+        if(e.key.toLowerCase() in keys) keys[e.key.toLowerCase()] = false; 
+        if(e.key === 'ArrowUp') keys.up = false; if(e.key === 'ArrowDown') keys.down = false;
+        if(e.key === 'ArrowLeft') keys.left = false; if(e.key === 'ArrowRight') keys.right = false;
+        if(e.key === ' ') { keys.space = false; }
+    };
+
+    function updatePlayerPosition() {
+        if(eById('restaurant-view').classList.contains('hidden')) {
+            requestAnimationFrame(updatePlayerPosition);
+            return;
+        }
+
+        let speed = 0.5; let moving = false;
+        if (keys.w || keys.up) { gameState.playerPos.y = Math.max(50, gameState.playerPos.y - speed); moving=true; }
+        if (keys.s || keys.down) { gameState.playerPos.y = Math.min(90, gameState.playerPos.y + speed); moving=true; }
+        if (keys.a || keys.left) { gameState.playerPos.x = Math.max(10, gameState.playerPos.x - speed); moving=true; }
+        if (keys.d || keys.right) { gameState.playerPos.x = Math.min(90, gameState.playerPos.x + speed); moving=true; }
+
+        let p = eById('player-chef');
+        p.style.left = gameState.playerPos.x + '%';
+        p.style.top = gameState.playerPos.y + '%';
+        
+        if (moving) {
+            p.classList.add('walking');
+            if(Math.random() < 0.1) sfx.step();
+        } else {
+            p.classList.remove('walking');
+        }
+
+        checkProximity();
+        requestAnimationFrame(updatePlayerPosition);
+    }
+
+    function checkProximity() {
+        let nearTable = null;
+        for (let t of tables) {
+            if (t.active) {
+                let dx = Math.abs(t.x - gameState.playerPos.x);
+                let dy = Math.abs(t.y - gameState.playerPos.y);
+                if (dx < 12 && dy < 15) { nearTable = t; break; }
+            }
+        }
+        
+        let prompt = eById('action-prompt');
+        if (nearTable) {
+            prompt.style.display = 'block';
+            prompt.innerHTML = `Mesa ${nearTable.id + 1} <span>[ESPACIO]</span>`;
+            gameState.currentKitchenTable = nearTable.id;
+        } else {
+            prompt.style.display = 'none';
+            gameState.currentKitchenTable = null;
+        }
+    }
+
+    function handleAction() {
+        if (gameState.currentKitchenTable !== null && eById('kitchen-view').classList.contains('hidden')) {
+            openKitchen(gameState.currentKitchenTable);
+        }
+    }
+
+    function openKitchen(tId) {
+        eById('restaurant-view').classList.add('hidden');
+        eById('kitchen-view').classList.remove('hidden');
+        eById('kitchen-table-id').innerText = tId + 1;
+        
+        let reqData = gameState.orders[tId];
+        gameState.currentSlices = reqData.slices; 
+
+        let tkt = eById('ticket');
+        tkt.innerHTML = '';
+        let counts = {}; 
+        reqData.ingredients.forEach(i => counts[i] = (counts[i]||0)+1);
+        
+        for (let k in counts) {
+            let item = document.createElement('div'); item.className = 'order-item';
+            item.innerHTML = `<div class="order-icon">${ingredientsDB[k].svg}</div> <span>${counts[k]}/${gameState.currentSlices} ${ingredientsDB[k].label}</span>`;
+            tkt.appendChild(item);
+        }
+        
+        initPizzaSVG(gameState.currentSlices);
+        clearPizza();
+        document.querySelectorAll('.ing-btn').forEach(b => b.classList.remove('selected'));
+        gameState.selectedIngredient = null;
+        sfx.pop();
+    }
+
+    function closeKitchen() {
+        eById('kitchen-view').classList.add('hidden');
+        eById('restaurant-view').classList.remove('hidden');
+        sfx.pop();
+    }
+
+    function servePizza() {
+        if (gameState.pizzaBuilder.includes(null)) {
+            let cb = eById('cutting-board');
+            cb.classList.remove('shake'); void cb.offsetWidth; cb.classList.add('shake');
+            sfx.error();
+            return;
+        }
+
+        let tId = gameState.currentKitchenTable;
+        let req = gameState.orders[tId].ingredients.slice().sort();
+        let made = gameState.pizzaBuilder.slice().sort();
+        
+        if (JSON.stringify(req) === JSON.stringify(made)) {
+            successOrder(tId);
+        } else {
+            failOrder(tId);
+        }
+        closeKitchen();
+    }
+
+    function successOrder(tId) {
+        sfx.success();
+        gameState.score += 100;
+        eById('score').innerText = gameState.score;
+        clearTable(tId);
+        gameState.spawnRate = Math.max(1500, gameState.spawnRate - 150);
+        clearInterval(gameState.gameInterval);
+        gameState.gameInterval = setInterval(spawnOrder, gameState.spawnRate);
+    }
+
+    function failOrder(tId) {
+        sfx.error();
+        gameState.lives--;
+        updateLives();
+        clearTable(tId);
+        
+        let alert = eById(`alert-${tId}`);
+        alert.innerHTML = 'X'; alert.style.color = 'white'; alert.style.background = '#e74c3c';
+        alert.classList.add('active');
+        setTimeout(() => {
+            alert.classList.remove('active');
+            setTimeout(()=>{ alert.innerHTML = '!'; alert.style.color = ''; alert.style.background = ''; }, 300);
+        }, 1000);
+
+        if (gameState.lives <= 0) gameOver();
+    }
+
+    function clearTable(tId) {
+        let t = tables.find(x => x.id === tId);
+        t.active = false;
+        delete gameState.orders[tId];
+        eById(`cust-${tId}`).classList.remove('active');
+        eById(`alert-${tId}`).classList.remove('active');
+    }
+
+    function updateLives() {
+        eById('lives').innerText = '❤️'.repeat(Math.max(0, gameState.lives));
+    }
+
+    function gameOver() {
+        clearInterval(gameState.gameInterval);
+        eById('restaurant-view').classList.add('hidden');
+        eById('kitchen-view').classList.add('hidden');
+        eById('hud').classList.add('hidden');
+        eById('game-over').classList.remove('hidden');
+        eById('final-score').innerText = gameState.score;
+        sfx.gameOver();
+    }
+
+</script>
+</body>
+</html>
