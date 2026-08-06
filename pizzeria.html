@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Pizzería lo del Pipe - Fracciones</title>
+<title>Pizzería lo del Pipe - Prof. Gastón</title>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@800;900&display=swap" rel="stylesheet">
 <style>
     :root {
@@ -86,7 +86,7 @@
     }
     
     .neon-sign {
-        position: absolute; top: 22%; left: 28%; /* MODIFICADO: ajustado a 28% para centrarlo más */
+        position: absolute; top: 22%; left: 28%;
         font-family: 'Fredoka One'; font-size: clamp(2.5rem, 6vh, 5rem);
         color: #fff; transform: rotate(-5deg); 
         animation: neonRedBlink 5s infinite;
@@ -177,10 +177,12 @@
 
     .character-svg { position: absolute; top: -85%; width: 130%; height: 130%; filter: drop-shadow(0 2vh 1.5vh rgba(0,0,0,0.7)); opacity: 0; transform: translateY(2vh); transition: 0.4s ease-out; pointer-events: none; z-index: 11;}
     .character-svg.active { opacity: 1; transform: translateY(0); animation: float 3s infinite ease-in-out; }
+    
+    /* MODIFICADO: Ajuste de la fuente para que el número 120 encaje en el temporizador */
     .order-alert {
         position: absolute; top: -100%; right: -30%; background: #fff; border: clamp(4px, 0.8vh, 8px) solid var(--diner-cyan); color: var(--diner-cyan);
         border-radius: 50%; width: clamp(40px, 7vh, 70px); height: clamp(40px, 7vh, 70px); display: flex; justify-content: center; align-items: center;
-        font-family: 'Fredoka One'; font-size: clamp(1.8rem, 4vh, 3rem); box-shadow: 0 1.5vh 2.5vh rgba(0,0,0,0.5); opacity: 0; transform: scale(0); transition: 0.3s; pointer-events: none; z-index: 12;
+        font-family: 'Fredoka One'; font-size: clamp(1.2rem, 3vh, 2rem); box-shadow: 0 1.5vh 2.5vh rgba(0,0,0,0.5); opacity: 0; transform: scale(0); transition: 0.3s; pointer-events: none; z-index: 12;
     }
     .order-alert.active { opacity: 1; transform: scale(1); animation: pulse 0.8s infinite alternate; }
     
@@ -541,7 +543,11 @@
         return `<svg viewBox="0 0 100 100"><path d="M 15 95 C 15 45, 85 45, 85 95 Z" fill="${shirt}" /><circle cx="50" cy="40" r="22" fill="${skin}" /><circle cx="42" cy="38" r="3" fill="#2d3436" /><circle cx="58" cy="38" r="3" fill="#2d3436" /><path d="M 46 48 Q 50 51 54 48" fill="none" stroke="#2d3436" stroke-width="2" stroke-linecap="round"/>${accessory}</svg>`;
     }
 
+    // MODIFICADO: Generación de órdenes con máximo 3 clientes y timer
     function spawnOrder() {
+        let activeTables = tables.filter(t => t.active);
+        if (activeTables.length >= 3) return; // Límite de 3 clientes simultáneos
+
         let inactive = tables.filter(t => !t.active);
         if (inactive.length === 0) return;
         let table = inactive[Math.floor(Math.random() * inactive.length)];
@@ -550,10 +556,15 @@
         let denominadores = [4, 6, 8, 10, 12];
         let numSlices = denominadores[Math.floor(Math.random() * denominadores.length)];
         
-        let numIng = Math.floor(Math.random() * 3) + 1; 
+        let numIng = Math.floor(Math.random() * 3) + 1; // 1 a 3 tipos de ingredientes
+        
+        // Mezclamos todos los ingredientes disponibles para aleatoriedad real
+        let shuffledKeys = [...ingredientKeys].sort(() => 0.5 - Math.random());
+        let selectedIngs = shuffledKeys.slice(0, numIng);
+        
         let order = [];
-        for(let i=0; i<numSlices; i++) {
-            order.push(ingredientKeys[Math.floor(Math.random() * numIng)]);
+        for(let i = 0; i < numSlices; i++) {
+            order.push(selectedIngs[Math.floor(Math.random() * selectedIngs.length)]);
         }
         
         gameState.orders[table.id] = { slices: numSlices, ingredients: order };
@@ -561,7 +572,27 @@
         let cust = eById(`cust-${table.id}`);
         cust.innerHTML = createCustomerSVG();
         cust.classList.add('active');
-        eById(`alert-${table.id}`).classList.add('active');
+        
+        // Inicializar el temporizador de 2 minutos (120 segundos)
+        table.timeLeft = 120; 
+        let alert = eById(`alert-${table.id}`);
+        alert.innerHTML = table.timeLeft; 
+        alert.classList.add('active');
+
+        // Bucle para actualizar la alerta cada segundo
+        table.timerInterval = setInterval(() => {
+            table.timeLeft--;
+            if (table.active) {
+                alert.innerHTML = table.timeLeft; 
+                if (table.timeLeft <= 0) {
+                    clearInterval(table.timerInterval);
+                    failOrder(table.id); 
+                }
+            } else {
+                clearInterval(table.timerInterval); 
+            }
+        }, 1000);
+
         sfx.bell();
     }
 
@@ -706,18 +737,30 @@
         alert.classList.add('active');
         setTimeout(() => {
             alert.classList.remove('active');
-            setTimeout(()=>{ alert.innerHTML = '!'; alert.style.color = ''; alert.style.background = ''; }, 300);
+            setTimeout(()=>{ alert.style.color = ''; alert.style.background = ''; }, 300);
         }, 1000);
 
         if (gameState.lives <= 0) gameOver();
     }
 
+    // MODIFICADO: Limpieza de variables relacionadas al timer al vaciar la mesa
     function clearTable(tId) {
         let t = tables.find(x => x.id === tId);
         t.active = false;
+        
+        if (t.timerInterval) {
+            clearInterval(t.timerInterval);
+        }
+        
         delete gameState.orders[tId];
         eById(`cust-${tId}`).classList.remove('active');
-        eById(`alert-${tId}`).classList.remove('active');
+        
+        let alert = eById(`alert-${tId}`);
+        alert.classList.remove('active');
+        
+        setTimeout(() => { 
+            if (!t.active) alert.innerHTML = '!'; 
+        }, 400);
     }
 
     function updateLives() {
