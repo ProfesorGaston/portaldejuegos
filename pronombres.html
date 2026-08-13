@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Misión Pronombres | Prof. Gastón</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --space-bg: #0b0c10;
+            --neon-blue: #45f3ff;
+            --neon-purple: #b537f2;
+            --neon-green: #39ff14;
+            --neon-red: #ff073a;
+            --panel-bg: rgba(20, 24, 36, 0.85);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: var(--space-bg);
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(69, 243, 255, 0.1), transparent 30%),
+                radial-gradient(circle at 85% 30%, rgba(181, 55, 242, 0.1), transparent 30%);
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding: 20px;
+        }
+
+        .stars {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none;
+            background: transparent url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><circle cx="10" cy="10" r="1.5" fill="%23FFF"/><circle cx="80" cy="60" r="1" fill="%2345f3ff"/><circle cx="150" cy="130" r="1.5" fill="%23FFF"/><circle cx="40" cy="180" r="1" fill="%23b537f2"/></svg>') repeat;
+            animation: moveStars 100s linear infinite;
+        }
+        @keyframes moveStars { from { background-position: 0 0; } to { background-position: -1000px 1000px; } }
+
+        .container {
+            width: 100%; max-width: 800px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            border: 2px solid var(--neon-blue);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(69, 243, 255, 0.3), inset 0 0 15px rgba(69, 243, 255, 0.1);
+            position: relative;
+        }
+
+        h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            color: #fff;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue);
+        }
+
+        .hidden { display: none !important; }
+
+        .btn {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+            padding: 15px 30px;
+            margin: 10px;
+            border: 2px solid transparent;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 1px;
+            background: #1a1a2e;
+            color: #fff;
+        }
+        
+        .btn:active { transform: scale(0.95); }
+        
+        .btn-start {
+            border-color: var(--neon-green);
+            box-shadow: 0 0 15px rgba(57, 255, 20, 0.4);
+        }
+        .btn-start:hover { background: var(--neon-green); color: #000; box-shadow: 0 0 25px rgba(57, 255, 20, 0.8); }
+
+        .btn-option {
+            width: 100%; max-width: 300px;
+            border-color: var(--neon-purple);
+            box-shadow: 0 0 10px rgba(181, 55, 242, 0.2);
+            display: inline-block;
+        }
+        .btn-option:hover { background: var(--neon-purple); color: #fff; box-shadow: 0 0 20px rgba(181, 55, 242, 0.6); }
+
+        #hud {
+            display: flex; justify-content: space-between; align-items: center;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(1rem, 3vw, 1.3rem);
+            margin-bottom: 25px;
+            background: rgba(0,0,0,0.6);
+            padding: 10px 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .energy-bar-container {
+            width: 100%; height: 20px; background: #222; border-radius: 10px; margin-bottom: 25px;
+            border: 1px solid var(--neon-green); overflow: hidden; box-shadow: 0 0 10px rgba(57, 255, 20, 0.2);
+        }
+        #energy-bar {
+            height: 100%; width: 100%; background: var(--neon-green);
+            transition: width 0.3s ease, background 0.3s ease;
+            box-shadow: 0 0 10px var(--neon-green);
+        }
+
+        #sentence-box {
+            font-size: clamp(1.4rem, 4vw, 2rem);
+            margin-bottom: 30px;
+            line-height: 1.5;
+            background: rgba(255,255,255,0.05);
+            padding: 20px;
+            border-radius: 15px;
+            border-left: 5px solid var(--neon-blue);
+        }
+
+        .blank-space {
+            display: inline-block;
+            min-width: 80px;
+            border-bottom: 3px dashed var(--neon-purple);
+            color: var(--neon-blue);
+            padding: 0 10px;
+            text-align: center;
+        }
+
+        .options-grid {
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 15px;
+        }
+
+        .feedback {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-family: 'Space Grotesk', sans-serif; font-size: clamp(2.5rem, 7vw, 4rem); opacity: 0;
+            pointer-events: none; z-index: 100; text-align: center; width: 100%;
+            text-shadow: 0 5px 15px rgba(0,0,0,1);
+        }
+        
+        @keyframes scan {
+            0% { opacity: 0; transform: translate(-50%, -30%) scale(0.8); }
+            20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+            80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -70%) scale(1.2); }
+        }
+        .anim-feedback { animation: scan 1.5s ease-out forwards; }
+        .shake { animation: shake-anim 0.4s ease-in-out; }
+        @keyframes shake-anim { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 50% { transform: translateX(10px); } 75% { transform: translateX(-10px); } }
+
+        .watermark {
+            position: fixed; bottom: 15px; right: 20px;
+            font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1rem;
+            color: rgba(255, 255, 255, 0.3); pointer-events: none; z-index: 1000;
+            letter-spacing: 1px; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="stars"></div>
+    <div id="feedback-msg" class="feedback"></div>
+
+    <div id="screen-start" class="container">
+        <h1>🚀 Misión<br>Pronombres</h1>
+        <p style="font-size: 1.2rem; margin-bottom: 25px; color: #aaa;">
+            La nave necesita energía. Completa las 30 oraciones de la vida diaria con el pronombre correcto (personales, demostrativos o posesivos) para recargar los motores.
+        </p>
+        <button class="btn btn-start" onclick="startGame()">▶ INICIAR MISIÓN</button>
+    </div>
+
+    <div id="screen-game" class="container hidden">
+        <div id="hud">
+            <div>Misión: <span id="level-display" style="color:var(--neon-blue)">1/30</span></div>
+            <div>Energía: <span id="score-display" style="color:var(--neon-green)">100%</span></div>
+        </div>
+
+        <div class="energy-bar-container">
+            <div id="energy-bar"></div>
+        </div>
+
+        <div id="sentence-box">Cargando datos...</div>
+
+        <div id="options-container" class="options-grid"></div>
+    </div>
+
+    <div id="screen-end" class="container hidden">
+        <h1 id="end-title">¡MISIÓN CUMPLIDA! 🌌</h1>
+        <p style="font-size: 1.4rem; margin-bottom: 15px; color: #aaa;">Energía final de la nave:</p>
+        <p style="font-size: 4rem; color: var(--neon-green); font-family: 'Space Grotesk'; margin-bottom: 25px; text-shadow: 0 0 20px var(--neon-green);">
+            ⚡ <span id="final-score">0</span>%
+        </p>
+        <button class="btn btn-start" onclick="location.reload()">JUGAR DE NUEVO</button>
+    </div>
+
+    <div class="watermark">Creado por el Prof. Gastón</div>
+
+    <script>
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let ac;
+
+        function playSound(type) {
+            if (!ac) ac = new AudioContext();
+            if (ac.state === 'suspended') ac.resume();
+            
+            const now = ac.currentTime;
+            
+            if (type === 'success') {
+                const osc = ac.createOscillator();
+                const gain = ac.createGain();
+                osc.connect(gain); gain.connect(ac.destination);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, now);
+                osc.frequency.setValueAtTime(1108.73, now + 0.1);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'error') {
+                const osc = ac.createOscillator();
+                const gain = ac.createGain();
+                osc.connect(gain); gain.connect(ac.destination);
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.exponentialRampToValueAtTime(80, now + 0.3);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'win') {
+                const notes = [440, 554.37, 659.25, 880, 1108.73]; 
+                notes.forEach((freq, i) => {
+                    const osc = ac.createOscillator();
+                    const gain = ac.createGain();
+                    osc.connect(gain); gain.connect(ac.destination);
+                    osc.type = 'square';
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0, now + i * 0.1);
+                    gain.gain.linearRampToValueAtTime(0.05, now + i * 0.1 + 0.05);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.1 + 0.4);
+                    osc.start(now + i * 0.1); osc.stop(now + i * 0.1 + 0.4);
+                });
+            } else if (type === 'lose') {
+                const osc = ac.createOscillator();
+                const gain = ac.createGain();
+                osc.connect(gain); gain.connect(ac.destination);
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(250, now);
+                osc.frequency.exponentialRampToValueAtTime(40, now + 1.5);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0, now + 1.5);
+                osc.start(now); osc.stop(now + 1.5);
+            }
+        }
+
+        const allQuestions = [
+            { text: "El bondi venía re lleno. <span class='blank-space'>___</span> tuvimos que viajar parados.", ans: "Nosotros", options: ["Yo", "Ellos", "Nosotros", "Ustedes"] },
+            { text: "Mi hermano se comió el último alfajor. ¡Ese era <span class='blank-space'>___</span>!", ans: "mío", options: ["suyo", "mío", "tuyo", "aquel"] },
+            { text: "¿Trajiste el termo? Porque yo traje el mate, pero me olvidé el <span class='blank-space'>___</span>.", ans: "mío", options: ["mío", "tuyo", "nuestro", "este"] },
+            { text: "Juan y Pablo llegaron tarde a la oficina. <span class='blank-space'>___</span> perdieron el tren.", ans: "Ellos", options: ["Ustedes", "Ellos", "Nosotros", "Él"] },
+            { text: "Estas llaves no son de mi casa, seguro son <span class='blank-space'>___</span>.", ans: "tuyas", options: ["nuestras", "vos", "tuyas", "aquellas"] },
+            { text: "Se me quedó sin batería el celular. ¿Me prestás el <span class='blank-space'>___</span> para mandar un mensaje?", ans: "tuyo", options: ["tuyo", "suyo", "mío", "aquel"] },
+            { text: "¿Vas a cocinar <span class='blank-space'>___</span> hoy o pedimos unas empanadas?", ans: "vos", options: ["él", "vos", "yo", "nosotros"] },
+            { text: "Che, esa campera que tenés puesta es igual a la <span class='blank-space'>___</span>.", ans: "mía", options: ["nuestra", "mía", "tuya", "suya"] },
+            { text: "El perro del vecino ladra toda la noche, por suerte el <span class='blank-space'>___</span> es re tranquilo.", ans: "nuestro", options: ["nuestro", "suyo", "mío", "este"] },
+            { text: "Los vecinos de arriba están de mudanza. <span class='blank-space'>___</span> hacen ruido desde temprano.", ans: "Ellos", options: ["Ustedes", "Nosotros", "Ellos", "Esos"] },
+            { text: "Hola, ¿cómo andan? ¿<span class='blank-space'>___</span> van a venir al asado del domingo?", ans: "Ustedes", options: ["Ellos", "Nosotros", "Ustedes", "Vos"] },
+            { text: "<span class='blank-space'>___</span> no entendí la tarea de matemática, ¿me la explicás?", ans: "Yo", options: ["Él", "Vos", "Yo", "Nosotros"] },
+            { text: "¿Viste el último capítulo de la serie? <span class='blank-space'>___</span> lo vi ayer a la noche.", ans: "Yo", options: ["Vos", "Él", "Nosotros", "Yo"] },
+            { text: "Empezó a llover y no traje paraguas. ¿Me prestás <span class='blank-space'>___</span> que tenés ahí?", ans: "ese", options: ["este", "ese", "aquel", "mío"] },
+            { text: "Yo pago las pizzas y <span class='blank-space'>___</span> pagan la gaseosa, ¿les parece?", ans: "ustedes", options: ["ustedes", "ellos", "vos", "nosotros"] },
+            { text: "Ana y Luz se fueron al cine. A <span class='blank-space'>___</span> les encantan las películas de terror.", ans: "ellas", options: ["ellos", "ustedes", "ellas", "nosotras"] },
+            { text: "Mirá qué buenas zapatillas. Me voy a comprar <span class='blank-space'>___</span> de la vidriera.", ans: "esas", options: ["estas", "esas", "aquellas", "mías"] },
+            { text: "No me gusta cómo me queda este pantalón, me voy a probar <span class='blank-space'>___</span> de allá.", ans: "aquel", options: ["este", "ese", "aquel", "tuyo"] },
+            { text: "No traje vianda al trabajo hoy. ¿<span class='blank-space'>___</span> trajiste algo para comer?", ans: "Vos", options: ["Él", "Yo", "Vos", "Ella"] },
+            { text: "Mi cuarto ya está ordenado, pero el <span class='blank-space'>___</span> es un desastre. ¡Andá a ordenar!", ans: "tuyo", options: ["tuyo", "suyo", "mío", "nuestro"] },
+            { text: "Fui al club y mi toalla estaba sucia, así que mi hermano me prestó la <span class='blank-space'>___</span>.", ans: "suya", options: ["tuya", "suya", "nuestra", "mía"] },
+            { text: "<span class='blank-space'>___</span> tengo turno en el médico a las cinco, me tengo que ir.", ans: "Yo", options: ["Él", "Vos", "Yo", "Nosotros"] },
+            { text: "¿Hace mucho que están esperando el colectivo? <span class='blank-space'>___</span> estoy acá hace media hora.", ans: "Yo", options: ["Vos", "Nosotros", "Yo", "Él"] },
+            { text: "Hice una pastafrola para la merienda. Espero que a <span class='blank-space'>___</span> les guste.", ans: "ustedes", options: ["ellos", "ustedes", "nosotros", "vos"] },
+            { text: "Me aprietan mucho estos zapatos, voy a ponerme <span class='blank-space'>___</span> que son más cómodos.", ans: "esos", options: ["estos", "esos", "aquellos", "míos"] },
+            { text: "Mi auto está en el taller, así que vinimos en el <span class='blank-space'>___</span> de mi cuñado.", ans: "suyo", options: ["suyo", "tuyo", "nuestro", "mío"] },
+            { text: "La fila de esta caja es larguísima, mejor vamos a <span class='blank-space'>___</span> de la otra punta.", ans: "aquella", options: ["esta", "esa", "aquella", "nuestra"] },
+            { text: "Se cortó el wifi en mi casa. ¿Me prestás datos? Porque me quedé sin los <span class='blank-space'>___</span>.", ans: "míos", options: ["tuyos", "suyos", "míos", "nuestros"] },
+            { text: "Fuimos al súper a comprar pan, pero nos olvidamos la plata. <span class='blank-space'>___</span> la dejamos en casa.", ans: "Nosotros", options: ["Yo", "Ellos", "Nosotros", "Ustedes"] },
+            { text: "¿Ves esa mochila azul? <span class='blank-space'>___</span> es la que uso para ir a la facultad.", ans: "Esa", options: ["Esta", "Esa", "Aquella", "Mía"] }
+        ];
+
+        let gameQuestions = [];
+        let currentLevel = 0;
+        let energy = 100;
+        let waitingAnswer = true;
+
+        function startGame() {
+            let shuffled = [...allQuestions].sort(() => Math.random() - 0.5);
+            gameQuestions = shuffled.slice(0, 30); // Ahora son 30 niveles
+            
+            document.getElementById('screen-start').classList.add('hidden');
+            document.getElementById('screen-game').classList.remove('hidden');
+            
+            if (!ac) ac = new AudioContext();
+            
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            if (currentLevel >= gameQuestions.length || energy <= 0) {
+                endGame();
+                return;
+            }
+            
+            waitingAnswer = true;
+            const q = gameQuestions[currentLevel];
+            
+            document.getElementById('level-display').innerText = `${currentLevel + 1}/${gameQuestions.length}`;
+            document.getElementById('sentence-box').innerHTML = q.text;
+            
+            let ops = [...q.options].sort(() => Math.random() - 0.5);
+            let container = document.getElementById('options-container');
+            container.innerHTML = '';
+            
+            ops.forEach(opt => {
+                let btn = document.createElement('button');
+                btn.className = 'btn btn-option';
+                btn.innerText = opt;
+                btn.onclick = () => checkAnswer(opt, btn);
+                container.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selectedAns, btnElement) {
+            if(!waitingAnswer) return;
+            waitingAnswer = false;
+
+            const q = gameQuestions[currentLevel];
+            
+            if (selectedAns === q.ans) {
+                playSound('success');
+                btnElement.style.background = "var(--neon-green)";
+                btnElement.style.borderColor = "var(--neon-green)";
+                
+                document.getElementById('sentence-box').innerHTML = q.text.replace("<span class='blank-space'>___</span>", `<span style="color: var(--neon-green); font-weight: bold;">${q.ans}</span>`);
+
+                showFeedback("¡BIEN AHÍ! ⚡", "var(--neon-green)");
+                energy = Math.min(100, energy + 5);
+                
+                setTimeout(() => {
+                    currentLevel++;
+                    loadQuestion();
+                }, 1500);
+                
+            } else {
+                playSound('error');
+                btnElement.style.background = "var(--neon-red)";
+                btnElement.style.borderColor = "var(--neon-red)";
+                
+                energy -= 20;
+                
+                const gameContainer = document.getElementById('screen-game');
+                gameContainer.classList.add('shake');
+                setTimeout(() => gameContainer.classList.remove('shake'), 400);
+                
+                showFeedback("¡ERROR! 💥", "var(--neon-red)");
+                
+                if (energy <= 0) {
+                    setTimeout(() => endGame(), 1500);
+                } else {
+                    setTimeout(() => {
+                        currentLevel++;
+                        loadQuestion();
+                    }, 1800);
+                }
+            }
+            updateEnergy();
+        }
+
+        function updateEnergy() {
+            energy = Math.max(0, energy);
+            document.getElementById('score-display').innerText = `${energy}%`;
+            
+            const bar = document.getElementById('energy-bar');
+            bar.style.width = `${energy}%`;
+            
+            if (energy > 50) {
+                bar.style.background = "var(--neon-green)";
+                bar.style.boxShadow = "0 0 10px var(--neon-green)";
+                document.getElementById('score-display').style.color = "var(--neon-green)";
+            } else if (energy > 20) {
+                bar.style.background = "#ffd700";
+                bar.style.boxShadow = "0 0 10px #ffd700";
+                document.getElementById('score-display').style.color = "#ffd700";
+            } else {
+                bar.style.background = "var(--neon-red)";
+                bar.style.boxShadow = "0 0 10px var(--neon-red)";
+                document.getElementById('score-display').style.color = "var(--neon-red)";
+            }
+        }
+
+        function showFeedback(text, color) {
+            const fb = document.getElementById('feedback-msg');
+            fb.innerText = text;
+            fb.style.color = color;
+            fb.style.textShadow = `0 5px 15px ${color}, 0 0 30px ${color}`;
+            fb.classList.remove('anim-feedback');
+            void fb.offsetWidth;
+            fb.classList.add('anim-feedback');
+        }
+
+        function endGame() {
+            document.getElementById('screen-game').classList.add('hidden');
+            document.getElementById('screen-end').classList.remove('hidden');
+            
+            const title = document.getElementById('end-title');
+            const finalScoreEl = document.getElementById('final-score');
+            finalScoreEl.innerText = energy;
+            
+            if (energy <= 0) {
+                playSound('lose');
+                title.innerText = "¡NAVE DESTRUIDA! 💥";
+                title.style.color = "var(--neon-red)";
+                finalScoreEl.parentElement.style.color = "var(--neon-red)";
+                finalScoreEl.parentElement.style.textShadow = "0 0 20px var(--neon-red)";
+            } else {
+                playSound('win');
+                title.innerText = "¡MISIÓN CUMPLIDA! 🌌";
+                title.style.color = "var(--neon-blue)";
+                
+                if (energy === 100) {
+                    title.innerText = "¡PERFECCIÓN ESPACIAL! 👑";
+                    title.style.color = "#ffd700";
+                }
+            }
+        }
+    </script>
+</body>
+</html>

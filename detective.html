@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Agencia de Detectives | Prof. Gastón</title>
+    <!-- Fuentes: Una sans-serif limpia para lectura y una de máquina de escribir para las palabras -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&family=Special+Elite&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --paper-bg: #eaddcf;
+            --ink-dark: #2b1f17;
+            --ink-light: #5c4738;
+            --stamp-red: #9e1b1b;
+            --stamp-green: #227022;
+            --folder-bg: #f4ebd8;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--paper-bg);
+            /* Patrón de papel viejo/cartulina */
+            background-image: repeating-linear-gradient(0deg, transparent, transparent 19px, rgba(0,0,0,0.03) 20px),
+                              radial-gradient(circle at 50% 50%, #eaddcf 0%, #c4b097 100%);
+            color: var(--ink-dark);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%; max-width: 800px;
+            background: var(--folder-bg);
+            border: 2px solid #b89f81;
+            border-radius: 2px 20px 2px 2px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.15), inset 0 0 40px rgba(139, 115, 85, 0.1);
+            position: relative;
+        }
+
+        /* Etiqueta de la carpeta */
+        .container::before {
+            content: "EXPEDIENTE CONFIDENCIAL";
+            position: absolute;
+            top: -25px;
+            left: -2px;
+            background: #b89f81;
+            color: var(--folder-bg);
+            padding: 5px 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            border-radius: 5px 5px 0 0;
+            letter-spacing: 1px;
+        }
+
+        h1 {
+            font-family: 'Special Elite', cursive;
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            color: var(--ink-dark);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            border-bottom: 2px solid var(--ink-light);
+            display: inline-block;
+            padding-bottom: 5px;
+        }
+
+        .hidden { display: none !important; }
+
+        .btn {
+            font-family: 'Montserrat', sans-serif;
+            font-size: clamp(1rem, 2.5vw, 1.2rem);
+            padding: 15px 30px;
+            margin: 10px;
+            border: 2px solid var(--ink-light);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 1px;
+            background: transparent;
+            color: var(--ink-dark);
+        }
+        
+        .btn:active { transform: scale(0.95); }
+        
+        .btn-start {
+            background: var(--ink-dark);
+            color: var(--folder-bg);
+            border-color: var(--ink-dark);
+            margin-top: 20px;
+        }
+        .btn-start:hover { 
+            background: var(--ink-light); 
+            border-color: var(--ink-light);
+            box-shadow: 3px 3px 0 rgba(0,0,0,0.2);
+        }
+
+        .btn-option {
+            width: 100%; max-width: 220px;
+            background: #fff;
+        }
+        .btn-option:hover { 
+            background: var(--ink-light); 
+            color: #fff; 
+        }
+
+        #hud {
+            display: flex; justify-content: space-between; align-items: center;
+            font-family: 'Special Elite', cursive;
+            font-size: clamp(1rem, 3vw, 1.3rem);
+            margin-bottom: 15px;
+            border-bottom: 1px dashed var(--ink-light);
+            padding-bottom: 10px;
+        }
+
+        .energy-bar-container {
+            width: 100%; height: 15px; background: rgba(0,0,0,0.1); border-radius: 0; margin-bottom: 30px;
+            border: 1px solid var(--ink-dark); overflow: hidden;
+        }
+        #energy-bar {
+            height: 100%; width: 100%; background: var(--ink-dark);
+            transition: width 0.3s ease, background 0.3s ease;
+        }
+
+        #word-box {
+            font-size: clamp(3rem, 8vw, 4.5rem);
+            font-family: 'Special Elite', cursive;
+            font-weight: normal;
+            margin-bottom: 40px;
+            letter-spacing: 3px;
+            color: var(--ink-dark);
+            background: transparent;
+            padding: 20px;
+            position: relative;
+        }
+        
+        /* Simular subrayado a mano */
+        #word-box::after {
+            content: '';
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 3px;
+            background: var(--stamp-red);
+            border-radius: 50%;
+            opacity: 0.7;
+        }
+
+        .options-grid {
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 15px;
+        }
+
+        .feedback {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-family: 'Special Elite', cursive; 
+            font-size: clamp(2rem, 6vw, 3.5rem); 
+            font-weight: bold;
+            opacity: 0;
+            pointer-events: none; z-index: 100; text-align: center; width: 100%;
+            border: 4px solid currentColor;
+            padding: 10px 30px;
+            border-radius: 10px;
+            transform: translate(-50%, -50%) rotate(-10deg);
+            background: rgba(244, 235, 216, 0.9);
+        }
+        
+        @keyframes stamp {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(2) rotate(-20deg); }
+            20% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(-10deg); }
+            80% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(-10deg); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1.1) rotate(-10deg); }
+        }
+        .anim-feedback { animation: stamp 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        
+        .shake { animation: shake-anim 0.4s ease-in-out; }
+        @keyframes shake-anim { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 50% { transform: translateX(10px); } 75% { transform: translateX(-10px); } }
+
+        .watermark {
+            position: absolute; bottom: 15px; right: 20px;
+            font-family: 'Special Elite', cursive; font-size: 0.9rem;
+            color: var(--ink-light); pointer-events: none; opacity: 0.6;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="feedback-msg" class="feedback"></div>
+
+    <div id="screen-start" class="container">
+        <h1>🔍 Agencia de<br>Detectives</h1>
+        <p style="font-size: 1.1rem; margin-bottom: 25px; color: var(--ink-light); line-height: 1.6;">
+            Detective, tenemos 30 casos sin resolver. El Jefe espera que analices cada palabra y determines si es un <strong>Diptongo, Triptongo o Hiato</strong>.<br><br>
+            Cuidado con equivocarte, o el prestigio de la agencia caerá.
+        </p>
+        <button class="btn btn-start" onclick="startGame()">INVESTIGAR CASOS</button>
+    </div>
+
+    <div id="screen-game" class="container hidden">
+        <div id="hud">
+            <div>Caso N°: <span id="level-display">1/30</span></div>
+            <div>Prestigio: <span id="score-display">100%</span></div>
+        </div>
+
+        <div class="energy-bar-container">
+            <div id="energy-bar"></div>
+        </div>
+
+        <div id="word-box">Cargando...</div>
+
+        <div id="options-container" class="options-grid">
+            <button class="btn btn-option" onclick="checkAnswer('Diptongo', this)">Diptongo</button>
+            <button class="btn btn-option" onclick="checkAnswer('Triptongo', this)">Triptongo</button>
+            <button class="btn btn-option" onclick="checkAnswer('Hiato', this)">Hiato</button>
+        </div>
+    </div>
+
+    <div id="screen-end" class="container hidden">
+        <h1 id="end-title">¡CASOS CERRADOS! 📂</h1>
+        <p style="font-size: 1.2rem; margin-bottom: 15px; color: var(--ink-light);">Prestigio final de la agencia:</p>
+        <p style="font-size: 4rem; color: var(--ink-dark); font-family: 'Special Elite', cursive; margin-bottom: 25px;">
+            <span id="final-score">0</span>%
+        </p>
+        <button class="btn btn-start" onclick="location.reload()">NUEVO ARCHIVO</button>
+    </div>
+
+    <div class="watermark">Sello oficial: Prof. Gastón</div>
+
+    <script>
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let ac;
+
+        function playSound(type) {
+            if (!ac) ac = new AudioContext();
+            if (ac.state === 'suspended') ac.resume();
+            
+            const now = ac.currentTime;
+            
+            // Sonidos adaptados para que parezcan más acústicos/máquina de escribir
+            if (type === 'success') {
+                const osc = ac.createOscillator();
+                const gain = ac.createGain();
+                osc.connect(gain); gain.connect(ac.destination);
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+                gain.gain.setValueAtTime(0, now);
+                gain.gain.linearRampToValueAtTime(0.3, now + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now); osc.stop(now + 0.2);
+            } else if (type === 'error') {
+                const osc = ac.createOscillator();
+                const gain = ac.createGain();
+                osc.connect(gain); gain.connect(ac.destination);
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(50, now + 0.2);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now); osc.stop(now + 0.2);
+            }
+        }
+
+        const allWords = [
+            { word: "Auto", ans: "Diptongo" },
+            { word: "Teatro", ans: "Hiato" },
+            { word: "Uruguay", ans: "Triptongo" },
+            { word: "País", ans: "Hiato" },
+            { word: "Agua", ans: "Diptongo" },
+            { word: "Miau", ans: "Triptongo" },
+            { word: "León", ans: "Hiato" },
+            { word: "Ciudad", ans: "Diptongo" },
+            { word: "Raíz", ans: "Hiato" },
+            { word: "Guau", ans: "Triptongo" },
+            { word: "Escuela", ans: "Diptongo" },
+            { word: "Baúl", ans: "Hiato" },
+            { word: "Paraguay", ans: "Triptongo" },
+            { word: "Fuego", ans: "Diptongo" },
+            { word: "Frío", ans: "Hiato" },
+            { word: "Buey", ans: "Triptongo" },
+            { word: "Cuaderno", ans: "Diptongo" },
+            { word: "Poeta", ans: "Hiato" },
+            { word: "Huaico", ans: "Triptongo" },
+            { word: "Viaje", ans: "Diptongo" },
+            { word: "Maíz", ans: "Hiato" },
+            { word: "Miedo", ans: "Diptongo" },
+            { word: "Caer", ans: "Hiato" },
+            { word: "Hioides", ans: "Triptongo" },
+            { word: "Monstruo", ans: "Diptongo" },
+            { word: "Grúa", ans: "Hiato" },
+            { word: "Semiautomático", ans: "Triptongo" },
+            { word: "Puente", ans: "Diptongo" },
+            { word: "Alegría", ans: "Hiato" },
+            { word: "Boina", ans: "Diptongo" }
+        ];
+
+        let gameQuestions = [];
+        let currentLevel = 0;
+        let energy = 100;
+        let waitingAnswer = true;
+
+        function startGame() {
+            let shuffled = [...allWords].sort(() => Math.random() - 0.5);
+            gameQuestions = shuffled.slice(0, 30);
+            
+            document.getElementById('screen-start').classList.add('hidden');
+            document.getElementById('screen-game').classList.remove('hidden');
+            
+            if (!ac) ac = new AudioContext();
+            
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            if (currentLevel >= gameQuestions.length || energy <= 0) {
+                endGame();
+                return;
+            }
+            
+            waitingAnswer = true;
+            const q = gameQuestions[currentLevel];
+            
+            document.getElementById('level-display').innerText = `${currentLevel + 1}/${gameQuestions.length}`;
+            document.getElementById('word-box').innerText = q.word;
+            
+            const btns = document.querySelectorAll('.btn-option');
+            btns.forEach(btn => {
+                btn.style.background = "#fff";
+                btn.style.color = "var(--ink-dark)";
+                btn.style.borderColor = "var(--ink-light)";
+            });
+        }
+
+        function checkAnswer(selectedAns, btnElement) {
+            if(!waitingAnswer) return;
+            waitingAnswer = false;
+
+            const q = gameQuestions[currentLevel];
+            
+            if (selectedAns === q.ans) {
+                playSound('success');
+                btnElement.style.background = "var(--stamp-green)";
+                btnElement.style.color = "#fff";
+                btnElement.style.borderColor = "var(--stamp-green)";
+                
+                showFeedback("¡VERIFICADO!", "var(--stamp-green)");
+                energy = Math.min(100, energy + 5);
+                
+                setTimeout(() => {
+                    currentLevel++;
+                    loadQuestion();
+                }, 1200);
+                
+            } else {
+                playSound('error');
+                btnElement.style.background = "var(--stamp-red)";
+                btnElement.style.color = "#fff";
+                btnElement.style.borderColor = "var(--stamp-red)";
+                
+                energy -= 20;
+                
+                const gameContainer = document.getElementById('screen-game');
+                gameContainer.classList.add('shake');
+                setTimeout(() => gameContainer.classList.remove('shake'), 400);
+                
+                showFeedback("¡DENEGADO!", "var(--stamp-red)");
+                
+                if (energy <= 0) {
+                    setTimeout(() => endGame(), 1200);
+                } else {
+                    setTimeout(() => {
+                        currentLevel++;
+                        loadQuestion();
+                    }, 1500);
+                }
+            }
+            updateEnergy();
+        }
+
+        function updateEnergy() {
+            energy = Math.max(0, energy);
+            document.getElementById('score-display').innerText = `${energy}%`;
+            
+            const bar = document.getElementById('energy-bar');
+            bar.style.width = `${energy}%`;
+            
+            if (energy > 50) {
+                bar.style.background = "var(--ink-dark)";
+                document.getElementById('score-display').style.color = "var(--ink-dark)";
+            } else if (energy > 20) {
+                bar.style.background = "#b8860b"; // Dorado oscuro
+                document.getElementById('score-display').style.color = "#b8860b";
+            } else {
+                bar.style.background = "var(--stamp-red)";
+                document.getElementById('score-display').style.color = "var(--stamp-red)";
+            }
+        }
+
+        function showFeedback(text, color) {
+            const fb = document.getElementById('feedback-msg');
+            fb.innerText = text;
+            fb.style.color = color;
+            fb.classList.remove('anim-feedback');
+            void fb.offsetWidth;
+            fb.classList.add('anim-feedback');
+        }
+
+        function endGame() {
+            document.getElementById('screen-game').classList.add('hidden');
+            document.getElementById('screen-end').classList.remove('hidden');
+            
+            const title = document.getElementById('end-title');
+            const finalScoreEl = document.getElementById('final-score');
+            finalScoreEl.innerText = energy;
+            
+            if (energy <= 0) {
+                title.innerText = "¡DESPEDIDO! 🚫";
+                title.style.color = "var(--stamp-red)";
+                finalScoreEl.style.color = "var(--stamp-red)";
+            } else {
+                title.innerText = "¡CASOS RESUELTOS! 🕵️‍♂️";
+                if (energy === 100) {
+                    title.innerText = "¡DETECTIVE ESTRELLA! ⭐";
+                }
+            }
+        }
+    </script>
+</body>
+</html>

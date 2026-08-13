@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Proporción Gamer: Level Up!</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #a29bfe;
+            --secondary: #ffeaa7;
+            --direct: #00b894;
+            --inverse: #ff7675;
+            --bg-dark: #0f0c20;
+            --card-bg: #1e1b38;
+            --accent: #fd79a8;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(circle at 20% 20%, rgba(162, 155, 254, 0.15), transparent 40%),
+                radial-gradient(circle at 80% 80%, rgba(253, 121, 168, 0.15), transparent 40%);
+            background-size: cover;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+            overflow-y: auto; 
+            padding: 20px 0; 
+        }
+
+        .container {
+            width: 95%;
+            max-width: 850px;
+            background: rgba(30, 27, 56, 0.9);
+            backdrop-filter: blur(12px);
+            border: 3px solid var(--primary);
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 0 25px rgba(162, 155, 254, 0.3);
+            position: relative;
+            margin: auto;
+        }
+
+        h1 {
+            font-family: 'Fredoka One', cursive;
+            font-size: clamp(2rem, 5vw, 3.2rem);
+            color: var(--secondary);
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(255, 234, 167, 0.5);
+            letter-spacing: 2px;
+        }
+
+        .hidden { display: none !important; }
+
+        /* Botones */
+        .btn {
+            font-family: 'Fredoka One', cursive;
+            font-size: clamp(1rem, 2.5vw, 1.3rem);
+            padding: 12px 25px;
+            margin: 8px;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: transform 0.2s, filter 0.2s;
+            text-transform: uppercase;
+            box-shadow: 0 6px 0 rgba(0,0,0,0.4);
+        }
+        
+        .btn:active { transform: translateY(6px); box-shadow: 0 0 0 rgba(0,0,0,0.4); }
+        .btn:hover { filter: brightness(1.2); }
+
+        .btn-start { background-color: var(--accent); color: #fff; }
+        .btn-direct { background-color: var(--direct); color: #fff; }
+        .btn-inverse { background-color: var(--inverse); color: #fff; }
+        .btn-option { background-color: #342ead; color: #fff; width: 80%; max-width: 350px; border: 2px solid var(--primary);}
+
+        /* HUD y Vidas */
+        #hud {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: 'Fredoka One', cursive;
+            font-size: clamp(1rem, 3vw, 1.4rem);
+            margin-bottom: 15px;
+            background: rgba(0,0,0,0.5);
+            padding: 10px 20px;
+            border-radius: 15px;
+            border: 2px solid rgba(162, 155, 254, 0.3);
+        }
+
+        .hud-item { display: flex; align-items: center; gap: 8px; }
+        .vidas { color: #ff7675; text-shadow: 0 0 8px #ff7675; font-size: 1.3rem;}
+        .combo { color: var(--secondary); font-size: 0.9rem; animation: pulse 0.5s alternate infinite; }
+
+        /* Temporizador */
+        #timer-container {
+            width: 100%;
+            height: 14px;
+            background: #000;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            border: 1px solid var(--primary);
+        }
+        #timer-bar {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #00b894, #ffeaa7, #ff7675);
+            background-size: 200% 100%;
+            transition: width 1s linear;
+        }
+
+        #problem-text {
+            font-size: clamp(1.1rem, 2.5vw, 1.35rem);
+            margin-bottom: 15px;
+            line-height: 1.4;
+            background: rgba(0,0,0,0.3);
+            padding: 12px 18px;
+            border-radius: 12px;
+            border-left: 5px solid var(--accent);
+            text-align: left;
+        }
+
+        table {
+            margin: 0 auto 15px auto;
+            border-collapse: collapse;
+            width: 100%;
+            max-width: 450px;
+            background: #fff;
+            color: #2d3436;
+            border-radius: 12px;
+            overflow: hidden;
+            font-weight: 900;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+        }
+
+        th, td { padding: 10px 15px; border: 2px solid #dfe6e9; font-size: clamp(1.1rem, 2.5vw, 1.4rem); text-align: center; width: 50%;}
+        th { background-color: var(--primary); color: #0f0c20; font-family: 'Fredoka One'; text-transform: uppercase;}
+        .td-incognita { color: var(--inverse); font-size: 2rem; animation: pulse 1s infinite alternate;}
+
+        .phase-title {
+            color: var(--secondary);
+            font-size: clamp(1.1rem, 2.5vw, 1.3rem);
+            margin-bottom: 10px;
+            font-family: 'Fredoka One';
+            letter-spacing: 1px;
+        }
+
+        /* Animación centrada en la pantalla */
+        .feedback {
+            position: fixed; 
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-family: 'Fredoka One'; font-size: clamp(2.5rem, 7vw, 4.5rem); opacity: 0;
+            pointer-events: none; z-index: 100; text-shadow: 0 10px 20px rgba(0,0,0,0.9);
+            width: 100%;
+            text-align: center;
+        }
+        
+        /* MARCA DE AGUA DEL PROF. GASTÓN */
+        .watermark {
+            position: fixed;
+            bottom: 15px;
+            right: 20px;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 900;
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.4);
+            pointer-events: none;
+            z-index: 1000;
+            letter-spacing: 1px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+
+        @keyframes popOut {
+            0% { opacity: 0; transform: translate(-50%, -20%) scale(0.5); }
+            30% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+            80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -80%) scale(1.2); }
+        }
+        .anim-feedback { animation: popOut 1.5s ease-out forwards; }
+        @keyframes pulse { 0% { transform: scale(0.95); } 100% { transform: scale(1.05); } }
+        .shake { animation: shake-anim 0.4s ease-in-out; }
+        @keyframes shake-anim { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-15px); } 50% { transform: translateX(15px); } 75% { transform: translateX(-15px); } }
+
+    </style>
+</head>
+<body>
+
+    <div id="feedback-msg" class="feedback"></div>
+
+    <!-- PANTALLA DE INICIO -->
+    <div id="screen-start" class="container">
+        <h1>🎮 PROPORCIÓN<br>LEVEL UP!</h1>
+        <p style="font-size: 1.2rem; margin-bottom: 25px; color: #a29bfe;">
+            Supera los 25 niveles y demuestra tus habilidades matemáticas gamer. Analiza si la relación es <b>Directa</b> (📈) o <b>Inversa</b> (📉) y resuelve los cálculos para ganar XP.
+        </p>
+        <button class="btn btn-start" onclick="startGame()">▶ EMPEZAR PARTIDA</button>
+    </div>
+
+    <!-- PANTALLA DE JUEGO -->
+    <div id="screen-game" class="container hidden">
+        <div id="hud">
+            <div class="hud-item">Vidas: <span id="lives-display" class="vidas">❤️❤️❤️</span></div>
+            <div class="hud-item" style="flex-direction: column; gap: 0;">
+                <div>Nivel: <span id="level-display" style="color:var(--secondary)">1/25</span></div>
+            </div>
+            <div class="hud-item" style="flex-direction: column; gap: 0; align-items: flex-end;">
+                <div>XP: <span id="score-display">0</span></div>
+                <div id="combo-display" class="combo hidden">🔥 Combo x2</div>
+            </div>
+        </div>
+
+        <div id="timer-container">
+            <div id="timer-bar"></div>
+        </div>
+
+        <div id="problem-text">Cargando desafío...</div>
+
+        <table id="data-table">
+            <thead>
+                <tr>
+                    <th id="var1-name">Var 1</th>
+                    <th id="var2-name">Var 2</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td id="val1-a">-</td>
+                    <td id="val2-a">-</td>
+                </tr>
+                <tr>
+                    <td id="val1-b">-</td>
+                    <td id="val2-b" class="td-incognita">?</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- FASE 1: TIPO DE RELACIÓN -->
+        <div id="phase-1">
+            <div class="phase-title">¿Qué tipo de proporcionalidad es?</div>
+            <button class="btn btn-direct" onclick="checkType('directa')">📈 DIRECTA</button>
+            <button class="btn btn-inverse" onclick="checkType('inversa')">📉 INVERSA</button>
+        </div>
+
+        <!-- FASE 2: RESOLUCIÓN -->
+        <div id="phase-2" class="hidden">
+            <div class="phase-title">¡Bien! ¿Cuál es el valor que falta (?)?</div>
+            <div id="options-container" style="display: flex; flex-direction: column; align-items: center;">
+                <!-- Opciones -->
+            </div>
+        </div>
+    </div>
+
+    <!-- PANTALLA FINAL -->
+    <div id="screen-end" class="container hidden">
+        <h1 id="end-title">¡PARTIDA FINALIZADA! 🏆</h1>
+        <p style="font-size: 1.4rem; margin-bottom: 15px; color: #a29bfe;">Puntaje de Experiencia (XP) conseguido:</p>
+        <p style="font-size: 3rem; color: var(--secondary); font-family: 'Fredoka One'; margin-bottom: 25px;">
+            ⭐ <span id="final-score">0</span> XP
+        </p>
+        <button class="btn btn-start" onclick="location.reload()">JUGAR DE NUEVO</button>
+    </div>
+
+    <!-- MARCA DE AGUA -->
+    <div class="watermark">Creado por el Prof. Gastón</div>
+
+    <script>
+        // Sistema de Audio Web Avanzado (Sintetizador 8-Bits)
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let ac;
+
+        function playSound(type) {
+            if (!ac) ac = new AudioContext();
+            if (ac.state === 'suspended') ac.resume();
+            
+            const now = ac.currentTime;
+            
+            if (type === 'success') {
+                const osc = ac.createOscillator();
+                const gain = ac.createGain();
+                osc.connect(gain);
+                gain.connect(ac.destination);
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(987.77, now); // Nota B5
+                osc.frequency.setValueAtTime(1318.51, now + 0.1); // Salto a E6
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+                
+            } else if (type === 'error') {
+                const osc = ac.createOscillator();
+                const gain = ac.createGain();
+                osc.connect(gain);
+                gain.connect(ac.destination);
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(100, now + 0.3);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+                
+            } else if (type === 'win') {
+                const notes = [523.25, 659.25, 783.99, 1046.50]; // Acorde C mayor
+                notes.forEach((freq, i) => {
+                    const osc = ac.createOscillator();
+                    const gain = ac.createGain();
+                    osc.connect(gain);
+                    gain.connect(ac.destination);
+                    osc.type = 'square';
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0, now + i * 0.12);
+                    gain.gain.linearRampToValueAtTime(0.1, now + i * 0.12 + 0.05);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.12 + 0.4);
+                    osc.start(now + i * 0.12);
+                    osc.stop(now + i * 0.12 + 0.4);
+                });
+                
+            } else if (type === 'lose') {
+                const osc = ac.createOscillator();
+                const gain = ac.createGain();
+                osc.connect(gain);
+                gain.connect(ac.destination);
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.exponentialRampToValueAtTime(50, now + 1.2);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0, now + 1.2);
+                osc.start(now); osc.stop(now + 1.2);
+            }
+        }
+
+        // 25 Problemas de temática Gamer/Streamer
+        const allProblems = [
+            { text: "🎮 En Fortnite, 3 skins épicas cuestan 4.500 V-Bucks. ¿Cuántos V-Bucks cuestan 5 skins del mismo valor?", var1: "Skins", var2: "V-Bucks", v1a: 3, v2a: 4500, v1b: 5, ans: 7500, type: "directa", options: [6000, 7500, 9000] },
+            { text: "📦 Un equipo de 4 youtubers tarda 12 horas en construir un reto de MrBeast. ¿Cuánto tardarían si fueran 6 creadores trabajando juntas?", var1: "Youtubers", var2: "Horas", v1a: 4, v2a: 12, v1b: 6, ans: 8, type: "inversa", options: [8, 10, 18] },
+            { text: "⛏️ En Minecraft, para craftear 2 armaduras completas de diamante se usan 48 diamantes. ¿Cuántos diamantes necesitas para 5 armaduras?", var1: "Armaduras", var2: "Diamantes", v1a: 2, v2a: 48, v1b: 5, ans: 120, type: "directa", options: [100, 120, 140] },
+            { text: "🤖 Para procesar la actualización de Brawl Stars, 3 servidores tardan 8 horas. ¿Cuántas horas tardarían si activan 6 servidores?", var1: "Servidores", var2: "Horas", v1a: 3, v2a: 8, v1b: 6, ans: 4, type: "inversa", options: [4, 6, 12] },
+            { text: "⚽ En EA FC, con 2.000 FC Points compras 4 sobres. ¿Cuántos sobres puedes abrir si consigues 5.000 FC Points?", var1: "FC Points", var2: "Sobres", v1a: 2000, v2a: 4, v1b: 5000, ans: 10, type: "directa", options: [8, 10, 12] },
+            { text: "🎬 Un equipo de 2 editores tarda 6 horas en editar los mejores momentos de un stream. Si contrata a 1 editor más (3 en total), ¿cuántas horas tardarán?", var1: "Editores", var2: "Horas", v1a: 2, v2a: 6, v1b: 3, ans: 4, type: "inversa", options: [3, 4, 9] },
+            { text: "🎟️ Para un evento de Twitch, 3 entradas VIP cuestan $15.000. ¿Cuánto pagará un grupo de amigos por 5 entradas VIP?", var1: "Entradas", var2: "Precio ($)", v1a: 3, v2a: 15000, v1b: 5, ans: 25000, type: "directa", options: [20000, 25000, 30000] },
+            { text: "🍕 En el servidor survival de Spreen, la comida dura 12 días para 2 jugadores. ¿Cuántos días durará la misma comida si hay 4 jugadores?", var1: "Jugadores", var2: "Días", v1a: 2, v2a: 12, v1b: 4, ans: 6, type: "inversa", options: [6, 8, 10] },
+            { text: "🏃 En Stumble Guys, por ganar 4 partidas te dan 100 gemas. ¿Cuántas gemas obtendrás si ganas 10 partidas?", var1: "Victorias", var2: "Gemas", v1a: 4, v2a: 100, v1b: 10, ans: 250, type: "directa", options: [200, 250, 300] },
+            { text: "💻 Un estudio de 5 desarrolladores tarda 20 días en crear un juego para Roblox. Si contrataran a 5 desarrolladores más (10 en total), ¿cuántos días tardarían?", var1: "Devs", var2: "Días", v1a: 5, v2a: 20, v1b: 10, ans: 10, type: "inversa", options: [10, 15, 25] },
+            { text: "🍫 Comprar 3 barras de chocolate Feastables cuesta $9.000. ¿Cuánto saldrán 7 barras?", var1: "Chocolates", var2: "Precio ($)", v1a: 3, v2a: 9000, v1b: 7, ans: 21000, type: "directa", options: [18000, 21000, 24000] },
+            { text: "🚔 En GTA Roleplay, 4 administradores tardan 10 horas en revisar los reportes. ¿Cuántas horas tardarán si entran 5 administradores?", var1: "Admins", var2: "Horas", v1a: 4, v2a: 10, v1b: 5, ans: 8, type: "inversa", options: [6, 8, 12] },
+            { text: "💬 En Twitch, donar 500 bits cuesta unos $5. Si alguien quiere donar 2.000 bits, ¿cuánto le costará?", var1: "Bits", var2: "Precio ($)", v1a: 500, v2a: 5, v1b: 2000, ans: 20, type: "directa", options: [15, 20, 25] },
+            { text: "⚙️ Renderizar un video para YouTube tarda 30 minutos usando una PC con 4 núcleos. ¿Cuánto tardaría una PC más potente de 8 núcleos?", var1: "Núcleos", var2: "Minutos", v1a: 4, v2a: 30, v1b: 8, ans: 15, type: "inversa", options: [15, 20, 60] },
+            { text: "🔫 En Valorant, 2 skins de armas exclusivas cuestan 3.500 VP. ¿Cuántos VP necesitarías para comprar 4 skins?", var1: "Skins", var2: "VP", v1a: 2, v2a: 3500, v1b: 4, ans: 7000, type: "directa", options: [5500, 7000, 8500] },
+            { text: "🛡️ 2 moderadores tardan 10 minutos en limpiar el chat de spam. Si ayudan 3 mods más (5 en total), ¿en cuántos minutos lo limpian?", var1: "Mods", var2: "Minutos", v1a: 2, v2a: 10, v1b: 5, ans: 4, type: "inversa", options: [2, 4, 8] },
+            { text: "⬇️ Descargar un juego pesa y tarda 60 minutos con una conexión de 10 MB/s. Si tu internet sube a 20 MB/s, ¿cuánto tardará?", var1: "MB/s", var2: "Minutos", v1a: 10, v2a: 60, v1b: 20, ans: 30, type: "inversa", options: [20, 30, 45] },
+            { text: "💎 En League of Legends, 3 cofres Hextech cuestan 675 RP. ¿Cuánto costarán 5 cofres?", var1: "Cofres", var2: "RP", v1a: 3, v2a: 675, v1b: 5, ans: 1125, type: "directa", options: [900, 1125, 1350] },
+            { text: "🧱 2 jugadores tardan 20 minutos en aplanar un terreno en Minecraft. Si se unen 2 amigos más (4 en total), ¿cuánto tardarán?", var1: "Jugadores", var2: "Minutos", v1a: 2, v2a: 20, v1b: 4, ans: 10, type: "inversa", options: [5, 10, 15] },
+            { text: "👑 En Fall Guys, necesitas 10 coronas para comprar 2 partes de una skin. ¿Cuántas coronas necesitas para conseguir 5 partes?", var1: "Partes", var2: "Coronas", v1a: 2, v2a: 10, v1b: 5, ans: 25, type: "directa", options: [20, 25, 30] },
+            { text: "⚔️ En Zelda, necesitas 4 orbes del valor para conseguir 1 corazón de vida extra. ¿Cuántos orbes necesitas para conseguir 3 corazones?", var1: "Corazones", var2: "Orbes", v1a: 1, v2a: 4, v1b: 3, ans: 12, type: "directa", options: [8, 10, 12] },
+            { text: "🏆 Un equipo de esports de 5 jugadores gana un premio de $50.000 ($10.000 para cada uno). Si el equipo fuera de 4 jugadores, ¿cuánto se llevaría cada uno?", var1: "Jugadores", var2: "Premio c/u", v1a: 5, v2a: 10000, v1b: 4, ans: 12500, type: "inversa", options: [12500, 15000, 8000] },
+            { text: "📱 En Pokémon GO, hacer 3 evoluciones te cuesta 150 caramelos. ¿Cuántos caramelos gastarás si haces 6 evoluciones seguidas?", var1: "Evoluciones", var2: "Caramelos", v1a: 3, v2a: 150, v1b: 6, ans: 300, type: "directa", options: [250, 300, 350] },
+            { text: "🏎️ En Mario Kart, jugar en la dificultad de 100cc te hace terminar en 3 minutos. Si juegas en 150cc (más velocidad), ¿en cuántos minutos terminarás?", var1: "Velocidad (cc)", var2: "Minutos", v1a: 100, v2a: 3, v1b: 150, ans: 2, type: "inversa", options: [1.5, 2, 4.5] },
+            { text: "🚀 Un viaje en Starfield con motores nivel 2 tarda 12 minutos. Si instalas motores de nivel 4, ¿cuánto tiempo tardará el mismo viaje?", var1: "Nivel Motor", var2: "Minutos", v1a: 2, v2a: 12, v1b: 4, ans: 6, type: "inversa", options: [6, 8, 24] }
+        ];
+
+        let gameProblems = [];
+        let currentLevel = 0;
+        let score = 0;
+        let lives = 3;
+        let combo = 0;
+        
+        let timerInterval;
+        let timeLeft;
+        const LEVEL_TIME = 90; // 90 segundos = 1.5 minutos
+
+        function startGame() {
+            let shuffled = [...allProblems].sort(() => Math.random() - 0.5);
+            gameProblems = shuffled.slice(0, 25); 
+            
+            document.getElementById('screen-start').classList.add('hidden');
+            document.getElementById('screen-game').classList.remove('hidden');
+            
+            if (!ac) ac = new AudioContext();
+            
+            loadProblem();
+        }
+
+        function loadProblem() {
+            if (currentLevel >= gameProblems.length || lives <= 0) {
+                endGame();
+                return;
+            }
+
+            const p = gameProblems[currentLevel];
+            
+            document.getElementById('level-display').innerText = `${currentLevel + 1}/${gameProblems.length}`;
+            
+            document.getElementById('problem-text').innerText = p.text;
+            document.getElementById('var1-name').innerText = p.var1;
+            document.getElementById('var2-name').innerText = p.var2;
+            document.getElementById('val1-a').innerText = p.v1a;
+            document.getElementById('val2-a').innerText = p.v2a;
+            document.getElementById('val1-b').innerText = p.v1b;
+            
+            document.getElementById('phase-1').classList.remove('hidden');
+            document.getElementById('phase-2').classList.add('hidden');
+            
+            startTimer();
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timeLeft = LEVEL_TIME;
+            updateTimerBar();
+            
+            timerInterval = setInterval(() => {
+                timeLeft -= 0.1;
+                updateTimerBar();
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    handleError("¡TIEMPO AGOTADO! ⏱️");
+                }
+            }, 100);
+        }
+
+        function updateTimerBar() {
+            const bar = document.getElementById('timer-bar');
+            const percent = Math.max(0, (timeLeft / LEVEL_TIME) * 100);
+            bar.style.width = percent + '%';
+            
+            if (percent < 30) bar.style.backgroundPosition = '100% 0';
+            else if (percent < 60) bar.style.backgroundPosition = '50% 0';
+            else bar.style.backgroundPosition = '0% 0';
+        }
+
+        function checkType(selectedType) {
+            const p = gameProblems[currentLevel];
+            if (selectedType === p.type) {
+                playSound('success');
+                showFeedback("¡CORRECTO! ✔️", "#00b894");
+                score += (20 * (combo + 1));
+                updateScore();
+                
+                timeLeft = Math.min(LEVEL_TIME, timeLeft + 10);
+                
+                document.getElementById('phase-1').classList.add('hidden');
+                document.getElementById('phase-2').classList.remove('hidden');
+                
+                let ops = [...p.options].sort(() => Math.random() - 0.5);
+                let container = document.getElementById('options-container');
+                container.innerHTML = '';
+                
+                ops.forEach(opt => {
+                    let btn = document.createElement('button');
+                    btn.className = 'btn btn-option';
+                    btn.innerText = opt;
+                    btn.onclick = () => checkAnswer(opt);
+                    container.appendChild(btn);
+                });
+            } else {
+                handleError("¡TIPO INCORRECTO! ❌");
+                let exp = p.type === 'directa' ? "Si aumenta una variable, la otra también aumenta." : "Si aumenta una variable, la otra disminuye.";
+                setTimeout(() => alert(`Pista gamer: ${exp}`), 500);
+            }
+        }
+
+        function checkAnswer(selectedAns) {
+            clearInterval(timerInterval);
+            const p = gameProblems[currentLevel];
+            
+            if (selectedAns === p.ans) {
+                playSound('success');
+                combo++;
+                showFeedback("¡EXCELENTE! ⭐", "#ffeaa7");
+                score += (100 * combo);
+                
+                if (combo > 1) {
+                    let cd = document.getElementById('combo-display');
+                    cd.innerText = `🔥 Combo x${combo}`;
+                    cd.classList.remove('hidden');
+                }
+                
+                updateScore();
+                
+                setTimeout(() => {
+                    currentLevel++;
+                    loadProblem();
+                }, 1500);
+            } else {
+                handleError("¡CÁLCULO INCORRECTO! ❌");
+            }
+        }
+
+        function handleError(msg) {
+            clearInterval(timerInterval);
+            playSound('error');
+            combo = 0;
+            document.getElementById('combo-display').classList.add('hidden');
+            
+            lives--;
+            updateLives();
+            
+            const gameContainer = document.getElementById('screen-game');
+            gameContainer.classList.add('shake');
+            setTimeout(() => gameContainer.classList.remove('shake'), 400);
+            
+            showFeedback(msg, "#ff7675");
+            
+            setTimeout(() => {
+                if (lives > 0) {
+                    currentLevel++;
+                    loadProblem();
+                } else {
+                    endGame();
+                }
+            }, 2000);
+        }
+
+        function updateScore() { document.getElementById('score-display').innerText = score; }
+
+        function updateLives() {
+            document.getElementById('lives-display').innerText = '❤️'.repeat(Math.max(0, lives));
+        }
+
+        function showFeedback(text, color) {
+            const fb = document.getElementById('feedback-msg');
+            fb.innerText = text;
+            fb.style.color = color;
+            fb.style.textShadow = `0 5px 15px ${color}`;
+            fb.classList.remove('anim-feedback');
+            void fb.offsetWidth;
+            fb.classList.add('anim-feedback');
+        }
+
+        function endGame() {
+            clearInterval(timerInterval);
+            document.getElementById('screen-game').classList.add('hidden');
+            document.getElementById('screen-end').classList.remove('hidden');
+            
+            const title = document.getElementById('end-title');
+            if (lives <= 0) {
+                playSound('lose');
+                title.innerText = "¡GAME OVER! 💥";
+                title.style.color = "#ff7675";
+            } else {
+                playSound('win');
+                title.innerText = "¡VICTORIA EPICA! 🏆";
+                title.style.color = "#00b894";
+            }
+            
+            document.getElementById('final-score').innerText = score;
+        }
+    </script>
+</body>
+</html>
