@@ -26,7 +26,7 @@
             height: 100vh; width: 100vw;
         }
 
-        /* --- SISTEMA DE LOGIN --- */
+        /* --- PANTALLA DE INICIO --- */
         #login-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: radial-gradient(circle at center, #1a1a1f 0%, #0a0a0b 100%);
@@ -46,22 +46,13 @@
             color: var(--accent-color); margin-bottom: 30px; letter-spacing: 2px; line-height: 1;
         }
 
-        .login-form input {
-            width: 100%; padding: 15px; margin-bottom: 15px; background: #222; border: 1px solid #333;
-            border-radius: 5px; color: white; font-family: 'Montserrat', sans-serif; font-size: 1rem; outline: none;
-        }
-
-        .login-form input:focus { border-color: var(--accent-color); }
-
         .login-btn {
             width: 100%; padding: 15px; background: var(--accent-color); color: white; border: none;
             border-radius: 5px; font-weight: bold; font-family: 'Montserrat', sans-serif; cursor: pointer;
             font-size: 1.1rem; transition: background 0.3s; margin-top: 10px;
         }
 
-        .login-btn:hover { background: #b20710; }
-
-        .error-msg { color: #e50914; font-size: 0.9rem; margin-top: 15px; display: none; font-weight: 600; }
+        .login-btn:hover { background: #b20710; transform: scale(1.02); }
         
         .login-footer { margin-top: 25px; font-size: 0.85rem; color: #777; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;}
 
@@ -177,10 +168,7 @@
         <div class="login-card">
             <h1>PORTAL DE JUEGOS</h1>
             <div class="login-form">
-                <input type="text" id="user" placeholder="Usuario">
-                <input type="password" id="pass" placeholder="Contraseña">
-                <button class="login-btn" onclick="checkLogin()">Ingresar</button>
-                <div id="login-error" class="error-msg">Credenciales incorrectas. Intenta de nuevo.</div>
+                <button class="login-btn" onclick="ingresarAlPortal()">Acceder</button>
             </div>
             <div class="login-footer">Creado por el Prof. Gastón</div>
         </div>
@@ -213,24 +201,9 @@
     </div>
 
 <script>
-    // --- LÓGICA DE LOGIN ---
-    function checkLogin() {
-        const u = document.getElementById('user').value.toLowerCase().trim();
-        const p = document.getElementById('pass').value.trim();
-
-        if (u === 'alumno' && p === 'fff') {
-            sessionStorage.setItem('acceso_gaston', 'true');
-            ingresarAlPortal();
-        } else {
-            document.getElementById('login-error').style.display = 'block';
-            const card = document.querySelector('.login-card');
-            card.style.transform = 'translateX(10px)';
-            setTimeout(() => card.style.transform = 'translateX(-10px)', 100);
-            setTimeout(() => card.style.transform = 'translateX(0)', 200);
-        }
-    }
-
+    // --- LÓGICA DE ACCESO ---
     function ingresarAlPortal() {
+        sessionStorage.setItem('acceso_gaston', 'true');
         document.getElementById('login-overlay').style.opacity = '0';
         setTimeout(() => {
             document.getElementById('login-overlay').style.display = 'none';
@@ -262,7 +235,9 @@
                 { title: 'Tren de Oraciones', desc: 'Ordena los vagones.', icon: '🚂', url: 'Tren de oraciones.html' },
                 { title: 'Carreras de Teclado', desc: '¡Escribe palabras para ganar la carrera!', icon: '🏎️', url: 'Carreras de teclado.html' },
                 { title: 'Regla Ortográfica', desc: 'Aprende las reglas de ortografía jugando.', icon: '📝', url: 'regla ortografica.html' },
-                { title: 'Laboratorio de Clasificación', desc: 'Clasifica sustantivos, adjetivos y verbos volando.', icon: '🚀', url: 'Laboratorio de Clasificación.html' }
+                { title: 'Laboratorio de Clasificación', desc: 'Clasifica sustantivos, adjetivos y verbos volando.', icon: '🧪', url: 'Laboratorio de Clasificación.html' },
+                { title: 'Misión Pronombres', desc: 'Completa las oraciones con el pronombre correcto para recargar la nave.', icon: '🚀', url: 'pronombres.html' },
+                { title: 'Agencia de Detectives', desc: 'Analiza cada palabra y determina si es Diptongo, Triptongo o Hiato.', icon: '🔍', url: 'detective.html' }
             ]
         },
         {
@@ -287,10 +262,9 @@
         {
             category: "Matemática Numérica", color: "#3498db",
             games: [
-                // AQUÍ AGREGUÉ TUS DOS JUEGOS NUEVOS
+                { title: 'Proporción Gamer', desc: 'Analiza si la relación es Directa o Inversa y resuelve los cálculos.', icon: '🕹️', url: 'prop.html' },
                 { title: 'Pizzería lo del Pipe', desc: 'Aprende y practica fracciones preparando deliciosas pizzas.', icon: '🍕', url: 'pizzeria.html' },
                 { title: 'Raft Math', desc: 'Calcula divisiones exactas para lanzar proyectiles y defenderte.', icon: '🛶', url: 'raft-math.html' },
-                // ABAJO CONTINÚAN LOS QUE YA TENÍAS
                 { title: 'Penales Multiplicativos', desc: 'Calculá, apuntá y anota un golazo de matemáticas.', icon: '⚽', url: 'Penales Multiplicativos.html' },
                 { title: 'Math Invaders', desc: 'Resuelve operaciones rápidas.', icon: '👽', url: 'Math Invaders.html' },
                 { title: 'Pac-Mates', desc: 'Recorre el laberinto.', icon: '👻', url: 'Pacman de sumas.html' },
@@ -455,9 +429,9 @@
     }
 
     window.addEventListener('keydown', e => {
-        // Bloqueo de controles si el login está activo
+        // Bloqueo de controles si la pantalla de inicio está activa
         if(sessionStorage.getItem('acceso_gaston') !== 'true') {
-            if(e.key === 'Enter') checkLogin();
+            if(e.key === 'Enter') ingresarAlPortal();
             return; 
         }
 
