@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rover Espacial - Misión Cartoon</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+
+        body {
+            background: radial-gradient(circle at 50% 30%, #2f1b69 0%, #130a2a 100%);
+            font-family: 'Fredoka', cursive, sans-serif; height: 100vh;
+            overflow: hidden; display: flex; flex-direction: column; align-items: center; color: #ffffff;
+        }
+
+        #espacio-canvas {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none;
+        }
+
+        /* --- INTERFAZ (HUD) --- */
+        header { position: relative; z-index: 10; margin-top: 2vh; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+        
+        .titulo-hud {
+            font-size: clamp(1.8rem, 4.5vw, 2.8rem); font-weight: 700; letter-spacing: 2px;
+            color: #fffa65; -webkit-text-stroke: 2px #d35400;
+            text-shadow: 0 6px 0 #e67e22, 0 10px 20px rgba(0,0,0,0.5); text-transform: uppercase;
+        }
+
+        .contenedor-hud {
+            display: flex; align-items: center; gap: 15px; background: #341f97;
+            border: 4px solid #ff9f43; padding: 6px 20px; border-radius: 30px;
+            box-shadow: 0 6px 0 #2e86de, 0 10px 15px rgba(0,0,0,0.4);
+        }
+
+        .nivel-texto { font-size: clamp(1rem, 3vw, 1.3rem); font-weight: 700; color: #fffa65; letter-spacing: 1px; }
+        .barra-energia-bg { width: clamp(140px, 25vw, 220px); height: 16px; background: #1e1045; border-radius: 10px; border: 2px solid #54a0ff; overflow: hidden; }
+        .barra-energia-fill { height: 100%; width: 5%; background: linear-gradient(90deg, #1dd1a1, #10ac84); transition: width 0.5s; border-radius: 10px; }
+
+        /* --- CONTENEDOR PRINCIPAL --- */
+        .juego-contenedor {
+            position: relative; z-index: 10; margin-top: 1vh; display: flex; flex-direction: column;
+            align-items: center; gap: 12px;
+            width: 95%; max-width: 800px; flex-grow: 1;
+        }
+
+        /* --- TABLERO CARTOON --- */
+        .tablero-wrapper {
+            position: relative;
+            width: min(85vw, 42vh, 390px); 
+            height: min(85vw, 42vh, 390px);
+            border-radius: 24px;
+            padding: 8px;
+            background: #5f27cd;
+            border: 5px solid #ff9f43;
+            box-shadow: 0 10px 0 #341f97, 0 15px 25px rgba(0,0,0,0.5);
+            overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .tablero {
+            display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(5, 1fr);
+            width: 100%; height: 100%; position: relative; gap: 6px;
+        }
+
+        .celda {
+            background: #341f97; border-radius: 12px;
+            border-bottom: 4px solid #1e1045;
+            display: flex; justify-content: center; align-items: center;
+            transition: all 0.2s;
+        }
+
+        .celda.rastro { background: #ff9f43; border-bottom-color: #e67e22; box-shadow: inset 0 0 10px rgba(0,0,0,0.2); }
+        .celda.error-impacto { background: #ff4757; border-bottom-color: #ff6b81; animation: rebotarError 0.4s ease infinite alternate; }
+        
+        @keyframes rebotarError { 0% { transform: scale(1); } 100% { transform: scale(0.92); } }
+
+        .entidad { display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; pointer-events: none; }
+        .mineral { animation: flotarCartoon 2s infinite ease-in-out alternate; }
+        @keyframes flotarCartoon { 0% { transform: translateY(-3px) rotate(-3deg); } 100% { transform: translateY(5px) rotate(3deg); } }
+
+        /* --- ROVER ANIMADO --- */
+        #el-rover {
+            position: absolute; width: 20%; height: 20%; z-index: 10;
+            display: flex; justify-content: center; align-items: center;
+            transition: left 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+                        top 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+                        transform 0.3s ease; 
+        }
+
+        /* --- SECUENCIA DE COMANDOS --- */
+        .pantalla-comandos {
+            width: 100%; min-height: 58px; background: #1e1045; border: 3px solid #54a0ff;
+            border-radius: 16px; display: flex; align-items: center; padding: 5px 10px; gap: 8px; overflow-x: auto;
+            box-shadow: inset 0 4px 8px rgba(0,0,0,0.5);
+        }
+
+        .comando-item {
+            background: #ff9f43; border: 2px solid #fff; border-bottom: 4px solid #e67e22; border-radius: 12px;
+            width: 42px; height: 42px; display: flex; justify-content: center; align-items: center;
+            font-size: 1.4rem; color: #fff; flex-shrink: 0; animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .comando-item.ejecutando { background: #fffa65; border-color: #ff9f43; transform: scale(1.15); border-bottom-color: #f39c12; }
+
+        @keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+
+        /* --- CONTROLES --- */
+        .controles-wrapper { display: flex; gap: 15px; align-items: center; width: 100%; justify-content: center; margin-top: 2px; }
+        
+        .pad-direccional { display: grid; grid-template-columns: 52px 52px 52px; grid-template-rows: 52px 52px; gap: 6px; }
+        
+        .btn-dir {
+            background: #54a0ff; border: 3px solid #fff; border-bottom: 5px solid #2e86de; border-radius: 14px;
+            color: #fff; font-size: 1.4rem; cursor: pointer; display: flex; justify-content: center; align-items: center;
+            transition: all 0.1s;
+        }
+        .btn-dir:active { transform: translateY(3px); border-bottom-width: 2px; }
+        
+        .btn-arriba { grid-column: 2; grid-row: 1; } .btn-izq { grid-column: 1; grid-row: 2; }
+        .btn-abajo { grid-column: 2; grid-row: 2; } .btn-der { grid-column: 3; grid-row: 2; }
+
+        .botones-accion { display: flex; flex-direction: column; gap: 8px; }
+        
+        .btn-accion {
+            font-family: 'Fredoka', cursive, sans-serif; font-size: 1.1rem; font-weight: 700; padding: 10px 18px;
+            border-radius: 14px; border: 3px solid #fff; cursor: pointer; transition: 0.1s; text-transform: uppercase;
+        }
+        .btn-ejecutar { background: #1dd1a1; border-bottom: 5px solid #10ac84; color: #fff; text-shadow: 0 2px 0 #10ac84; }
+        .btn-ejecutar:active { transform: translateY(3px); border-bottom-width: 2px; }
+        .btn-ejecutar:disabled { background: #8395a7; border-color: #c8d6e5; border-bottom-color: #576574; cursor: not-allowed; text-shadow: none; }
+        
+        .btn-borrar { background: #ff4757; border-bottom: 5px solid #ff6b81; color: #fff; }
+        .btn-borrar:active { transform: translateY(3px); border-bottom-width: 2px; }
+
+        /* --- MARCA DE AGUA --- */
+        .marca-agua {
+            position: absolute; bottom: 12px; right: 20px; font-family: 'Fredoka', cursive;
+            font-size: 1.1rem; font-weight: 700; color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 1px; z-index: 50; pointer-events: none;
+        }
+
+        /* --- MODALES --- */
+        .modal {
+            display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100;
+            background: #341f97; border: 5px solid #ff4757; box-shadow: 0 10px 0 #1e1045, 0 20px 40px rgba(0,0,0,0.6);
+            padding: 25px; border-radius: 25px; text-align: center; width: 90%; max-width: 360px;
+        }
+        .modal h2 { font-size: 2rem; margin-bottom: 10px; color: #ff4757; text-shadow: 0 3px 0 #fff; }
+        .modal.victoria { border-color: #fffa65; }
+        .modal.victoria h2 { color: #fffa65; text-shadow: 0 3px 0 #d35400; }
+    </style>
+</head>
+<body>
+
+    <canvas id="espacio-canvas"></canvas>
+
+    <header>
+        <div class="titulo-hud">ROVER ESPACIAL</div>
+        <div class="contenedor-hud">
+            <div class="nivel-texto" id="hud-nivel">NIVEL 01 / 20</div>
+            <div class="barra-energia-bg"><div class="barra-energia-fill" id="hud-barra"></div></div>
+        </div>
+    </header>
+
+    <main class="juego-contenedor">
+        <div class="pantalla-comandos" id="secuencia-comandos"></div>
+        
+        <div class="tablero-wrapper">
+            <div class="tablero" id="tablero"></div>
+            <div id="el-rover"></div>
+        </div>
+
+        <div class="controles-wrapper">
+            <div class="pad-direccional">
+                <button class="btn-dir btn-arriba" onclick="agregarComando('U', '⬆️')">⬆️</button>
+                <button class="btn-dir btn-izq" onclick="agregarComando('L', '⬅️')">⬅️</button>
+                <button class="btn-dir btn-abajo" onclick="agregarComando('D', '⬇️')">⬇️</button>
+                <button class="btn-dir btn-der" onclick="agregarComando('R', '➡️')">➡️</button>
+            </div>
+            <div class="botones-accion">
+                <button class="btn-accion btn-ejecutar" onclick="ejecutarSecuencia()" id="btn-ejec">EJECUTAR</button>
+                <button class="btn-accion btn-borrar" onclick="borrarUltimo()" id="btn-borrar">BORRAR</button>
+            </div>
+        </div>
+    </main>
+
+    <div class="marca-agua">Creada por el Prof. Gastón</div>
+
+    <!-- Modales Cartoon -->
+    <div id="modal-error" class="modal">
+        <h2>¡OOPS! 💥</h2>
+        <p style="color: #c8d6e5; font-size: 1.1rem; margin-bottom: 15px;">Chocaste con un obstáculo espacial.</p>
+        <button class="btn-accion btn-borrar" style="width: 100%; font-size: 1.2rem;" onclick="reiniciarNivelActual()">REINTENTAR 🔄</button>
+    </div>
+
+    <div id="modal-victoria" class="modal victoria">
+        <h2>¡GENIAL! 🎉</h2>
+        <p style="color: #c8d6e5; font-size: 1.1rem; margin-bottom: 15px;">Llegaste a la base espacial a salvo.</p>
+        <button class="btn-accion btn-ejecutar" style="width: 100%; font-size: 1.2rem;" onclick="siguienteNivel()">AVANZAR 🚀</button>
+    </div>
+
+    <script>
+        // --- ILUSTRACIONES CARTOON (SVG) ---
+        const svgAuto = `
+            <svg viewBox="0 0 100 100" style="width:90%; height:90%; filter: drop-shadow(0 6px 0 rgba(0,0,0,0.3));">
+                <rect x="8" y="15" width="18" height="26" rx="8" fill="#2f3542" stroke="#fff" stroke-width="3"/>
+                <rect x="74" y="15" width="18" height="26" rx="8" fill="#2f3542" stroke="#fff" stroke-width="3"/>
+                <rect x="8" y="59" width="18" height="26" rx="8" fill="#2f3542" stroke="#fff" stroke-width="3"/>
+                <rect x="74" y="59" width="18" height="26" rx="8" fill="#2f3542" stroke="#fff" stroke-width="3"/>
+                <rect x="20" y="10" width="60" height="80" rx="20" fill="#ff4757" stroke="#fff" stroke-width="4"/>
+                <path d="M 28 30 Q 50 20 72 30 L 68 50 Q 50 45 32 50 Z" fill="#70a1ff" stroke="#fff" stroke-width="3"/>
+                <ellipse cx="40" cy="35" rx="4" ry="6" fill="#fff"/>
+                <ellipse cx="60" cy="35" rx="4" ry="6" fill="#fff"/>
+                <circle cx="32" cy="16" r="6" fill="#fffa65" stroke="#fff" stroke-width="2"/>
+                <circle cx="68" cy="16" r="6" fill="#fffa65" stroke="#fff" stroke-width="2"/>
+            </svg>
+        `;
+
+        const svgBase = `
+            <svg viewBox="0 0 100 100" style="width:90%; height:90%; filter: drop-shadow(0 6px 0 rgba(0,0,0,0.3));">
+                <circle cx="50" cy="50" r="42" fill="#1dd1a1" stroke="#fff" stroke-width="4"/>
+                <circle cx="50" cy="50" r="30" fill="#10ac84" stroke="#fff" stroke-width="3"/>
+                <text x="50" y="62" font-family="'Fredoka', sans-serif" font-size="36" font-weight="bold" fill="#fffa65" text-anchor="middle" stroke="#576574" stroke-width="2">🏁</text>
+            </svg>
+        `;
+
+        const svgBasuraEspacial = `
+            <svg viewBox="0 0 100 100" style="width:85%; height:85%; filter: drop-shadow(0 6px 0 rgba(0,0,0,0.3));">
+                <path d="M 25 15 Q 50 5 80 20 Q 95 50 85 80 Q 50 95 20 80 Q 5 50 25 15 Z" fill="#a55eea" stroke="#fff" stroke-width="4"/>
+                <circle cx="35" cy="35" r="8" fill="#8854d0"/>
+                <circle cx="65" cy="40" r="12" fill="#8854d0"/>
+                <circle cx="45" cy="70" r="10" fill="#8854d0"/>
+            </svg>
+        `;
+
+        document.getElementById('el-rover').innerHTML = svgAuto;
+
+        // --- SONIDOS DIVERTIDOS (WEB AUDIO) ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        function playSound(type) {
+            if (!audioCtx) audioCtx = new AudioContext();
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            
+            if (type === 'beep') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.08);
+            } else if (type === 'crash') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'win') {
+                osc.type = 'triangle';
+                [300, 400, 500, 700].forEach((freq, i) => {
+                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime + i * 0.08);
+                });
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+            } else if (type === 'move') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(250, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(500, audioCtx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+            }
+        }
+
+        // --- FONDO DE ESPACIO CARTOON ---
+        const canvas = document.getElementById('espacio-canvas');
+        const ctx = canvas.getContext('2d');
+        let estrellas = [];
+
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resize); resize();
+
+        for (let i = 0; i < 50; i++) {
+            estrellas.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                r: Math.random() * 4 + 2,
+                color: ['#fffa65', '#70a1ff', '#ff78e6', '#ff9f43'][Math.floor(Math.random() * 4)]
+            });
+        }
+
+        function animarFondo() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            estrellas.forEach(e => {
+                ctx.beginPath();
+                ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2);
+                ctx.fillStyle = e.color;
+                ctx.fill();
+            });
+            requestAnimationFrame(animarFondo);
+        }
+        animarFondo();
+
+        // --- 20 NIVELES (CORREGIDOS: los 20 verificados como resolubles con BFS ---
+        // --- y reordenados de más fácil a más difícil según distancia de camino ---
+        // --- óptimo, "desvío" forzado por obstáculos y cantidad de obstáculos)   ---
+        const niveles = [
+            // Bloque 1 (Niveles 1-12): sin desvío forzado, se enseña secuenciación básica
+            { rover: [0, 2], meta: [4, 2], obstaculos: [[2, 0], [1, 4], [3, 4]] },
+            { rover: [0, 0], meta: [2, 2], obstaculos: [[0, 1], [3, 2], [2, 3], [1, 4], [4, 1], [4, 4], [3, 0]] },
+            { rover: [0, 0], meta: [4, 2], obstaculos: [[1, 0], [1, 1], [2, 3], [3, 3], [3, 4], [4, 1]] },
+            { rover: [0, 0], meta: [4, 4], obstaculos: [[1, 0], [0, 2], [3, 1], [2, 3], [4, 2]] },
+            { rover: [4, 4], meta: [0, 0], obstaculos: [[3, 4], [4, 2], [1, 3], [2, 1], [1, 0]] },
+            { rover: [0, 4], meta: [4, 0], obstaculos: [[1, 4], [0, 2], [2, 2], [4, 2], [3, 0]] },
+            { rover: [0, 0], meta: [4, 4], obstaculos: [[2, 2], [3, 3], [1, 0], [3, 4], [4, 1], [0, 3]] },
+            { rover: [0, 4], meta: [4, 0], obstaculos: [[1, 3], [1, 2], [3, 2], [3, 1], [3, 0], [0, 1]] },
+            { rover: [4, 4], meta: [0, 0], obstaculos: [[4, 3], [2, 2], [3, 3], [0, 2], [2, 0], [0, 4], [4, 0]] },
+            { rover: [0, 0], meta: [4, 4], obstaculos: [[0, 2], [1, 2], [2, 2], [2, 4], [3, 4], [4, 0], [4, 1], [4, 2]] },
+            { rover: [0, 4], meta: [4, 0], obstaculos: [[0, 3], [1, 3], [2, 3], [2, 2], [2, 1], [4, 1], [1, 0], [4, 4]] },
+            { rover: [0, 0], meta: [4, 4], obstaculos: [[1, 1], [1, 2], [1, 3], [3, 1], [3, 2], [3, 3], [0, 2], [4, 2]] },
+            // Bloque 2 (Niveles 13-17): desvío moderado, hay que empezar a rodear obstáculos
+            { rover: [2, 2], meta: [4, 0], obstaculos: [[2, 1], [3, 2], [2, 3], [4, 1], [4, 2], [0, 0]] },
+            // Nivel 14: Rodeo en U
+            { rover: [0, 2], meta: [4, 2], obstaculos: [[1, 1], [1, 2], [1, 3], [3, 1], [3, 2], [3, 3], [2, 0]] },
+            { rover: [4, 2], meta: [0, 2], obstaculos: [[3, 1], [3, 2], [3, 3], [1, 1], [1, 2], [1, 3], [2, 4]] },
+            { rover: [2, 0], meta: [2, 4], obstaculos: [[1, 1], [1, 2], [3, 0], [3, 1], [3, 2], [2, 3], [0, 4], [4, 4]] },
+            { rover: [2, 4], meta: [2, 0], obstaculos: [[1, 4], [3, 4], [2, 2], [1, 2], [3, 2], [4, 2], [1, 1], [3, 1], [3, 0]] },
+            // Bloque 3 (Niveles 18-20): desvío grande / laberinto, mayor exigencia
+            { rover: [0, 0], meta: [0, 4], obstaculos: [[0, 1], [1, 1], [2, 1], [1, 3], [2, 3], [3, 3], [4, 3], [4, 1]] },
+            // Nivel 19: Camino serpenteante
+            { rover: [2, 4], meta: [2, 0], obstaculos: [[0, 3], [1, 3], [2, 3], [3, 3], [1, 1], [2, 1], [3, 1], [4, 1]] },
+            // Nivel 20: Bloque central (el más difícil, 12 obstáculos formando un muro)
+            { rover: [4, 4], meta: [0, 4], obstaculos: [[1, 1], [2, 1], [3, 1], [1, 2], [2, 2], [3, 2], [1, 3], [2, 3], [3, 3], [1, 4], [2, 4], [3, 4]] }
+        ];
+
+        let nivelIndex = 0, comandos = [], posicionRover = [0, 0], rotacionRover = 0, ejecutando = false;
+        const LIMITE_COMANDOS = 15;
+
+        function cargarNivel() {
+            ejecutando = false;
+            document.getElementById('hud-nivel').innerText = `NIVEL ${(nivelIndex + 1).toString().padStart(2, '0')} / ${niveles.length}`;
+            document.getElementById('hud-barra').style.width = ((nivelIndex + 1) / niveles.length) * 100 + '%';
+            document.getElementById('btn-ejec').disabled = false;
+            
+            comandos = []; actualizarUIComandos();
+            
+            const nivel = niveles[nivelIndex];
+            posicionRover = [...nivel.rover];
+            rotacionRover = 90; 
+            
+            const tablero = document.getElementById('tablero');
+            tablero.innerHTML = '';
+
+            for (let y = 0; y < 5; y++) {
+                for (let x = 0; x < 5; x++) {
+                    const celda = document.createElement('div');
+                    celda.className = 'celda';
+                    celda.id = `celda-${x}-${y}`;
+                    
+                    if (x === nivel.meta[0] && y === nivel.meta[1]) {
+                        celda.innerHTML = `<div class="entidad mineral">${svgBase}</div>`;
+                    }
+                    
+                    nivel.obstaculos.forEach(obs => { 
+                        if (x === obs[0] && y === obs[1]) {
+                            celda.innerHTML = `<div class="entidad">${svgBasuraEspacial}</div>`;
+                        } 
+                    });
+                    
+                    tablero.appendChild(celda);
+                }
+            }
+            
+            actualizarGraficoRover();
+
+            // Blindaje: si el rover ya arranca sobre la meta (nivel mal cargado),
+            // se gana automáticamente en vez de dejar al jugador sin forma de ganar.
+            if (posicionRover[0] === nivel.meta[0] && posicionRover[1] === nivel.meta[1]) {
+                setTimeout(() => {
+                    playSound('win');
+                    document.getElementById('modal-victoria').style.display = 'block';
+                }, 300);
+            }
+        }
+
+        function actualizarGraficoRover() {
+            const rover = document.getElementById('el-rover');
+            const tableroWrapper = document.querySelector('.tablero-wrapper');
+            const blockSize = tableroWrapper.clientWidth / 5;
+            rover.style.width = `${blockSize}px`;
+            rover.style.height = `${blockSize}px`;
+            rover.style.left = `${posicionRover[0] * blockSize}px`;
+            rover.style.top = `${posicionRover[1] * blockSize}px`;
+            rover.style.transform = `rotate(${rotacionRover}deg)`;
+        }
+
+        window.addEventListener('resize', actualizarGraficoRover);
+
+        function agregarComando(dir, icono) {
+            if (ejecutando || comandos.length >= LIMITE_COMANDOS) return;
+            playSound('beep'); comandos.push({ dir, icono }); actualizarUIComandos();
+        }
+
+        function borrarUltimo() {
+            if (ejecutando || comandos.length === 0) return;
+            playSound('beep'); comandos.pop(); actualizarUIComandos();
+        }
+
+        function actualizarUIComandos() {
+            const cont = document.getElementById('secuencia-comandos');
+            cont.innerHTML = '';
+            comandos.forEach((cmd, i) => {
+                const div = document.createElement('div');
+                div.className = 'comando-item'; div.id = `cmd-${i}`; div.innerText = cmd.icono;
+                cont.appendChild(div);
+            });
+            cont.scrollLeft = cont.scrollWidth;
+        }
+
+        async function ejecutarSecuencia() {
+            if (comandos.length === 0 || ejecutando) return;
+            ejecutando = true;
+            document.getElementById('btn-ejec').disabled = true;
+
+            const nivel = niveles[nivelIndex];
+            
+            for (let i = 0; i < comandos.length; i++) {
+                const cmd = comandos[i];
+                
+                document.querySelectorAll('.comando-item').forEach(c => c.classList.remove('ejecutando'));
+                document.getElementById(`cmd-${i}`).classList.add('ejecutando');
+
+                let [x, y] = posicionRover;
+                document.getElementById(`celda-${x}-${y}`).classList.add('rastro');
+                
+                if (cmd.dir === 'U') { y--; rotacionRover = 0; }
+                if (cmd.dir === 'D') { y++; rotacionRover = 180; }
+                if (cmd.dir === 'L') { x--; rotacionRover = -90; }
+                if (cmd.dir === 'R') { x++; rotacionRover = 90; }
+
+                if (x < 0 || x > 4 || y < 0 || y > 4) {
+                    mostrarError(posicionRover[0], posicionRover[1]); return;
+                }
+
+                const choco = nivel.obstaculos.some(obs => obs[0] === x && obs[1] === y);
+                if (choco) { mostrarError(x, y); return; }
+
+                posicionRover = [x, y];
+                actualizarGraficoRover();
+                playSound('move');
+                
+                await pausas(450);
+            }
+
+            document.querySelectorAll('.comando-item').forEach(c => c.classList.remove('ejecutando'));
+
+            if (posicionRover[0] === nivel.meta[0] && posicionRover[1] === nivel.meta[1]) {
+                playSound('win');
+                document.getElementById('modal-victoria').style.display = 'block';
+            } else {
+                mostrarError(posicionRover[0], posicionRover[1]);
+            }
+        }
+
+        function mostrarError(x, y) {
+            playSound('crash');
+            const celdaError = document.getElementById(`celda-${x}-${y}`);
+            if(celdaError) celdaError.classList.add('error-impacto');
+            setTimeout(() => { document.getElementById('modal-error').style.display = 'block'; }, 400);
+        }
+
+        function reiniciarNivelActual() { document.getElementById('modal-error').style.display = 'none'; cargarNivel(); }
+        function siguienteNivel() { 
+            document.getElementById('modal-victoria').style.display = 'none'; 
+            nivelIndex++; 
+            if(nivelIndex >= niveles.length) {
+                alert("¡FELICITACIONES! Has completado la Misión Cartoon.");
+                nivelIndex = 0; 
+            }
+            cargarNivel(); 
+        }
+        function pausas(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+        window.onload = cargarNivel;
+    </script>
+</body>
+</html>

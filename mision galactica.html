@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Misión Galáctica - Prof. Gastón</title>
+    <script src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/dist/twemoji.min.js" defer></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@600;700&display=swap');
+
+        :root {
+            --tamano-nodo: 140px;
+            --tamano-tarjeta: 130px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+
+        body {
+            background: #020108; font-family: 'Orbitron', sans-serif; height: 100vh;
+            overflow: hidden; display: flex; flex-direction: column; align-items: center; color: #ffffff;
+        }
+
+        #espacio-canvas {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;
+            background: radial-gradient(ellipse at bottom, #0d1b2a 0%, #020108 100%); pointer-events: none;
+        }
+
+        /* --- INTERFAZ (HUD) --- */
+        header { position: relative; z-index: 10; margin-top: 2vh; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        
+        .titulo-hud {
+            font-size: clamp(1.5rem, 4vw, 2.5rem); font-weight: 900; letter-spacing: 4px;
+            background: linear-gradient(180deg, #fff 0%, #00d2ff 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 25px rgba(0, 210, 255, 0.7); text-transform: uppercase;
+        }
+
+        .contenedor-hud {
+            display: flex; align-items: center; gap: 15px; background: rgba(10, 20, 40, 0.6); backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 210, 255, 0.3); padding: 10px 25px; border-radius: 50px; box-shadow: 0 0 30px rgba(0, 210, 255, 0.2);
+        }
+
+        .nivel-texto { font-family: 'Rajdhani', sans-serif; font-size: clamp(1rem, 3vw, 1.5rem); font-weight: 700; color: #00d2ff; letter-spacing: 2px; }
+        .barra-energia-bg { width: clamp(150px, 30vw, 250px); height: 14px; background: rgba(0, 0, 0, 0.5); border-radius: 10px; border: 1px solid rgba(0, 210, 255, 0.4); overflow: hidden; }
+        .barra-energia-fill { height: 100%; width: 5%; background: linear-gradient(90deg, #00d2ff, #3a7bd5); box-shadow: 0 0 15px #00d2ff; transition: width 0.5s; }
+
+        /* --- ESCENARIO DINÁMICO --- */
+        .escenario {
+            position: relative; z-index: 10; margin-top: 1vh; width: 95%; max-width: 1200px;
+            display: flex; justify-content: center; align-items: center; flex-grow: 1;
+        }
+
+        .orbita-linea {
+            position: absolute; width: 100%; height: 2px; top: 50%;
+            background: linear-gradient(90deg, transparent, #00d2ff, transparent);
+            box-shadow: 0 0 20px #00d2ff, 0 0 40px rgba(0, 210, 255, 0.5); z-index: 1;
+        }
+
+        .vaina-patron {
+            display: flex; gap: clamp(10px, 2.5vw, 25px); justify-content: center; align-items: center;
+            z-index: 2; flex-wrap: wrap; width: 100%; padding: 10px 0;
+        }
+
+        .nodo-planeta {
+            width: var(--tamano-nodo); 
+            height: var(--tamano-nodo);
+            background: rgba(10, 15, 35, 0.85); backdrop-filter: blur(10px); border-radius: 50%;
+            border: 2px solid rgba(0, 210, 255, 0.5); display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 0 25px rgba(0, 210, 255, 0.2), inset 0 0 20px rgba(0, 0, 0, 0.9);
+            position: relative; animation: levitar 3s ease-in-out infinite alternate;
+            transition: all 0.4s ease;
+        }
+
+        .nodo-planeta:nth-child(even) { animation-delay: 1.5s; border-color: rgba(162, 155, 254, 0.6); box-shadow: 0 0 25px rgba(162, 155, 254, 0.2); }
+        .nodo-planeta::after {
+            content: ''; position: absolute; top: -6px; left: -6px; right: -6px; bottom: -6px; border-radius: 50%;
+            border: 2px solid transparent; border-top-color: rgba(0, 210, 255, 0.8); border-bottom-color: rgba(162, 155, 254, 0.8);
+            animation: girarAnillo 5s linear infinite;
+        }
+
+        @keyframes girarAnillo { 100% { transform: rotate(360deg); } }
+        @keyframes levitar { 0% { transform: translateY(-6px); } 100% { transform: translateY(6px); } }
+
+        .nodo-incognita {
+            border: 2px dashed #ff9ff3; background: radial-gradient(circle, rgba(255, 159, 243, 0.1), #000);
+            box-shadow: 0 0 40px rgba(255, 159, 243, 0.4); animation: succion 1.5s infinite alternate;
+        }
+        .nodo-incognita::after { display: none; }
+        @keyframes succion {
+            0% { transform: scale(0.95); box-shadow: 0 0 20px rgba(255, 159, 243, 0.4); }
+            100% { transform: scale(1.05); box-shadow: 0 0 50px rgba(255, 159, 243, 0.8); border-color: #feca57; }
+        }
+
+        /* --- BOTONES OPCIONES --- */
+        .zona-opciones {
+            position: relative; z-index: 10; margin-bottom: 6vh; display: flex; gap: clamp(15px, 3vw, 30px);
+            justify-content: center; flex-wrap: wrap; width: 95%; max-width: 1000px;
+        }
+
+        .tarjeta-holo {
+            width: var(--tamano-tarjeta); 
+            height: var(--tamano-tarjeta);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.01));
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.2); border-top: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 20px; display: flex; justify-content: center; align-items: center; cursor: pointer;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.6); transition: all 0.3s ease;
+        }
+
+        .tarjeta-holo:hover { transform: translateY(-8px); border-color: #00d2ff; box-shadow: 0 20px 40px rgba(0, 210, 255, 0.3); }
+        .tarjeta-holo.error { border-color: #ff4757; background: rgba(255, 71, 87, 0.2); animation: sacudida 0.4s; pointer-events: none; }
+        @keyframes sacudida { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+
+        /* --- PROPORCIÓN DE EMOJIS --- */
+        .nodo-planeta img.emoji, 
+        .tarjeta-holo img.emoji { 
+            width: 75% !important; 
+            height: 75% !important; 
+            max-width: 75% !important;
+            max-height: 75% !important;
+            object-fit: contain;
+            filter: drop-shadow(0 0 12px rgba(255,255,255,0.4));
+            pointer-events: none;
+        }
+
+        /* --- MARCA DE AGUA --- */
+        .marca-agua {
+            position: absolute;
+            bottom: 20px;
+            right: 25px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            z-index: 50;
+            pointer-events: none;
+        }
+
+        /* --- VICTORIA --- */
+        #modal-victoria {
+            display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 100; background: rgba(2, 5, 15, 0.95); backdrop-filter: blur(30px);
+            border: 2px solid #feca57; box-shadow: 0 0 80px rgba(254, 202, 87, 0.6); padding: 40px 60px; border-radius: 30px; text-align: center; width: 90%; max-width: 500px;
+        }
+        #modal-victoria h2 { font-size: clamp(2rem, 5vw, 3rem); color: #feca57; text-shadow: 0 0 20px #feca57; margin-bottom: 15px; }
+        .btn-reiniciar {
+            background: linear-gradient(90deg, #feca57, #ff9ff3); border: none; padding: 15px 40px;
+            font-family: inherit; font-size: 1.2rem; font-weight: 900; color: #000; border-radius: 30px; cursor: pointer; transition: 0.3s; margin-top: 20px;
+        }
+        .btn-reiniciar:hover { transform: scale(1.05); box-shadow: 0 0 25px #feca57; }
+    </style>
+</head>
+<body>
+
+    <canvas id="espacio-canvas"></canvas>
+
+    <header>
+        <div class="titulo-hud">MISIÓN GALÁCTICA</div>
+        <div class="contenedor-hud">
+            <div class="nivel-texto" id="hud-nivel">NIVEL 01 / 20</div>
+            <div class="barra-energia-bg"><div class="barra-energia-fill" id="hud-barra"></div></div>
+        </div>
+    </header>
+
+    <main class="escenario">
+        <div class="orbita-linea"></div>
+        <div class="vaina-patron" id="vaina-patron"></div>
+    </main>
+
+    <section class="zona-opciones" id="zona-opciones"></section>
+
+    <!-- Tu marca de agua -->
+    <div class="marca-agua">Creada por el Prof. Gastón</div>
+
+    <div id="modal-victoria">
+        <h2>¡UNIVERSO CONQUISTADO!</h2>
+        <p style="color: #c8d6e5; font-size: 1.2rem; font-family: 'Rajdhani'">Completaste los 20 patrones espaciales.</p>
+        <button class="btn-reiniciar" onclick="reiniciarJuego()">NUEVO VIAJE</button>
+    </div>
+
+    <script>
+        // --- MOTOR DE FONDO ---
+        const canvas = document.getElementById('espacio-canvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        let estrellas = [], particulas = [], estrellasFugaces = [];
+
+        function resize() {
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            ctx.fillStyle = '#020108'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class EstrellaParallax {
+            constructor() { this.x = Math.random() * canvas.width; this.y = Math.random() * canvas.height; this.z = Math.random() * 3 + 1; this.size = (4 - this.z) * 0.8; this.alpha = Math.random(); this.blink = Math.random() * 0.02 + 0.005; }
+            update() { this.x -= 0.5 / this.z; if (this.x < 0) this.x = canvas.width; this.alpha += this.blink; if (this.alpha > 1 || this.alpha < 0.2) this.blink *= -1; }
+            draw() { ctx.globalAlpha = Math.abs(this.alpha); ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill(); }
+        }
+        class EstrellaFugaz {
+            constructor() { this.reset(); }
+            reset() { this.x = Math.random() * canvas.width + canvas.width; this.y = Math.random() * canvas.height / 2; this.length = Math.random() * 80 + 40; this.speed = Math.random() * 10 + 15; this.active = false; }
+            update() { if (this.active) { this.x -= this.speed; this.y += this.speed / 2; if (this.x < -this.length) this.active = false; } else if (Math.random() < 0.005) { this.reset(); this.active = true; } }
+            draw() { if (!this.active) return; ctx.globalAlpha = 0.8; let grad = ctx.createLinearGradient(this.x, this.y, this.x + this.length, this.y - this.length/2); grad.addColorStop(0, 'rgba(255, 255, 255, 1)'); grad.addColorStop(1, 'rgba(255, 255, 255, 0)'); ctx.strokeStyle = grad; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(this.x, this.y); ctx.lineTo(this.x + this.length, this.y - this.length/2); ctx.stroke(); }
+        }
+        class Particula {
+            constructor(x, y) { this.x = x; this.y = y; let angle = Math.random() * Math.PI * 2; let speed = Math.random() * 12 + 4; this.vx = Math.cos(angle) * speed; this.vy = Math.sin(angle) * speed; this.size = Math.random() * 5 + 2; this.alpha = 1; this.color = ['0, 210, 255', '254, 202, 87', '255, 159, 243', '255, 255, 255'][Math.floor(Math.random() * 4)]; }
+            update() { this.x += this.vx; this.y += this.vy; this.vx *= 0.92; this.vy *= 0.92; this.alpha -= 0.02; }
+            draw() { ctx.globalAlpha = Math.max(0, this.alpha); let gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size * 2); gradient.addColorStop(0, `rgba(${this.color}, 1)`); gradient.addColorStop(1, `rgba(${this.color}, 0)`); ctx.fillStyle = gradient; ctx.beginPath(); ctx.arc(this.x, this.y, this.size * 2, 0, Math.PI * 2); ctx.fill(); }
+        }
+
+        for (let i = 0; i < 120; i++) estrellas.push(new EstrellaParallax());
+        for (let i = 0; i < 2; i++) estrellasFugaces.push(new EstrellaFugaz());
+
+        function animar() {
+            ctx.globalAlpha = 1;
+            let bgGrad = ctx.createRadialGradient(canvas.width/2, canvas.height, 0, canvas.width/2, canvas.height, canvas.height);
+            bgGrad.addColorStop(0, '#0d1b2a'); bgGrad.addColorStop(1, '#020108');
+            ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            estrellas.forEach(e => { e.update(); e.draw(); }); estrellasFugaces.forEach(ef => { ef.update(); ef.draw(); });
+            for (let i = particulas.length - 1; i >= 0; i--) { particulas[i].update(); particulas[i].draw(); if (particulas[i].alpha <= 0) particulas.splice(i, 1); }
+            requestAnimationFrame(animar);
+        }
+        requestAnimationFrame(animar);
+
+        /* --- SECUENCIA PROGRESIVA CON 20 NIVELES (Revisada y Correcta) --- */
+        const niveles = [
+            { secuencia: ['🌍', '🌍'], correcta: '🌍', opciones: ['🌍', '🌕'] },
+            { secuencia: ['🚀', '🛸'], correcta: '🚀', opciones: ['🚀', '🛸'] },
+            { secuencia: ['⭐', '🌟', '⭐'], correcta: '🌟', opciones: ['🌟', '☄️', '⭐'] },
+            { secuencia: ['👽', '👽', '🤖'], correcta: '👽', opciones: ['👾', '👽', '🤖'] },
+            { secuencia: ['🪐', '☄️', '🪐'], correcta: '☄️', opciones: ['☄️', '🪐', '🌌'] },
+
+            { secuencia: ['🛰️', '🌌', '🌌', '🛰️'], correcta: '🌌', opciones: ['🌌', '🛰️', '🌠'] },
+            { secuencia: ['👨‍🚀', '👨‍🚀', '👾', '👨‍🚀'], correcta: '👨‍🚀', opciones: ['👾', '👨‍🚀', '👽'] },
+            { secuencia: ['🌍', '🌕', '🌞', '🌍'], correcta: '🌕', opciones: ['🌞', '🌍', '🪐', '🌕'] },
+            
+            // --- A PARTIR DEL NIVEL 9 (índice 8) LOS CÍRCULOS VUELVEN A SER GRANDES ---
+            { secuencia: ['🚀', '🛸', '🛰️', '🚀', '🛸'], correcta: '🛰️', opciones: ['🚀', '🛰️', '🛸', '☄️'] },
+            { secuencia: ['⭐', '🌟', '☄️', '⭐', '🌟'], correcta: '☄️', opciones: ['☄️', '🌠', '⭐', '🪐'] },
+            { secuencia: ['👽', '👽', '🤖', '🤖', '👽'], correcta: '👽', opciones: ['👽', '🤖', '👾', '👨‍🚀'] },
+            { secuencia: ['🪐', '☄️', '🌌', '🪐', '☄️'], correcta: '🌌', opciones: ['🌍', '🌕', '🪐', '🌌'] },
+            { secuencia: ['🛸', '🛰️', '🚀', '🛸', '🛰️'], correcta: '🚀', opciones: ['🚀', '🛸', '🛰️', '🌠'] },
+            { secuencia: ['🌟', '🌠', '⭐', '🌟', '🌠'], correcta: '⭐', opciones: ['🌠', '⭐', '🌟', '🌞'] },
+            { secuencia: ['🤖', '👾', '👽', '👨‍🚀', '🤖'], correcta: '👾', opciones: ['👽', '👾', '🤖', '🧑‍🚀'] },
+            { secuencia: ['🌍', '🪐', '🌌', '☄️', '🌍', '🪐'], correcta: '🌌', opciones: ['🌌', '🌍', '☄️', '🪐', '🌞'] },
+            { secuencia: ['🌞', '🌞', '🌕', '🌕', '🌍', '🌍'], correcta: '🌞', opciones: ['🌞', '☄️', '🌟', '🌍', '🌕'] },
+            { secuencia: ['🚀', '🚀', '🛸', '🛰️', '🚀', '🚀'], correcta: '🛸', opciones: ['🚀', '🛰️', '🛸', '🌌', '🌠'] },
+            { secuencia: ['⭐', '🌟', '🌠', '☄️', '⭐', '🌟', '🌠'], correcta: '☄️', opciones: ['🌠', '🌌', '⭐', '☄️', '🌟'] },
+            { secuencia: ['👽', '👾', '🤖', '👨‍🚀', '🧑‍🚀', '👽', '👾'], correcta: '🤖', opciones: ['👽', '👨‍🚀', '👾', '🤖', '🧑‍🚀'] }
+        ];
+
+        let nivelIndex = 0;
+        const mezclar = (arr) => arr.sort(() => Math.random() - 0.5);
+
+        function cargarNivel() {
+            document.getElementById('hud-nivel').innerText = `NIVEL ${(nivelIndex + 1).toString().padStart(2, '0')} / 20`;
+            document.getElementById('hud-barra').style.width = ((nivelIndex + 1) / niveles.length) * 100 + '%';
+
+            const nivel = niveles[nivelIndex];
+            const totalNodos = nivel.secuencia.length + 1;
+            const rootStyles = document.documentElement.style;
+            
+            // --- ESCALADO DE TAMAÑOS ---
+            if (nivelIndex >= 8) {
+                rootStyles.setProperty('--tamano-nodo', '135px');
+                rootStyles.setProperty('--tamano-tarjeta', '125px');
+            } else if (totalNodos <= 3) {
+                rootStyles.setProperty('--tamano-nodo', '140px');
+                rootStyles.setProperty('--tamano-tarjeta', '130px');
+            } else {
+                rootStyles.setProperty('--tamano-nodo', '110px');
+                rootStyles.setProperty('--tamano-tarjeta', '110px');
+            }
+
+            const vaina = document.getElementById('vaina-patron');
+            vaina.innerHTML = '';
+
+            nivel.secuencia.forEach(emoji => {
+                const nodo = document.createElement('div');
+                nodo.className = 'nodo-planeta';
+                nodo.innerText = emoji;
+                vaina.appendChild(nodo);
+            });
+
+            const incognita = document.createElement('div');
+            incognita.className = 'nodo-planeta nodo-incognita';
+            incognita.id = 'nodo-incognita';
+            vaina.appendChild(incognita);
+
+            const zonaOpciones = document.getElementById('zona-opciones');
+            zonaOpciones.innerHTML = '';
+
+            mezclar([...nivel.opciones]).forEach(emoji => {
+                const tarjeta = document.createElement('div');
+                tarjeta.className = 'tarjeta-holo';
+                tarjeta.innerText = emoji;
+                tarjeta.onclick = () => evaluar(tarjeta, emoji);
+                zonaOpciones.appendChild(tarjeta);
+            });
+
+            if (typeof twemoji !== 'undefined') {
+                twemoji.parse(vaina); twemoji.parse(zonaOpciones);
+            }
+        }
+
+        function evaluar(tarjeta, emojiSeleccionado) {
+            if (emojiSeleccionado === niveles[nivelIndex].correcta) {
+                const inc = document.getElementById('nodo-incognita');
+                inc.className = 'nodo-planeta'; 
+                inc.innerText = emojiSeleccionado; 
+                inc.style.borderColor = '#00d2ff';
+                if (typeof twemoji !== 'undefined') twemoji.parse(inc);
+
+                const rect = inc.getBoundingClientRect();
+                for (let i = 0; i < 40; i++) particulas.push(new Particula(rect.left + rect.width/2, rect.top + rect.height/2));
+
+                document.querySelectorAll('.tarjeta-holo').forEach(t => t.style.pointerEvents = 'none');
+
+                setTimeout(() => {
+                    nivelIndex++;
+                    if (nivelIndex < niveles.length) cargarNivel();
+                    else document.getElementById('modal-victoria').style.display = 'block';
+                }, 1200);
+            } else {
+                tarjeta.classList.add('error');
+                setTimeout(() => tarjeta.classList.remove('error'), 400);
+            }
+        }
+
+        function reiniciarJuego() {
+            nivelIndex = 0; document.getElementById('modal-victoria').style.display = 'none'; cargarNivel();
+        }
+
+        window.onload = cargarNivel;
+    </script>
+</body>
+</html>

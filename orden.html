@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ordenamos la secuencia - Prof. Gastón</title>
+    <script src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/dist/twemoji.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700;900&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+
+        body {
+            background: #74b9ff;
+            font-family: 'Fredoka', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 15px;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .nube {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 50px;
+            z-index: 1;
+            pointer-events: none;
+            animation: moverNubes linear infinite;
+        }
+        .nube::before, .nube::after {
+            content: '';
+            position: absolute;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+        }
+        .nube1 { width: 120px; height: 40px; top: 8%; left: -150px; animation-duration: 25s; }
+        .nube1::before { width: 50px; height: 50px; top: -20px; left: 20px; }
+        .nube1::after { width: 40px; height: 40px; top: -15px; right: 20px; }
+
+        .nube2 { width: 180px; height: 60px; top: 25%; left: -200px; animation-duration: 35s; animation-delay: 5s; }
+        .nube2::before { width: 70px; height: 70px; top: -30px; left: 30px; }
+        .nube2::after { width: 50px; height: 50px; top: -20px; right: 30px; }
+
+        @keyframes moverNubes {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(calc(100vw + 300px)); }
+        }
+
+        header {
+            text-align: center;
+            margin-top: 5px;
+            margin-bottom: 10px;
+            z-index: 10;
+        }
+
+        h1 {
+            color: #fff200;
+            font-size: 2.8rem;
+            text-shadow: 3px 3px 0px #2d3436, 5px 5px 0px rgba(0,0,0,0.15);
+            margin-bottom: 8px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .panel-progreso {
+            background: #ffffff;
+            border: 3px solid #2d3436;
+            border-radius: 20px;
+            padding: 6px 15px;
+            display: inline-flex;
+            align-items: center;
+            box-shadow: 0 6px 10px rgba(0,0,0,0.15);
+            margin-bottom: 10px;
+        }
+
+        .estrellas-contenedor {
+            display: flex;
+            gap: 2px;
+            justify-content: center;
+        }
+
+        /* --- ESTILOS PARA LOS EMOJIS --- */
+        
+        /* Regla general para que los emojis en textos se adapten al tamaño de la letra */
+        img.emoji {
+            width: 1em !important;
+            height: 1em !important;
+            vertical-align: -0.15em;
+            pointer-events: none;
+        }
+
+        /* 1. Estrellas pequeñitas */
+        .estrella img.emoji {
+            width: 22px !important;
+            height: 22px !important;
+            filter: grayscale(100%) opacity(0.3);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            margin: 0 2px;
+        }
+        .estrella.ganada img.emoji {
+            filter: grayscale(0%) opacity(1);
+            transform: scale(1.2) rotate(10deg);
+        }
+
+        /* 2. Emojis gigantes para las tarjetas */
+        .ilustracion-marco img.emoji {
+            width: 75px !important;
+            height: 75px !important;
+            filter: drop-shadow(0 5px 5px rgba(0,0,0,0.15));
+        }
+        
+        /* 3. Emojis para las partículas de celebración */
+        .particle img.emoji {
+            width: 40px !important;
+            height: 40px !important;
+        }
+
+        .instrucciones {
+            background: #ff7675;
+            color: white;
+            padding: 6px 18px;
+            border-radius: 20px;
+            font-size: 1.1rem;
+            font-weight: 900;
+            border: 3px solid #ffffff;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #contenedor-juego {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 1000px;
+            z-index: 10;
+        }
+
+        .titulo-historia {
+            font-size: 2rem;
+            color: #ffffff;
+            text-shadow: 3px 3px 0 #2d3436;
+            margin-bottom: 15px;
+            font-weight: 900;
+            background: rgba(45, 52, 54, 0.2);
+            padding: 5px 25px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .tablero-secuencia {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            margin-bottom: 25px;
+        }
+
+        @media (max-width: 850px) {
+            .tablero-secuencia {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 20px;
+            }
+            .flecha-conector { display: none !important; }
+        }
+
+        .slot-tarjeta {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .badge-orden {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #ff4757;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid #ffffff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            margin-bottom: -15px;
+            z-index: 20;
+        }
+
+        .slot-tarjeta:nth-child(1) .badge-orden { background: #ff4757; }
+        .slot-tarjeta:nth-child(3) .badge-orden { background: #ffa502; }
+        .slot-tarjeta:nth-child(5) .badge-orden { background: #2ed573; }
+        .slot-tarjeta:nth-child(7) .badge-orden { background: #1e90ff; }
+
+        .tarjeta {
+            background: #ffffff;
+            width: 100%;
+            min-height: 200px;
+            border-radius: 20px;
+            border: 4px solid #2d3436;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 25px 12px 15px 12px;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+            position: relative;
+        }
+
+        .tarjeta:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 20px rgba(0,0,0,0.25);
+        }
+
+        .tarjeta.seleccionada {
+            border-color: #ff4757;
+            transform: scale(1.06) translateY(-10px);
+            box-shadow: 0 0 20px rgba(255, 71, 87, 0.6), 0 12px 20px rgba(0,0,0,0.2);
+            animation: latidoSeleccion 0.8s infinite alternate;
+        }
+
+        .tarjeta.seleccionada::before {
+            content: '👆';
+            position: absolute;
+            top: -45px;
+            font-size: 2.2rem;
+            animation: rebotarMano 0.6s infinite alternate;
+        }
+
+        @keyframes latidoSeleccion {
+            0% { border-color: #ff4757; }
+            100% { border-color: #ff6b81; }
+        }
+        @keyframes rebotarMano {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-8px); }
+        }
+
+        .ilustracion-marco {
+            background: #f1f2f6;
+            width: 100%;
+            height: 100px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px dashed #ced6e0;
+        }
+
+        .texto-escena {
+            font-size: 1.05rem;
+            color: #2d3436;
+            font-weight: 900;
+            text-align: center;
+            line-height: 1.2;
+            margin-top: 10px;
+        }
+
+        .flecha-conector {
+            font-size: 1.8rem;
+            color: #ffffff;
+            text-shadow: 2px 2px 0px #2d3436;
+            font-weight: 900;
+        }
+
+        .btn-comprobar {
+            padding: 12px 35px;
+            font-size: 1.8rem;
+            font-weight: 900;
+            background: #2ed573;
+            color: white;
+            border: 4px solid #ffffff;
+            border-bottom: 7px solid #26af5f;
+            border-radius: 35px;
+            cursor: pointer;
+            font-family: 'Fredoka', sans-serif;
+            transition: all 0.1s;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-comprobar:active {
+            transform: translateY(6px);
+            border-bottom-width: 3px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        #pantalla-final {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(255,255,255,0.98);
+            padding: 40px 50px;
+            border-radius: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            border: 8px solid #2d3436;
+            z-index: 50;
+            margin-top: 20px;
+        }
+
+        #pantalla-final h2 { 
+            font-size: 3.5rem; 
+            color: #ff4757; 
+            margin-bottom: 15px; 
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        #pantalla-final p { font-size: 1.5rem; color: #555; margin-bottom: 30px; font-weight: 700; }
+
+        .anim-shake { animation: shake 0.4s ease-in-out; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-10px); }
+            40%, 80% { transform: translateX(10px); }
+        }
+
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            animation: flyUp 1.2s forwards;
+            z-index: 1000;
+        }
+        @keyframes flyUp {
+            0% { transform: translate(0, 0) scale(0.5); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)) scale(1.4); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="nube nube1"></div>
+    <div class="nube nube2"></div>
+
+    <header id="header-juego">
+        <h1>ORDENA LA HISTORIETA 📖</h1>
+        
+        <div class="panel-progreso">
+            <div class="estrellas-contenedor" id="estrellas">
+                <!-- Se llenan solas con JavaScript -->
+            </div>
+        </div>
+        <br>
+        <div class="instrucciones"><span>👇</span> Toca dos tarjetas para cambiar su lugar</div>
+    </header>
+
+    <div id="contenedor-juego">
+        <div class="titulo-historia" id="titulo-historia">Cargando...</div>
+        <div class="tablero-secuencia" id="tablero"></div>
+        <button class="btn-comprobar" onclick="comprobarOrden()">¡COMPROBAR! ✔️</button>
+    </div>
+
+    <div id="pantalla-final">
+        <h2>¡SUPER FANTASTICO! 🏆</h2>
+        <p>¡Completaste las 10 historias como un campeón!</p>
+        <button class="btn-comprobar" onclick="reiniciarJuegoTodo()">¡JUGAR OTRA VEZ! 🔄</button>
+    </div>
+
+    <script>
+        const historias = [
+            { titulo: "<span>🌱</span> Plantando una Flor", pasos: [ { emoji: "🪴", texto: "Ponemos la semilla en tierra" }, { emoji: "🌧️", texto: "La regamos con agua" }, { emoji: "🌿", texto: "Sale un pequeño brote" }, { emoji: "🌻", texto: "¡Florece una linda flor!" } ] },
+            { titulo: "<span>🧼</span> Lavándonos las Manos", pasos: [ { emoji: "🧼", texto: "Nos ponemos jabón" }, { emoji: "🫧", texto: "Frotamos haciendo espuma" }, { emoji: "💧", texto: "Nos enjuagamos con agua" }, { emoji: "✨", texto: "¡Manos bien limpias!" } ] },
+            { titulo: "<span>🐣</span> El Pajarito Nace", pasos: [ { emoji: "🥚", texto: "El huevo en el nido" }, { emoji: "🐣", texto: "El cascarón se rompe" }, { emoji: "🐥", texto: "Nace el pajarito" }, { emoji: "🕊️", texto: "¡Aprende a volar!" } ] },
+            { titulo: "<span>🥪</span> Un Sándwich Rico", pasos: [ { emoji: "🍞", texto: "Rodajas de pan" }, { emoji: "🧀", texto: "Agregamos queso y jamón" }, { emoji: "🥪", texto: "Cerramos el sándwich" }, { emoji: "😋", texto: "¡Hora de comer!" } ] },
+            { titulo: "<span>🍎</span> La Manzana", pasos: [ { emoji: "🍎", texto: "Buscamos una manzana" }, { emoji: "🚰", texto: "La lavamos con agua" }, { emoji: "🔪", texto: "La cortamos en gajos" }, { emoji: "😋", texto: "¡Comemos todo!" } ] },
+            { titulo: "<span>🪥</span> Lavarse los Dientes", pasos: [ { emoji: "🪥", texto: "Pasta en el cepillo" }, { emoji: "😬", texto: "Cepillo todos los dientes" }, { emoji: "🚰", texto: "Me enjuago con agua" }, { emoji: "😁", texto: "¡Sonrisa brillante!" } ] },
+            { titulo: "<span>🎒</span> Ir a la Escuela", pasos: [ { emoji: "🛏️", texto: "Me levanto de la cama" }, { emoji: "👕", texto: "Me pongo el uniforme" }, { emoji: "🎒", texto: "Agarro mi mochila" }, { emoji: "🏫", texto: "¡Llego a la escuela!" } ] },
+            { titulo: "<span>🌧️</span> Día de Lluvia", pasos: [ { emoji: "☁️", texto: "El cielo se pone gris" }, { emoji: "🌧️", texto: "Empieza a llover" }, { emoji: "☂️", texto: "Abro mi paraguas" }, { emoji: "🌈", texto: "¡Sale un arcoíris!" } ] },
+            { titulo: "<span>🍕</span> Haciendo Pizza", pasos: [ { emoji: "🥣", texto: "Preparamos la masa" }, { emoji: "🍅", texto: "Le ponemos salsa" }, { emoji: "🧀", texto: "Agregamos el queso" }, { emoji: "🍕", texto: "¡La sacamos del horno!" } ] },
+            { titulo: "<span>🦋</span> La Mariposa", pasos: [ { emoji: "🍃", texto: "Huevito en la hoja" }, { emoji: "🐛", texto: "Sale la oruga" }, { emoji: "🥥", texto: "Se hace capullo" }, { emoji: "🦋", texto: "¡Nace la mariposa!" } ] }
+        ];
+
+        let historiaActualIndex = 0;
+        let ordenActual = [];
+        let tarjetaSeleccionadaIndex = null;
+
+        function inicializarEstrellas() {
+            const cont = document.getElementById('estrellas');
+            cont.innerHTML = '';
+            historias.forEach(() => {
+                const span = document.createElement('span');
+                span.className = 'estrella';
+                span.innerText = '⭐';
+                cont.appendChild(span);
+            });
+            // Convertimos las estrellas a imagen colorida
+            twemoji.parse(cont);
+        }
+
+        function mezclarArray(array) {
+            let copia = [...array];
+            do {
+                copia.sort(() => Math.random() - 0.5);
+            } while (esIgualAlOriginal(copia));
+            return copia;
+        }
+
+        function esIgualAlOriginal(arr) {
+            return arr.every((item, idx) => item.idOriginal === idx);
+        }
+
+        function actualizarEstrellas() {
+            const listaEstrellas = document.querySelectorAll('.estrella');
+            listaEstrellas.forEach((estrella, idx) => {
+                if (idx < historiaActualIndex) {
+                    estrella.classList.add('ganada');
+                } else {
+                    estrella.classList.remove('ganada');
+                }
+            });
+        }
+
+        function cargarHistoria() {
+            tarjetaSeleccionadaIndex = null;
+            actualizarEstrellas();
+            
+            const historia = historias[historiaActualIndex];
+            document.getElementById('titulo-historia').innerHTML = historia.titulo;
+            // Parsea el emoji nuevo del título
+            twemoji.parse(document.getElementById('titulo-historia'));
+
+            const elementos = historia.pasos.map((paso, index) => ({
+                ...paso,
+                idOriginal: index
+            }));
+
+            ordenActual = mezclarArray(elementos);
+            renderizarTablero();
+        }
+
+        function renderizarTablero() {
+            const tablero = document.getElementById('tablero');
+            tablero.innerHTML = '';
+
+            ordenActual.forEach((item, index) => {
+                const slot = document.createElement('div');
+                slot.className = 'slot-tarjeta';
+
+                const badge = document.createElement('div');
+                badge.className = 'badge-orden';
+                badge.innerText = `${index + 1}°`;
+                slot.appendChild(badge);
+
+                const tarjeta = document.createElement('div');
+                tarjeta.className = `tarjeta ${tarjetaSeleccionadaIndex === index ? 'seleccionada' : ''}`;
+                tarjeta.onclick = () => seleccionarTarjeta(index);
+
+                const marco = document.createElement('div');
+                marco.className = 'ilustracion-marco';
+                
+                const emojiBox = document.createElement('div');
+                emojiBox.innerText = item.emoji;
+                marco.appendChild(emojiBox);
+
+                const textoBox = document.createElement('div');
+                textoBox.className = 'texto-escena';
+                textoBox.innerText = item.texto;
+
+                tarjeta.appendChild(marco);
+                tarjeta.appendChild(textoBox);
+                slot.appendChild(tarjeta);
+                tablero.appendChild(slot);
+
+                if (index < ordenActual.length - 1) {
+                    const flecha = document.createElement('div');
+                    flecha.className = 'flecha-conector';
+                    flecha.innerText = '➔';
+                    tablero.appendChild(flecha);
+                }
+            });
+
+            // Parsea las imágenes de las tarjetas nuevas
+            twemoji.parse(tablero);
+        }
+
+        function seleccionarTarjeta(index) {
+            if (tarjetaSeleccionadaIndex === null) {
+                tarjetaSeleccionadaIndex = index;
+            } else if (tarjetaSeleccionadaIndex === index) {
+                tarjetaSeleccionadaIndex = null;
+            } else {
+                const temp = ordenActual[tarjetaSeleccionadaIndex];
+                ordenActual[tarjetaSeleccionadaIndex] = ordenActual[index];
+                ordenActual[index] = temp;
+                tarjetaSeleccionadaIndex = null;
+            }
+            renderizarTablero();
+            // Para que la "manito" de selección también se vuelva imagen
+            twemoji.parse(document.getElementById('tablero'));
+        }
+
+        function comprobarOrden() {
+            const esCorrecto = ordenActual.every((item, idx) => item.idOriginal === idx);
+
+            if (esCorrecto) {
+                crearEfectoExito();
+                historiaActualIndex++;
+                actualizarEstrellas();
+
+                setTimeout(() => {
+                    if (historiaActualIndex < historias.length) {
+                        cargarHistoria();
+                    } else {
+                        mostrarPantallaFinal();
+                    }
+                }, 1200);
+            } else {
+                const tablero = document.getElementById('tablero');
+                tablero.classList.add('anim-shake');
+                setTimeout(() => tablero.classList.remove('anim-shake'), 400);
+            }
+        }
+
+        function crearEfectoExito() {
+            const emojis = ['🌟', '👏', '🎈', '🎉', '✨', '🏆'];
+            for (let i = 0; i < 20; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.innerText = emojis[Math.floor(Math.random() * emojis.length)];
+                p.style.left = (Math.random() * window.innerWidth) + 'px';
+                p.style.top = (window.innerHeight / 2) + 'px';
+                p.style.setProperty('--tx', `${(Math.random() - 0.5) * 300}px`);
+                p.style.setProperty('--ty', `${-Math.random() * 350 - 50}px`);
+                document.body.appendChild(p);
+                twemoji.parse(p);
+                setTimeout(() => p.remove(), 1200);
+            }
+        }
+
+        function mostrarPantallaFinal() {
+            document.getElementById('contenedor-juego').style.display = 'none';
+            document.getElementById('header-juego').style.display = 'none';
+            
+            const pantallaFinal = document.getElementById('pantalla-final');
+            pantallaFinal.style.display = 'flex';
+            twemoji.parse(pantallaFinal);
+        }
+
+        function reiniciarJuegoTodo() {
+            historiaActualIndex = 0;
+            document.getElementById('contenedor-juego').style.display = 'flex';
+            document.getElementById('header-juego').style.display = 'block';
+            document.getElementById('pantalla-final').style.display = 'none';
+            cargarHistoria();
+        }
+
+        window.onload = () => {
+            inicializarEstrellas();
+            cargarHistoria();
+            
+            // ESTO ES LO NUEVO: Revisa toda la página al cargar para cambiar los emojis estáticos (como el 📖 del título)
+            twemoji.parse(document.body);
+        };
+    </script>
+</body>
+</html>
