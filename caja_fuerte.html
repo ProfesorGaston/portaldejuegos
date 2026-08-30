@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminal Hacker</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700;900&family=Share+Tech+Mono&display=swap');
+
+        :root {
+            --neon-cyan: #00f3ff;
+            --neon-pink: #ff00ea;
+            --neon-green: #00ff41;
+            --alert-red: #ff3344;
+            --bg-dark: #020204;
+            --bg-panel: rgba(5, 8, 15, 0.92);
+            
+            --tier-blue: #4b69ff;
+            --tier-purple: #a247ff;
+            --tier-pink: #ff2ce6;
+            --tier-red: #ff4b4b;
+            --tier-gold: #ffd700;
+        }
+
+        * { box-sizing: border-box; user-select: none; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: 
+                linear-gradient(rgba(0, 243, 255, 0.07) 1px, transparent 1px), 
+                linear-gradient(90deg, rgba(0, 243, 255, 0.07) 1px, transparent 1px);
+            background-size: 50px 50px;
+            color: #fff; font-family: 'Rajdhani', sans-serif;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100vh; overflow: hidden;
+            animation: redHacker 20s linear infinite;
+        }
+
+        @keyframes redHacker {
+            0% { background-position: 0 0; }
+            100% { background-position: 50px 50px; }
+        }
+
+        body::after {
+            content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: 
+                linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+                radial-gradient(circle at center, transparent 50%, rgba(0,0,0,0.8) 100%);
+            background-size: 100% 4px, 100% 100%;
+            z-index: 999; pointer-events: none;
+            animation: parpadeoCRT 0.15s infinite;
+        }
+
+        @keyframes parpadeoCRT { 0%, 100% { opacity: 0.95; } 50% { opacity: 1; } }
+
+        /* --- MÓDULO TERMINAL --- */
+        .modulo-encriptacion {
+            background: var(--bg-panel); backdrop-filter: blur(10px); 
+            border: 1px solid rgba(0, 243, 255, 0.3); border-radius: 8px; 
+            padding: 0 40px 40px 40px; width: 90%; max-width: 800px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 0 20px rgba(0, 243, 255, 0.05);
+            position: relative; z-index: 10; display: flex; flex-direction: column; gap: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .terminal-header {
+            background: #04060a; padding: 12px 20px; display: flex; align-items: center; gap: 10px; 
+            border-bottom: 1px solid rgba(0, 243, 255, 0.3);
+            margin: 0 -40px 10px -40px; border-top-left-radius: 8px; border-top-right-radius: 8px;
+        }
+        
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+        .dot.close { background: #ff5f56; } .dot.min { background: #ffbd2e; } .dot.max { background: #27c93f; }
+        
+        .terminal-ruta { margin-left: 15px; color: rgba(0, 243, 255, 0.6); font-family: 'Share Tech Mono', monospace; font-size: 0.9rem; }
+
+        .modulo-encriptacion.error { border-color: var(--alert-red); box-shadow: 0 0 40px rgba(255, 51, 68, 0.3); animation: shake 0.3s; }
+        .modulo-encriptacion.exito { border-color: var(--neon-green); box-shadow: 0 0 50px rgba(0, 255, 65, 0.3); }
+        .modulo-encriptacion.oculto { opacity: 0; transform: scale(0.95); pointer-events: none; position: absolute; }
+
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+
+        .header { display: flex; flex-direction: column; gap: 15px; align-items: center; }
+        .titulo { font-size: 1.8rem; font-weight: 900; color: #fff; letter-spacing: 4px; text-transform: uppercase; text-shadow: 2px 0 var(--alert-red), -2px 0 var(--neon-cyan); }
+        
+        .progreso-cortafuegos { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; width: 100%; padding: 8px; background: rgba(0, 243, 255, 0.03); border-radius: 4px; border: 1px dashed rgba(0, 243, 255, 0.2); }
+        .nodo { width: 38px; height: 12px; background: #000; border: 1px solid var(--neon-cyan); transform: skew(-20deg); transition: 0.3s; position: relative; overflow: hidden; }
+        .nodo.activo { background: rgba(0, 243, 255, 0.3); box-shadow: 0 0 15px var(--neon-cyan); }
+        .nodo.desbloqueado { background: var(--neon-green); border-color: var(--neon-green); box-shadow: 0 0 15px var(--neon-green); }
+
+        .display-holografico {
+            background: #010205; border-radius: 4px; padding: 25px; text-align: left; 
+            border-left: 4px solid var(--neon-cyan); position: relative; 
+            display: flex; flex-direction: column; gap: 15px; font-family: 'Share Tech Mono', monospace;
+        }
+        
+        .texto-pista { font-size: 1.3rem; color: #fff; line-height: 1.4; min-height: 70px; }
+        .input-contenedor { display: flex; align-items: center; gap: 15px; margin-top: 10px; }
+        .prompt-symbol { font-size: 3rem; color: var(--neon-green); font-weight: bold; }
+        .input-teclado { font-size: 3.8rem; color: var(--neon-cyan); font-weight: bold; text-shadow: 0 0 20px var(--neon-cyan); letter-spacing: 15px; height: 70px; }
+        .cursor-parpadeante { width: 25px; height: 50px; background: var(--neon-cyan); animation: blink 1s step-end infinite; opacity: 0.7; }
+        
+        @keyframes blink { 0%, 100% { opacity: 0; } 50% { opacity: 0.7; } }
+
+        .mensaje-sistema { font-size: 1rem; color: #888; text-transform: uppercase; letter-spacing: 3px; min-height: 25px; text-align: center; font-family: 'Share Tech Mono', monospace; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px; }
+
+        /* --- SELECCIÓN DE CATEGORÍA --- */
+        .pantalla-categoria {
+            background: var(--bg-panel); backdrop-filter: blur(10px); 
+            border: 1px solid var(--neon-cyan); border-radius: 8px; 
+            padding: 40px; width: 90%; max-width: 750px; text-align: center;
+            box-shadow: 0 0 40px rgba(0, 243, 255, 0.2); z-index: 20;
+            display: flex; flex-direction: column; gap: 25px; transition: all 0.5s;
+        }
+        .pantalla-categoria.oculto { opacity: 0; transform: scale(0.9); pointer-events: none; position: absolute; }
+        .cat-opciones { display: flex; gap: 20px; justify-content: center; margin-top: 15px; }
+        .cat-card {
+            flex: 1; background: rgba(0, 243, 255, 0.05); border: 2px solid rgba(0, 243, 255, 0.3);
+            border-radius: 8px; padding: 25px; cursor: pointer; transition: all 0.3s;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+        }
+        .cat-card:hover { border-color: var(--neon-cyan); background: rgba(0, 243, 255, 0.15); box-shadow: 0 0 25px rgba(0, 243, 255, 0.3); transform: translateY(-5px); }
+        .cat-tecla { font-family: 'Share Tech Mono', monospace; font-size: 2.5rem; font-weight: bold; color: var(--neon-green); text-shadow: 0 0 10px var(--neon-green); border: 1px solid var(--neon-green); width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; border-radius: 6px; background: rgba(0,255,65,0.1); }
+        .cat-titulo { font-size: 1.5rem; font-weight: bold; color: #fff; }
+        .cat-desc { font-size: 0.95rem; color: #aaa; font-family: 'Share Tech Mono', monospace; }
+
+        /* --- BÓVEDA Y RULETA --- */
+        .animacion-boveda { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 150; display: flex; justify-content: center; align-items: center; pointer-events: none; opacity: 0; transition: opacity 0.5s; background: rgba(0,0,0,0.9); }
+        .animacion-boveda.activa { opacity: 1; pointer-events: all; }
+        .puerta-boveda { position: absolute; width: 50vw; height: 100vh; background: rgba(0, 243, 255, 0.05); border: 2px solid var(--neon-cyan); transition: transform 2.5s cubic-bezier(0.8, 0, 0.2, 1); backdrop-filter: blur(5px); }
+        .puerta-izq { left: 0; border-right: 5px solid var(--neon-cyan); }
+        .puerta-der { right: 0; border-left: 5px solid var(--neon-cyan); }
+        .volante { position: absolute; width: 180px; height: 180px; border: 4px dashed var(--neon-cyan); border-radius: 50%; z-index: 151; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.8); box-shadow: 0 0 50px var(--neon-cyan); animation: rotarLento 10s linear infinite; }
+        @keyframes rotarLento { 100% { transform: rotate(360deg); } }
+        .volante-centro { width: 70px; height: 70px; border: 4px solid var(--alert-red); border-radius: 50%; z-index: 152; box-shadow: 0 0 20px var(--alert-red); }
+        .animacion-boveda.abriendo .volante { animation: rotarRapido 1s linear infinite; border-color: var(--neon-green); box-shadow: 0 0 80px var(--neon-green); }
+        @keyframes rotarRapido { 100% { transform: rotate(-720deg) scale(1.2); } }
+        .animacion-boveda.abierta .puerta-izq { transform: translateX(-100%); }
+        .animacion-boveda.abierta .puerta-der { transform: translateX(100%); }
+        .animacion-boveda.abierta .volante { opacity: 0; transform: scale(3); transition: all 1s; }
+
+        .csgo-modal { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(2, 2, 4, 0.95); z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 1.5s ease; backdrop-filter: blur(15px); }
+        .csgo-modal.activo { opacity: 1; pointer-events: auto; }
+        .titulo-caja { font-size: 2.2rem; color: #fff; margin-bottom: 30px; font-weight: 900; letter-spacing: 4px; text-transform: uppercase; text-align: center; }
+        .ruleta-contenedor { width: 95%; max-width: 1000px; height: 220px; background: rgba(0,0,0,0.8); border: 2px solid rgba(0,243,255,0.4); position: relative; overflow: hidden; border-radius: 4px; }
+        .linea-selectora { position: absolute; top: 0; left: 50%; width: 4px; height: 100%; background: var(--neon-green); box-shadow: 0 0 20px var(--neon-green); transform: translateX(-50%); z-index: 20; pointer-events: none; }
+        .ruleta-pista { display: flex; height: 100%; transition: transform 7.5s cubic-bezier(0.1, 0.9, 0.1, 1); }
+        .item-ruleta { width: 220px; flex-shrink: 0; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; border-right: 1px solid rgba(255,255,255,0.05); border-bottom: 6px solid; background: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 100%); }
+        .item-ruleta .premio-img { width: 70px; height: 70px; margin-bottom: 12px; }
+        .item-ruleta .nombre { font-family: 'Share Tech Mono', monospace; font-size: 1rem; font-weight: bold; color: #fff; }
+        .premio-final { margin-top: 35px; font-size: 2rem; font-weight: 900; font-family: 'Share Tech Mono', monospace; opacity: 0; transform: translateY(20px); transition: all 1s; text-align: center; }
+        .premio-final.visible { opacity: 1; transform: translateY(0); }
+        .mensaje-reinicio { margin-top: 15px; font-size: 1.1rem; color: #666; font-family: 'Share Tech Mono', monospace; opacity: 0; transition: opacity 0.5s; }
+
+        .tier-blue { border-bottom-color: var(--tier-blue); } .tier-blue .nombre { color: var(--tier-blue); }
+        .tier-purple { border-bottom-color: var(--tier-purple); } .tier-purple .nombre { color: var(--tier-purple); }
+        .tier-pink { border-bottom-color: var(--tier-pink); } .tier-pink .nombre { color: var(--tier-pink); }
+        .tier-red { border-bottom-color: var(--tier-red); } .tier-red .nombre { color: var(--tier-red); }
+        .tier-gold { border-bottom-color: var(--tier-gold); background: linear-gradient(180deg, rgba(255, 215, 0, 0.1) 0%, transparent 100%); } .tier-gold .nombre { color: var(--tier-gold); }
+
+        /* --- PANTALLA INICIO --- */
+        .estado-inicial { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 300; transition: opacity 0.5s; background: var(--bg-dark); }
+        .titulo-principal { color: #fff; margin-bottom: 30px; font-size: 3.5rem; letter-spacing: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; font-family: 'Share Tech Mono', monospace; }
+        .titulo-principal span { color: var(--neon-cyan); font-size: 1.8rem; letter-spacing: 12px; }
+        #btn-conectar { background: rgba(0, 243, 255, 0.05); color: var(--neon-cyan); border: 1px solid var(--neon-cyan); padding: 20px 40px; font-size: 1.2rem; font-family: 'Share Tech Mono', monospace; text-transform: uppercase; cursor: pointer; letter-spacing: 4px; transition: all 0.2s; }
+        #btn-conectar:hover { background: rgba(0, 243, 255, 0.2); box-shadow: 0 0 30px rgba(0, 243, 255, 0.4); }
+        
+        .oculto { opacity: 0; pointer-events: none; position: absolute; }
+    </style>
+</head>
+<body>
+
+    <div class="animacion-boveda" id="animacion-boveda">
+        <div class="puerta-boveda puerta-izq"></div>
+        <div class="volante"><div class="volante-centro"></div></div>
+        <div class="puerta-boveda puerta-der"></div>
+    </div>
+
+    <div class="estado-inicial" id="pantalla-inicio">
+        <h1 class="titulo-principal">
+            <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f575.png" style="width: 65px; height: 65px; filter: drop-shadow(0 0 20px rgba(0, 243, 255, 0.8));" alt="espía">
+            NETWORK INFILTRATION
+            <span>PROTOCOL</span>
+        </h1>
+        <button id="btn-conectar">> INICIAR CONEXIÓN HACKER</button>
+    </div>
+
+    <div class="pantalla-categoria oculto" id="pantalla-categoria">
+        <h2 style="font-size: 2rem; color: var(--neon-cyan); letter-spacing: 3px; font-family: 'Share Tech Mono', monospace;">SELECCIONÁ CATEGORÍA DE DESAFÍO</h2>
+        <p style="color: #aaa; font-family: 'Share Tech Mono', monospace;">Presioná la tecla correspondiente en el teclado numérico o haz clic:</p>
+        <div class="cat-opciones">
+            <div class="cat-card" onclick="seleccionarCategoria('6-8')">
+                <div class="cat-tecla">A</div>
+                <div class="cat-titulo">6 a 8 Años</div>
+                <div class="cat-desc">Operaciones básicas, dobles y series</div>
+            </div>
+            <div class="cat-card" onclick="seleccionarCategoria('9-12')">
+                <div class="cat-tecla">D</div>
+                <div class="cat-titulo">9 a 12 Años</div>
+                <div class="cat-desc">Multiplicaciones, proporciones y lógica</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modulo-encriptacion oculto" id="modulo">
+        <div class="terminal-header">
+            <span class="dot close"></span><span class="dot min"></span><span class="dot max"></span>
+            <span class="terminal-ruta">root@mainframe:~/decrypt_tool</span>
+        </div>
+        <div class="header">
+            <div class="titulo">DESCIFRANDO CORTAFUEGOS</div>
+            <div class="progreso-cortafuegos" id="contenedor-nodos"></div>
+        </div>
+        <div class="display-holografico">
+            <div class="texto-pista" id="texto-pista">INICIANDO PROTOCOLO...</div>
+            <div class="input-contenedor">
+                <span class="prompt-symbol">></span>
+                <div class="input-teclado" id="texto-input">__</div>
+                <div class="cursor-parpadeante"></div>
+            </div>
+        </div>
+        <div class="mensaje-sistema" id="texto-mensaje">ESPERANDO ENTRADA DE DATOS...</div>
+    </div>
+
+    <div class="csgo-modal" id="modal-recompensa">
+        <div class="titulo-caja">/// EXTRACCIÓN EXITOSA ///</div>
+        <div class="ruleta-contenedor" id="ruleta-contenedor">
+            <div class="linea-selectora"></div>
+            <div class="ruleta-pista" id="ruleta-pista"></div>
+        </div>
+        <div class="premio-final" id="premio-final">Cargando botín...</div>
+        <div class="mensaje-reinicio" id="mensaje-reinicio">Cerrando conexión para borrar huellas...</div>
+    </div>
+
+    <script>
+        const bancoPreguntas = {
+            "6-8": [
+                { pista: "¿Cuánto es 10 + 15?", respuesta: "25" },
+                { pista: "¿Cuánto es 30 - 12?", respuesta: "18" },
+                { pista: "El doble del número 12 es...", respuesta: "24" },
+                { pista: "La mitad de 40 es...", respuesta: "20" },
+                { pista: "¿Cuántos días tienen una semana y 7 días más?", respuesta: "14" },
+                { pista: "¿Cuánto es 5 multiplicado por 5?", respuesta: "25" },
+                { pista: "¿Cuánto es 4 multiplicado por 8?", respuesta: "32" },
+                { pista: "Si tienes 50 caramelos y regalas 20, ¿cuántos te quedan?", respuesta: "30" },
+                { pista: "¿Cuánto es 100 menos 60?", respuesta: "40" },
+                { pista: "¿Cuántos meses hay en medio año?", respuesta: "06" },
+                { pista: "¿Cuánto es 7 multiplicado por 3?", respuesta: "21" },
+                { pista: "¿Cuánto es 9 + 8 + 10?", respuesta: "27" },
+                { pista: "¿Cuántas patas suman 4 perros y 1 gallina?", respuesta: "18" },
+                { pista: "¿Cuánto es el triple de 10?", respuesta: "30" },
+                { pista: "¿Cuánto es 45 + 15?", respuesta: "60" }
+            ],
+            "9-12": [
+                { pista: "¿Cuánto es 12 multiplicado por 4?", respuesta: "48" },
+                { pista: "¿Cuál es el resto de dividir 25 por 4?", respuesta: "01" },
+                { pista: "¿Cuánto es 150 dividido entre 3?", respuesta: "50" },
+                { pista: "¿Cuántos años hay en medio siglo?", respuesta: "50" },
+                { pista: "¿Cuánto es 8 multiplicado por 9?", respuesta: "72" },
+                { pista: "El perímetro de un cuadrado de lado 12 cm es...", respuesta: "48" },
+                { pista: "¿Cuánto es la mitad (50%) de 84?", respuesta: "42" },
+                { pista: "¿Cuánto es 100 menos 37?", respuesta: "63" },
+                { pista: "¿Cuánto es 11 multiplicado por 6?", respuesta: "66" },
+                { pista: "¿Cuántos minutos hay en tres cuartos de hora (3/4 h)?", respuesta: "45" },
+                { pista: "¿Cuánto es 14 multiplicado por 5?", respuesta: "70" },
+                { pista: "¿Cuál es el número primo que le sigue al 11?", respuesta: "13" },
+                { pista: "¿Cuánto es 25 multiplicado por 3?", respuesta: "75" },
+                { pista: "¿Cuánto es 36 dividido entre 4, más 10?", respuesta: "19" },
+                { pista: "Área de un rectángulo de 9 cm de base por 6 cm de altura:", respuesta: "54" }
+            ]
+        };
+
+        let bancoDePistas = []; 
+        let estadoJuego = "INICIO"; 
+
+        function mezclarArreglo(arreglo) {
+            let currentIndex = arreglo.length, randomIndex;
+            while (currentIndex !== 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [arreglo[currentIndex], arreglo[randomIndex]] = [arreglo[randomIndex], arreglo[currentIndex]];
+            }
+            return arreglo;
+        }
+
+        const twemoji = "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/";
+        const poolRecompensas = [
+            { nombre: "Caja de Seguridad Vacía", clase: "tier-red", prob: 30, img: `${twemoji}1f4e6.png` },
+            { nombre: "Un Caramelo Grande", clase: "tier-blue", prob: 25, img: `${twemoji}1f36c.png` },
+            { nombre: "Un Sello en la Mano", clase: "tier-purple", prob: 20, img: `${twemoji}270b.png` },
+            { nombre: "Paquete de Gomitas", clase: "tier-pink", prob: 15, img: `${twemoji}1f9f8.png` },
+            { nombre: "★ UN CHOCOLATE ★", clase: "tier-gold", prob: 10, img: `${twemoji}1f36b.png` }
+        ];
+
+        let nivelActual = 1;
+        const totalNiveles = 7; 
+        let respuestaCorrecta = "";
+        let entradaJugador = "";
+        let sistemaBloqueado = false;
+
+        const uiModulo = document.getElementById('modulo');
+        const uiPista = document.getElementById('texto-pista');
+        const uiInput = document.getElementById('texto-input');
+        const uiMensaje = document.getElementById('texto-mensaje');
+        const uiInicio = document.getElementById('pantalla-inicio');
+        const uiCategoria = document.getElementById('pantalla-categoria');
+        const modalRecompensa = document.getElementById('modal-recompensa');
+        const bovedaAnim = document.getElementById('animacion-boveda');
+        const contenedorNodos = document.getElementById('contenedor-nodos');
+
+        function seleccionarCategoria(catKey) {
+            let seleccion = bancoPreguntas[catKey];
+            bancoDePistas = mezclarArreglo([...seleccion]).slice(0, totalNiveles);
+            
+            uiCategoria.classList.add('oculto');
+            uiModulo.classList.remove('oculto');
+            
+            estadoJuego = "JUGANDO";
+            generarNodos();
+            generarDesafio();
+        }
+
+        function generarNodos() {
+            contenedorNodos.innerHTML = '';
+            for(let i = 1; i <= totalNiveles; i++) {
+                const div = document.createElement('div');
+                div.className = 'nodo';
+                div.id = `nodo-${i}`;
+                contenedorNodos.appendChild(div);
+            }
+        }
+
+        function generarDesafio() {
+            const desafio = bancoDePistas[nivelActual - 1];
+            respuestaCorrecta = desafio.respuesta;
+            const nivelF = nivelActual < 10 ? `0${nivelActual}` : nivelActual; 
+            uiPista.innerHTML = `<span style="color:var(--neon-cyan)">[NODO_${nivelF} / 07]</span><br>> ${desafio.pista}`;
+            entradaJugador = "";
+            uiInput.textContent = "__";
+            
+            for (let i = 1; i <= totalNiveles; i++) {
+                const nodo = document.getElementById(`nodo-${i}`);
+                if (i < nivelActual) nodo.className = 'nodo desbloqueado';
+                else if (i === nivelActual) nodo.className = 'nodo activo';
+                else nodo.className = 'nodo';
+            }
+        }
+
+        // PROCESADOR ROBUSTO CARÁCTER POR CARÁCTER
+        function procesarCadenaEntrada(cadena) {
+            if (!cadena) return;
+            const texto = cadena.toString().toUpperCase();
+
+            for (let i = 0; i < texto.length; i++) {
+                const char = texto[i];
+
+                if (estadoJuego === "SELECCION") {
+                    if (char === 'A') {
+                        seleccionarCategoria('6-8');
+                        return;
+                    }
+                    if (char === 'D') {
+                        seleccionarCategoria('9-12');
+                        return;
+                    }
+                }
+
+                if (estadoJuego === "JUGANDO" && !sistemaBloqueado) {
+                    if (char === '*' || char === '#') {
+                        reproducirSonido('borrar');
+                        entradaJugador = "";
+                        uiMensaje.textContent = "MEMORIA CACHÉ BORRADA";
+                        uiInput.textContent = "__";
+                    } else if (/[0-9]/.test(char) && entradaJugador.length < 2) {
+                        reproducirSonido('tecla');
+                        entradaJugador += char;
+                        uiInput.textContent = entradaJugador.padEnd(2, '_');
+
+                        if (entradaJugador.length === 2) {
+                            validarRespuesta();
+                        }
+                    }
+                }
+            }
+        }
+
+        // PERMITE PRUEBAS DESDE EL TECLADO DE LA PC TAMBIÉN
+        window.addEventListener('keydown', (e) => {
+            procesarCadenaEntrada(e.key);
+        });
+
+        function validarRespuesta() {
+            sistemaBloqueado = true;
+            const nivelF = nivelActual < 10 ? `0${nivelActual}` : nivelActual;
+
+            if (entradaJugador === respuestaCorrecta) {
+                reproducirSonido('acierto');
+                uiModulo.classList.add('exito');
+                uiMensaje.textContent = `[ OK ] BYPASS EXITOSO - NODO ${nivelF}`;
+                uiMensaje.style.color = 'var(--neon-green)';
+
+                setTimeout(() => {
+                    uiModulo.classList.remove('exito');
+                    uiMensaje.style.color = '#888';
+                    
+                    if (nivelActual < totalNiveles) {
+                        nivelActual++;
+                        uiMensaje.textContent = "CONECTANDO AL SIGUIENTE NODO...";
+                        generarDesafio();
+                        sistemaBloqueado = false;
+                    } else {
+                        document.getElementById(`nodo-${totalNiveles}`).className = 'nodo desbloqueado';
+                        uiMensaje.textContent = "VULNERABILIDAD CRÍTICA ENCONTRADA. ABRIENDO FIREWALL...";
+                        uiMensaje.style.color = 'var(--neon-cyan)';
+                        iniciarAperturaBoveda(); 
+                    }
+                }, 1500);
+
+            } else {
+                reproducirSonido('error');
+                uiModulo.classList.add('error');
+                uiMensaje.textContent = "[ ERROR ] CÓDIGO INCORRECTO - REINTENTE";
+                uiMensaje.style.color = 'var(--alert-red)';
+
+                setTimeout(() => {
+                    uiModulo.classList.remove('error');
+                    uiMensaje.style.color = '#888';
+                    uiMensaje.textContent = "ESPERANDO ENTRADA DE DATOS...";
+                    entradaJugador = "";
+                    uiInput.textContent = "__";
+                    sistemaBloqueado = false;
+                }, 1500);
+            }
+        }
+
+        function iniciarAperturaBoveda() {
+            estadoJuego = "FINALIZADO";
+            uiModulo.classList.add('oculto');
+            bovedaAnim.classList.add('activa');
+            
+            setTimeout(() => {
+                reproducirSonido('alarma_boveda');
+                bovedaAnim.classList.add('abriendo');
+                
+                setTimeout(() => {
+                    reproducirSonido('puertas_boveda');
+                    bovedaAnim.classList.add('abierta');
+                    
+                    setTimeout(() => {
+                        bovedaAnim.classList.remove('activa');
+                        iniciarRuleta();
+                    }, 2500);
+                    
+                }, 1800);
+            }, 500);
+        }
+
+        function obtenerItemAleatorio() {
+            let rand = Math.random() * 100;
+            let acumulado = 0;
+            for (let item of poolRecompensas) {
+                acumulado += item.prob;
+                if (rand <= acumulado) return item;
+            }
+            return poolRecompensas[0];
+        }
+
+        function iniciarRuleta() {
+            modalRecompensa.classList.add('activo');
+            const pista = document.getElementById('ruleta-pista');
+            pista.innerHTML = ''; 
+            
+            const totalItemsEnRuleta = 60;
+            const indiceGanador = 50; 
+            let itemGanador;
+
+            for (let i = 0; i < totalItemsEnRuleta; i++) {
+                let item = obtenerItemAleatorio();
+                if (i === indiceGanador) itemGanador = item;
+
+                let div = document.createElement('div');
+                div.className = `item-ruleta ${item.clase}`;
+                div.innerHTML = `<img src="${item.img}" class="premio-img" alt="premio">
+                                 <div class="nombre">${item.nombre}</div>`;
+                pista.appendChild(div);
+            }
+
+            setTimeout(() => {
+                reproducirSonido('giro_ruleta');
+                const anchoItem = 220; 
+                const offsetContenedor = document.getElementById('ruleta-contenedor').offsetWidth / 2;
+                const randomStop = Math.floor(Math.random() * 180) + 20; 
+                const desplazamiento = (indiceGanador * anchoItem) - offsetContenedor + randomStop;
+                
+                pista.style.transform = `translateX(-${desplazamiento}px)`;
+                
+                setTimeout(() => {
+                    reproducirSonido('premio_revelado');
+                    const txtPremio = document.getElementById('premio-final');
+                    const txtReinicio = document.getElementById('mensaje-reinicio');
+                    
+                    if(itemGanador.nombre === "Caja de Seguridad Vacía") {
+                        txtPremio.innerHTML = `LOTE DE DATOS DAÑADO<br><span style="color: var(--alert-red); font-size: 1.5rem">${itemGanador.nombre}</span>`;
+                    } else {
+                        txtPremio.innerHTML = `LOTE DE DATOS ASEGURADO<br>Reclamar premio: <span style="color: var(--${itemGanador.clase.split('-')[1]})">${itemGanador.nombre}</span>`;
+                    }
+                    
+                    txtPremio.classList.add('visible');
+                    setTimeout(() => { txtReinicio.style.opacity = 1; }, 1500);
+                    
+                    setTimeout(() => { window.location.reload(); }, 3500);
+
+                }, 7500);
+
+            }, 800);
+        }
+
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+
+        function reproducirSonido(tipo) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            const ahora = audioCtx.currentTime;
+
+            if (tipo === 'tecla') {
+                osc.type = 'square'; osc.frequency.setValueAtTime(800, ahora); osc.frequency.exponentialRampToValueAtTime(1200, ahora + 0.05);
+                gain.gain.setValueAtTime(0.05, ahora); gain.gain.exponentialRampToValueAtTime(0.001, ahora + 0.05);
+                osc.start(ahora); osc.stop(ahora + 0.05);
+            } else if (tipo === 'borrar') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(300, ahora); osc.frequency.exponentialRampToValueAtTime(150, ahora + 0.1);
+                gain.gain.setValueAtTime(0.08, ahora); osc.start(ahora); osc.stop(ahora + 0.1);
+            } else if (tipo === 'acierto') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(880, ahora); osc.frequency.setValueAtTime(1108.73, ahora + 0.1); 
+                gain.gain.setValueAtTime(0.1, ahora); gain.gain.linearRampToValueAtTime(0, ahora + 0.3);
+                osc.start(ahora); osc.stop(ahora + 0.3);
+            } else if (tipo === 'error') {
+                osc.type = 'square'; osc.frequency.setValueAtTime(150, ahora); osc.frequency.setValueAtTime(100, ahora + 0.1);
+                gain.gain.setValueAtTime(0.15, ahora); gain.gain.linearRampToValueAtTime(0, ahora + 0.2);
+                osc.start(ahora); osc.stop(ahora + 0.2);
+            } else if (tipo === 'alarma_boveda') {
+                osc.type = 'square'; osc.frequency.setValueAtTime(300, ahora); osc.frequency.linearRampToValueAtTime(800, ahora + 1.5);
+                gain.gain.setValueAtTime(0, ahora); gain.gain.linearRampToValueAtTime(0.08, ahora + 1.5);
+                osc.start(ahora); osc.stop(ahora + 1.8);
+            } else if (tipo === 'puertas_boveda') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(40, ahora);
+                gain.gain.setValueAtTime(0.3, ahora); gain.gain.exponentialRampToValueAtTime(0.01, ahora + 2.5);
+                osc.start(ahora); osc.stop(ahora + 2.5);
+            } else if (tipo === 'giro_ruleta') {
+                osc.type = 'square'; osc.frequency.setValueAtTime(200, ahora); osc.frequency.linearRampToValueAtTime(600, ahora + 7);
+                gain.gain.setValueAtTime(0.05, ahora); gain.gain.linearRampToValueAtTime(0, ahora + 7);
+                osc.start(ahora); osc.stop(ahora + 7);
+            } else if (tipo === 'premio_revelado') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(880, ahora); osc.frequency.setValueAtTime(1108.73, ahora + 0.15); osc.frequency.setValueAtTime(1318.51, ahora + 0.3); 
+                gain.gain.setValueAtTime(0.15, ahora); gain.gain.linearRampToValueAtTime(0, ahora + 2);
+                osc.start(ahora); osc.stop(ahora + 2);
+            }
+        }
+
+        let port;
+        const btnConectar = document.getElementById('btn-conectar');
+
+        btnConectar.addEventListener('click', async () => {
+            try {
+                if (!audioCtx) audioCtx = new AudioContext();
+
+                const puertosExistentes = await navigator.serial.getPorts();
+                if (puertosExistentes.length > 0) {
+                    port = puertosExistentes[0];
+                } else {
+                    port = await navigator.serial.requestPort();
+                }
+
+                await port.open({ baudRate: 9600 });
+                
+                uiInicio.classList.add('oculto');
+                uiCategoria.classList.remove('oculto');
+                estadoJuego = "SELECCION";
+                
+                leerDatosSeriales();
+            } catch (error) {
+                console.error("Error:", error);
+                alert("ERROR EN EL ENLACE USB: Verifica la conexión física del Arduino.");
+            }
+        });
+
+        async function leerDatosSeriales() {
+            const textDecoder = new TextDecoderStream();
+            const readableStreamClosed = port.readable.pipeTo(textDecoder.writable);
+            const reader = textDecoder.readable.getReader();
+            try {
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    if (value) procesarCadenaEntrada(value);
+                }
+            } catch (error) { console.error("Error serie:", error); } 
+            finally { reader.releaseLock(); }
+        }
+    </script>
+</body>
+</html>
