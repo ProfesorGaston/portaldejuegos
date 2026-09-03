@@ -145,6 +145,10 @@
             transition: transform 0.3s ease, background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
             transform: translateZ(0);
         }
+        .card.locked-game {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
         .card-icon { 
             font-size: 3vw; 
             margin-bottom: 8px; 
@@ -247,7 +251,7 @@
             games: [
                 { title: 'La Hormiga', desc: 'Guía a la hormiga por el túnel.', icon: '🐜', url: 'La hormiga.html' },
                 { title: 'Memoria Gamer', desc: 'Encuentra las parejas.', icon: '🎮', url: 'Rompe-cabezas.html' },
-                { title: 'Pesca Marítima', desc: 'Atrapa los peces indicados.', icon: '🎣', url: 'Pesca maritima.html' },
+                { title: 'Pesca Marítima 🔒', desc: 'Juego en mantenimiento por el momento.', icon: '🔒', url: '#', locked: true },
                 { title: '¿Quién suena?', desc: 'Descubre qué animal se oculta.', icon: '👂', url: 'Juego de sonidos animales.html' },
                 { title: 'Conectando Oficios', desc: 'Relaciona a los profesionales.', icon: '👨‍🔧', url: 'Juego de oficios.html' },
                 { title: 'Explosión de Burbujas', desc: 'Revienta las burbujas.', icon: '🔵', url: 'Explosion de burbujas.html' },
@@ -272,8 +276,8 @@
                 { title: 'Penales Multiplicativos', desc: 'Calculá, apuntá y anota un golazo de matemáticas.', icon: '⚽', url: 'Penales Multiplicativos.html' },
                 { title: 'Math Invaders', desc: 'Resuelve operaciones rápidas.', icon: '👽', url: 'Math Invaders.html' },
                 { title: 'Pac-Mates', desc: 'Recorre el laberinto.', icon: '👻', url: 'Pacman de sumas.html' },
-                { title: 'Safari Numérico', desc: 'Cuenta animales.', icon: '🐾', url: 'Juego de conteo del 1 al 20 animales.html' },
-                { title: 'La Huerta', desc: 'Cosecha vegetales.', icon: '🥦', url: 'Juego de conteo del 1 al 20 vegetales.html' },
+                { title: 'Safari Numérico 🔒', desc: 'Juego en mantenimiento por el momento.', icon: '🔒', url: '#', locked: true },
+                { title: 'La Huerta 🔒', desc: 'Juego en mantenimiento por el momento.', icon: '🔒', url: '#', locked: true },
                 { title: 'Estación Numérica', desc: 'Cuenta transportes.', icon: '🚢', url: 'Juego de conteo del 1 al 20 transportes.html' },
                 { title: 'Flappy Fractions', desc: 'Aprende fracciones volando.', icon: '🐦', url: 'Flappy fractions.html' },
                 { title: 'Mario X', desc: 'Aprende a multiplicar.', icon: '🍄', url: 'Mario X.html' },
@@ -298,7 +302,8 @@
             category: "Juegos de arduino", color: "#e67e22",
             games: [
                 { title: 'Caja Fuerte', desc: 'Ingresa la combinación correcta.', icon: '🔐', url: 'caja_fuerte.html' },
-                { title: 'Arquero', desc: 'Ataja penales conectando tu Arduino.', icon: '🥅', url: 'arquero.html' }
+                { title: 'Arquero', desc: 'Ataja penales conectando tu Arduino.', icon: '🥅', url: 'arquero.html' },
+                { title: 'Tetris Arduino', desc: 'Clásico juego de Tetris retro controlable mediante Arduino o teclado.', icon: '🧱', url: 'tetris_arduino.html' }
             ]
         }
     ];
@@ -322,12 +327,16 @@
         });
     }
 
-    function launchGame(url, title) {
+    function launchGame(game) {
+        if (game.locked) {
+            alert("Este juego se encuentra actualmente en mantenimiento.");
+            return;
+        }
         const loader = document.getElementById('loader-overlay');
-        document.getElementById('loading-msg').innerText = title.toUpperCase();
+        document.getElementById('loading-msg').innerText = game.title.toUpperCase();
         document.getElementById('loading-msg').style.color = processedRows[currentRow].color;
         loader.style.display = 'flex';
-        setTimeout(() => { window.location.href = url; }, 1000); 
+        setTimeout(() => { window.location.href = game.url; }, 1000); 
     }
 
     function init() {
@@ -342,7 +351,8 @@
             
             row.games.forEach((game, cIdx) => {
                 const card = document.createElement('div');
-                card.className = 'card'; card.id = `card-${rIdx}-${cIdx}`;
+                card.className = game.locked ? 'card locked-game' : 'card'; 
+                card.id = `card-${rIdx}-${cIdx}`;
                 card.innerHTML = `<div class="card-icon">${game.icon}</div><div class="card-title">${game.title}</div>`;
                 
                 card.dataset.baseBg = row.color + '15'; 
@@ -354,7 +364,7 @@
                     currentRow = rIdx; 
                     currentCol = cIdx; 
                     render();
-                    launchGame(game.url, game.title); 
+                    launchGame(game); 
                 };
                 document.getElementById(`cards-${rIdx}`).appendChild(card);
             });
@@ -407,7 +417,6 @@
         if (extrasUnlocked) return;
         extrasUnlocked = true;
 
-        // Añadimos la categoría secreta con los juegos de acción
         data.push({
             category: "Extras Secretos", color: "#9b59b6",
             games: [
@@ -420,7 +429,6 @@
             ]
         });
 
-        // Feedback Visual
         const loader = document.getElementById('loader-overlay');
         const msg = document.getElementById('loading-msg');
         msg.innerHTML = "¡CÓDIGO DETECTADO!<br>EXTRAS DESBLOQUEADOS";
@@ -432,10 +440,8 @@
         
         setTimeout(() => { 
             loader.style.display = 'none'; 
-            // Re-renderizamos todo el grid
             init();
             
-            // Llevamos al usuario directamente a la primera fila de la nueva sección extra
             currentRow = processedRows.findIndex(r => r.realCategory === "Extras Secretos");
             currentCol = 0;
             render();
@@ -443,13 +449,11 @@
     }
 
     window.addEventListener('keydown', e => {
-        // Bloqueo de controles si la pantalla de inicio está activa
         if(sessionStorage.getItem('acceso_gaston') !== 'true') {
             if(e.key === 'Enter') ingresarAlPortal();
             return; 
         }
 
-        // Registrar teclas para el código secreto
         secretBuffer += e.key;
         if (secretBuffer.length > 3) secretBuffer = secretBuffer.substring(1);
         if (secretBuffer === "031") {
@@ -457,7 +461,6 @@
             secretBuffer = ""; 
         }
 
-        // Navegación normal
         if(e.key === 'ArrowUp' && currentRow > 0) {
             currentRow--;
             if (currentCol >= processedRows[currentRow].games.length) currentCol = processedRows[currentRow].games.length - 1;
@@ -468,7 +471,7 @@
         }
         else if(e.key === 'ArrowLeft' && currentCol > 0) currentCol--;
         else if(e.key === 'ArrowRight' && currentCol < processedRows[currentRow].games.length - 1) currentCol++;
-        else if(e.key === 'Enter') launchGame(processedRows[currentRow].games[currentCol].url, processedRows[currentRow].games[currentCol].title);
+        else if(e.key === 'Enter') launchGame(processedRows[currentRow].games[currentCol]);
         
         render();
     });
