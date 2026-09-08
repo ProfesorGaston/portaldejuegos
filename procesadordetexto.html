@@ -385,7 +385,13 @@
 
         async function abrirDocumento() {
             try {
-                // Solicitar al usuario que elija un archivo HTML
+                // 1. Verifica si el navegador es compatible con la API
+                if (!window.showOpenFilePicker) {
+                    alert("Tu navegador no soporta la edición directa de archivos. Por favor, utiliza Google Chrome o Microsoft Edge en una computadora.");
+                    return;
+                }
+
+                // 2. Abre la ventana de selección
                 const [fileHandle] = await window.showOpenFilePicker({
                     types: [{
                         description: 'Archivos HTML',
@@ -398,7 +404,7 @@
                 const file = await fileHandle.getFile();
                 const contenido = await file.text();
                 
-                // Parsear el HTML y extraer el contenido del editor
+                // 3. Carga el contenido en el editor
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(contenido, 'text/html');
                 const loadedEditor = doc.querySelector('#editor') || doc.body;
@@ -407,7 +413,10 @@
                 updateWordCount();
                 
             } catch (error) {
-                console.log("El usuario canceló o hubo un error al abrir: ", error);
+                // Ignora el error si el usuario simplemente cerró la ventana de selección sin elegir nada
+                if (error.name !== 'AbortError') { 
+                    alert("Error al intentar abrir el archivo: " + error.message + "\n\nAsegúrate de estar ejecutando la página en un entorno seguro (HTTPS) o directamente desde tu disco duro.");
+                }
             }
         }
 
@@ -447,7 +456,9 @@
                 alert("¡Documento guardado exitosamente!");
                 
             } catch (error) {
-                console.log("El usuario canceló o hubo un error al guardar: ", error);
+                if (error.name !== 'AbortError') {
+                    alert("Error al intentar guardar el archivo: " + error.message);
+                }
             }
         }
 
