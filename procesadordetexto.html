@@ -389,8 +389,8 @@
             let repo = localStorage.getItem('gh_repo');
 
             if (!token || !user || !repo) {
-                user = prompt("Ingresa tu usuario de GitHub:", user || "");
-                repo = prompt("Ingresa el nombre del repositorio:", repo || "");
+                user = prompt("ProfesorGaston:", user || "");
+                repo = prompt("https://github.com/ProfesorGaston/portaldejuegos/blob/main/word-archivos:", repo || "");
                 token = prompt("Ingresa tu Personal Access Token (PAT) de GitHub:", token || "");
 
                 if (token && user && repo) {
