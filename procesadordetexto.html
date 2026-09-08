@@ -150,56 +150,6 @@
             display: flex;
             justify-content: space-between;
         }
-
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-
-        .modal-content {
-            background: white;
-            padding: 20px 25px;
-            border-radius: 8px;
-            width: 450px;
-            max-height: 85vh;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-        }
-
-        .modal-content h2 { margin-bottom: 15px; color: var(--word-blue); font-size: 18px; }
-        .form-group { margin-bottom: 12px; }
-        .form-group label { display: block; margin-bottom: 4px; font-size: 13px; color: var(--text-dark); }
-        .form-group input, .form-group select { width: 100%; padding: 8px; border: 1px solid var(--word-border); border-radius: 4px; }
-
-        .file-list {
-            border: 1px solid var(--word-border);
-            border-radius: 4px;
-            max-height: 220px;
-            overflow-y: auto;
-            margin-bottom: 15px;
-        }
-        .file-item {
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-            cursor: pointer;
-            font-size: 13px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .file-item:hover { background-color: #f0f4f9; }
-        .file-item.selected { background-color: #e2edfc; border-left: 4px solid var(--word-blue); }
-
-        .modal-buttons { display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px; }
-        .btn-cancel { background: white; border: 1px solid var(--word-border); padding: 8px 15px; border-radius: 4px; cursor: pointer; }
-        .btn-main { background-color: var(--word-blue); color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .btn-main:hover { background-color: var(--word-blue-hover); }
     </style>
 </head>
 <body>
@@ -207,21 +157,19 @@
     <div class="header-bar">
         <h1><i class="fa-solid fa-file-word" style="margin-right: 8px;"></i> Procesador de Texto</h1>
         <div class="header-actions">
-            <button class="btn-header" onclick="openLoadModal()"><i class="fa-solid fa-folder-open"></i> Abrir / Continuar</button>
-            <button class="btn-header" onclick="openSaveModal()"><i class="fa-solid fa-cloud-arrow-up"></i> Entregar / Guardar</button>
-            <button class="btn-header" onclick="openConfigModal()" title="Configuración"><i class="fa-solid fa-gear"></i></button>
+            <!-- Botones actualizados para usar la API de archivos locales -->
+            <button class="btn-header" onclick="abrirDocumento()"><i class="fa-solid fa-folder-open"></i> Abrir Archivo</button>
+            <button class="btn-header" onclick="guardarDocumento()"><i class="fa-solid fa-floppy-disk"></i> Guardar (Sobreescribir)</button>
         </div>
     </div>
 
     <div class="ribbon">
-        <!-- Edición / Historial -->
         <div class="toolbar-group">
             <button class="toolbar-btn" onclick="format('undo')" title="Deshacer"><i class="fa-solid fa-rotate-left"></i></button>
             <button class="toolbar-btn" onclick="format('redo')" title="Rehacer"><i class="fa-solid fa-rotate-right"></i></button>
             <button class="toolbar-btn" onclick="format('removeFormat')" title="Borrar formato"><i class="fa-solid fa-text-slash"></i></button>
         </div>
 
-        <!-- Fuentes y Tamaños -->
         <div class="toolbar-group">
             <select class="toolbar-select" id="fontName" onchange="format('fontName', this.value)">
                 <option value="Arial">Arial</option>
@@ -247,7 +195,6 @@
             </select>
         </div>
 
-        <!-- Estilos de Fuente -->
         <div class="toolbar-group">
             <button class="toolbar-btn" onclick="format('bold')" title="Negrita"><i class="fa-solid fa-bold"></i></button>
             <button class="toolbar-btn" onclick="format('italic')" title="Cursiva"><i class="fa-solid fa-italic"></i></button>
@@ -266,7 +213,6 @@
             </div>
         </div>
 
-        <!-- Párrafo, Sangría e Interlineado -->
         <div class="toolbar-group">
             <button class="toolbar-btn" onclick="format('justifyLeft')" title="Alinear a la izquierda"><i class="fa-solid fa-align-left"></i></button>
             <button class="toolbar-btn" onclick="format('justifyCenter')" title="Centrar"><i class="fa-solid fa-align-center"></i></button>
@@ -284,13 +230,11 @@
             </select>
         </div>
 
-        <!-- Listas -->
         <div class="toolbar-group">
             <button class="toolbar-btn" onclick="format('insertUnorderedList')" title="Viñetas"><i class="fa-solid fa-list-ul"></i></button>
             <button class="toolbar-btn" onclick="format('insertOrderedList')" title="Numeración"><i class="fa-solid fa-list-ol"></i></button>
         </div>
 
-        <!-- Insertar Elementos -->
         <div class="toolbar-group">
             <button class="toolbar-btn" onclick="insertTable()" title="Insertar Tabla"><i class="fa-solid fa-table"></i></button>
             <button class="toolbar-btn" onclick="triggerImageUpload()" title="Cargar Imagen desde PC"><i class="fa-solid fa-image"></i></button>
@@ -319,7 +263,6 @@
             <button class="toolbar-btn" onclick="format('insertHorizontalRule')" title="Línea Horizontal"><i class="fa-solid fa-minus"></i></button>
         </div>
 
-        <!-- Imprimir -->
         <div class="toolbar-group" style="border-right:none;">
             <button class="toolbar-btn" onclick="window.print()" title="Imprimir / PDF"><i class="fa-solid fa-print"></i></button>
         </div>
@@ -336,63 +279,9 @@
         <div id="statsCount">Palabras: 6 | Caracteres: 39</div>
     </div>
 
-    <!-- MODAL GUARDAR -->
-    <div class="modal-overlay" id="saveModal">
-        <div class="modal-content">
-            <h2>Entregar / Guardar Trabajo</h2>
-            <div class="form-group"><label>Nombre(s):</label><input type="text" id="alNombre" placeholder="Ej: Juan"></div>
-            <div class="form-group"><label>Apellido(s):</label><input type="text" id="alApellido" placeholder="Ej: Perez"></div>
-            <div style="display: flex; gap: 10px;">
-                <div class="form-group" style="flex: 1;"><label>Grado/Año:</label><input type="text" id="alGrado" placeholder="Ej: 5"></div>
-                <div class="form-group" style="flex: 1;"><label>División:</label><input type="text" id="alDivision" placeholder="Ej: A"></div>
-            </div>
-            <div class="modal-buttons">
-                <button class="btn-cancel" onclick="closeModal('saveModal')">Cancelar</button>
-                <button class="btn-main" onclick="uploadToGithub()">Enviar a GitHub</button>
-            </div>
-            <div id="saveStatus" style="margin-top: 10px; font-size: 12px; text-align: center;"></div>
-        </div>
-    </div>
-
-    <!-- MODAL CARGAR -->
-    <div class="modal-overlay" id="loadModal">
-        <div class="modal-content">
-            <h2>Abrir Trabajo desde GitHub</h2>
-            <p style="font-size:12px; color:#666; margin-bottom:10px;">Selecciona tu archivo guardado para continuar editándolo:</p>
-            <div id="loadStatus" style="font-size: 12px; margin-bottom: 8px;"></div>
-            <div class="file-list" id="fileListContainer"></div>
-            <div class="modal-buttons">
-                <button class="btn-cancel" onclick="closeModal('loadModal')">Cancelar</button>
-                <button class="btn-main" onclick="loadSelectedFile()">Cargar Documento</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL CONFIG -->
-    <div class="modal-overlay" id="configModal">
-        <div class="modal-content">
-            <h2>Configuración del Repositorio</h2>
-            <div class="form-group"><label>Usuario de GitHub:</label><input type="text" id="ghOwner"></div>
-            <div class="form-group"><label>Repositorio:</label><input type="text" id="ghRepo"></div>
-            <div class="form-group"><label>Carpeta Destino:</label><input type="text" id="ghFolder"></div>
-            <div class="form-group"><label>Token de Acceso Personal (PAT):</label><input type="password" id="ghToken"></div>
-            <div class="modal-buttons">
-                <button class="btn-cancel" onclick="closeModal('configModal')">Cerrar</button>
-                <button class="btn-main" onclick="saveConfig()">Guardar</button>
-            </div>
-        </div>
-    </div>
-
     <script>
-        const CONFIG_DEFAULT = {
-            owner: "ProfesorGaston",
-            repo: "portaldejuegos",
-            folder: "word-archivos",
-            token: ""
-        };
-
-        let selectedFileDownloadUrl = null;
-        let selectedFileName = null;
+        // Referencia global al archivo abierto
+        let archivoActual = null;
 
         function format(command, value = null) {
             document.execCommand(command, false, value);
@@ -400,7 +289,6 @@
             updateWordCount();
         }
 
-        // --- PEGADO AUTOMÁTICO DE IMÁGENES DESDE PORTAPAPELES ---
         document.getElementById('editor').addEventListener('paste', function(e) {
             const items = (e.clipboardData || e.originalEvent.clipboardData).items;
             for (let item of items) {
@@ -493,178 +381,73 @@
             document.getElementById('statsCount').innerText = `Palabras: ${words} | Caracteres: ${chars}`;
         }
 
-        function openSaveModal() { document.getElementById('saveModal').style.display = 'flex'; }
-        function openConfigModal() { document.getElementById('configModal').style.display = 'flex'; loadConfig(); }
-        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        // --- FUNCIONES DE SISTEMA DE ARCHIVOS LOCALES ---
 
-        function loadConfig() {
-            document.getElementById('ghOwner').value = localStorage.getItem('ghOwner') || CONFIG_DEFAULT.owner;
-            document.getElementById('ghRepo').value = localStorage.getItem('ghRepo') || CONFIG_DEFAULT.repo;
-            document.getElementById('ghFolder').value = localStorage.getItem('ghFolder') || CONFIG_DEFAULT.folder;
-            document.getElementById('ghToken').value = localStorage.getItem('ghToken') || CONFIG_DEFAULT.token;
-        }
-
-        function saveConfig() {
-            localStorage.setItem('ghOwner', document.getElementById('ghOwner').value.trim());
-            localStorage.setItem('ghRepo', document.getElementById('ghRepo').value.trim());
-            localStorage.setItem('ghFolder', document.getElementById('ghFolder').value.trim());
-            localStorage.setItem('ghToken', document.getElementById('ghToken').value.trim());
-            alert("Configuración guardada.");
-            closeModal('configModal');
-        }
-
-        function getConfig() {
-            return {
-                owner: localStorage.getItem('ghOwner') || CONFIG_DEFAULT.owner,
-                repo: localStorage.getItem('ghRepo') || CONFIG_DEFAULT.repo,
-                folder: localStorage.getItem('ghFolder') || CONFIG_DEFAULT.folder,
-                token: localStorage.getItem('ghToken') || CONFIG_DEFAULT.token
-            };
-        }
-
-        async function openLoadModal() {
-            document.getElementById('loadModal').style.display = 'flex';
-            const container = document.getElementById('fileListContainer');
-            const status = document.getElementById('loadStatus');
-            container.innerHTML = "";
-            status.innerHTML = "<span style='color:blue;'><i class='fa-solid fa-spinner fa-spin'></i> Obteniendo lista de archivos...</span>";
-
-            const cfg = getConfig();
-            const cleanFolder = cfg.folder.trim().replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
-            const url = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${cleanFolder}`;
-
+        async function abrirDocumento() {
             try {
-                const response = await fetch(url, {
-                    headers: cfg.token ? { 'Authorization': `token ${cfg.token}` } : {}
+                // Solicitar al usuario que elija un archivo HTML
+                const [fileHandle] = await window.showOpenFilePicker({
+                    types: [{
+                        description: 'Archivos HTML',
+                        accept: {'text/html': ['.html']}
+                    }]
                 });
-
-                if (response.ok) {
-                    const files = await response.json();
-                    const htmlFiles = files.filter(f => f.name.endsWith('.html'));
-                    status.innerHTML = "";
-
-                    if (htmlFiles.length === 0) {
-                        container.innerHTML = "<div style='padding:15px; text-align:center;'>No se encontraron trabajos guardados.</div>";
-                        return;
-                    }
-
-                    htmlFiles.forEach(file => {
-                        const div = document.createElement('div');
-                        div.className = 'file-item';
-                        div.innerHTML = `<span><i class="fa-solid fa-file-code" style="color:var(--word-blue);"></i> ${file.name}</span>`;
-                        div.onclick = () => {
-                            document.querySelectorAll('.file-item').forEach(el => el.classList.remove('selected'));
-                            div.classList.add('selected');
-                            selectedFileDownloadUrl = file.download_url;
-                            selectedFileName = file.name;
-                        };
-                        container.appendChild(div);
-                    });
-                } else {
-                    status.innerHTML = "<span style='color:red;'>Error al conectar con GitHub. Revisa la configuración.</span>";
-                }
-            } catch (err) {
-                status.innerHTML = `<span style='color:red;'>Error: ${err.message}</span>`;
-            }
-        }
-
-        async function loadSelectedFile() {
-            if (!selectedFileDownloadUrl) {
-                alert("Por favor selecciona un archivo de la lista.");
-                return;
-            }
-
-            try {
-                const res = await fetch(selectedFileDownloadUrl);
-                const htmlText = await res.text();
-
+                
+                archivoActual = fileHandle; 
+                
+                const file = await fileHandle.getFile();
+                const contenido = await file.text();
+                
+                // Parsear el HTML y extraer el contenido del editor
                 const parser = new DOMParser();
-                const doc = parser.parseFromString(htmlText, 'text/html');
+                const doc = parser.parseFromString(contenido, 'text/html');
                 const loadedEditor = doc.querySelector('#editor') || doc.body;
 
                 document.getElementById('editor').innerHTML = loadedEditor.innerHTML;
                 updateWordCount();
-
-                const parts = selectedFileName.split('_');
-                if (parts.length >= 4) {
-                    document.getElementById('alApellido').value = parts[0];
-                    document.getElementById('alNombre').value = parts[1];
-                    document.getElementById('alGrado').value = parts[2];
-                    document.getElementById('alDivision').value = parts[3];
-                }
-
-                closeModal('loadModal');
-                alert("¡Trabajo cargado correctamente!");
-            } catch (err) {
-                alert("Error al abrir el documento: " + err.message);
+                
+            } catch (error) {
+                console.log("El usuario canceló o hubo un error al abrir: ", error);
             }
         }
 
-        async function uploadToGithub() {
-            const nombre = document.getElementById('alNombre').value.trim();
-            const apellido = document.getElementById('alApellido').value.trim();
-            const grado = document.getElementById('alGrado').value.trim();
-            const division = document.getElementById('alDivision').value.trim();
-            const statusDiv = document.getElementById('saveStatus');
-
-            if (!nombre || !apellido || !grado || !division) {
-                statusDiv.innerHTML = "<span style='color:red;'>Por favor, completa todos tus datos.</span>";
-                return;
-            }
-
-            const cfg = getConfig();
-            if (!cfg.token) {
-                statusDiv.innerHTML = "<span style='color:red;'>Error: No hay Token configurado (engranaje).</span>";
-                return;
-            }
-
-            statusDiv.innerHTML = "<span style='color:blue;'><i class='fa-solid fa-spinner fa-spin'></i> Guardando trabajo...</span>";
-
-            const safeName = nombre.replace(/[^a-zA-Z0-9]/g, '');
-            const safeLast = apellido.replace(/[^a-zA-Z0-9]/g, '');
-            const filename = `${safeLast}_${safeName}_${grado}_${division}_${Date.now()}.html`;
-
-            const cleanFolder = cfg.folder.trim().replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
-            const fullPath = cleanFolder ? `${cleanFolder}/${filename}` : filename;
-
-            const rawContent = document.getElementById('editor').innerHTML;
-            const fullHtmlContent = `
-                <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto;">
-                    <h2>Trabajo de: ${apellido}, ${nombre} - Grado: ${grado} "${division}"</h2>
-                    <hr/>
-                    <div id="editor">${rawContent}</div>
-                </div>
-            `;
-
-            const bytes = new TextEncoder().encode(fullHtmlContent);
-            let binary = '';
-            for (let i = 0; i < bytes.byteLength; i++) { binary += String.fromCharCode(bytes[i]); }
-            const contentBase64 = btoa(binary);
-
-            const url = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${encodeURI(fullPath)}`;
-
+        async function guardarDocumento() {
             try {
-                const response = await fetch(url, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `token ${cfg.token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        message: `Entrega de ${apellido}, ${nombre} (${grado} ${division})`,
-                        content: contentBase64
-                    })
-                });
-
-                if (response.ok) {
-                    statusDiv.innerHTML = "<span style='color:green;'><i class='fa-solid fa-check'></i> ¡Entregado con éxito!</span>";
-                    setTimeout(() => { closeModal('saveModal'); statusDiv.innerHTML = ""; }, 2000);
-                } else {
-                    const err = await response.json();
-                    statusDiv.innerHTML = `<span style='color:red;'>Error: ${err.message}</span>`;
+                // Si es un documento nuevo sin archivo asociado, abrir "Guardar como..."
+                if (!archivoActual) {
+                    archivoActual = await window.showSaveFilePicker({
+                        suggestedName: 'Mi_Trabajo.html',
+                        types: [{
+                            description: 'Archivos HTML',
+                            accept: {'text/html': ['.html']}
+                        }]
+                    });
                 }
+                
+                const rawContent = document.getElementById('editor').innerHTML; 
+                
+                // Estructura HTML limpia para guardar el contenido
+                const contenidoEditado = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Documento Guardado</title>
+</head>
+<body style="font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto;">
+    <div id="editor">${rawContent}</div>
+</body>
+</html>`;
+
+                // Escribir y sobreescribir el archivo original
+                const writable = await archivoActual.createWritable();
+                await writable.write(contenidoEditado);
+                await writable.close();
+                
+                alert("¡Documento guardado exitosamente!");
+                
             } catch (error) {
-                statusDiv.innerHTML = `<span style='color:red;'>Error: ${error.message}</span>`;
+                console.log("El usuario canceló o hubo un error al guardar: ", error);
             }
         }
 
