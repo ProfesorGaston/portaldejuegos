@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Procesador de Texto - Prof. Gastón</title>
+    <title>Procesador de Texto - GitHub Integration</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -155,11 +155,11 @@
 <body>
 
     <div class="header-bar">
-        <h1><i class="fa-solid fa-file-word" style="margin-right: 8px;"></i> Procesador de Texto</h1>
+        <h1><i class="fa-brands fa-github" style="margin-right: 8px;"></i> Procesador de Texto - GitHub</h1>
         <div class="header-actions">
-            <!-- Botones actualizados para usar la API de archivos locales -->
-            <button class="btn-header" onclick="abrirDocumento()"><i class="fa-solid fa-folder-open"></i> Abrir Archivo</button>
-            <button class="btn-header" onclick="guardarDocumento()"><i class="fa-solid fa-floppy-disk"></i> Guardar (Sobreescribir)</button>
+            <button class="btn-header" onclick="resetearConfiguracion()"><i class="fa-solid fa-gear"></i> Config. GitHub</button>
+            <button class="btn-header" onclick="abrirDocumento()"><i class="fa-solid fa-folder-open"></i> Abrir de GitHub</button>
+            <button class="btn-header" onclick="guardarDocumento()"><i class="fa-solid fa-cloud-arrow-up"></i> Guardar en GitHub</button>
         </div>
     </div>
 
@@ -275,13 +275,13 @@
     </div>
 
     <div class="status-bar">
-        <div>Documento de Texto</div>
+        <div id="fileInfo">Documento sin guardar</div>
         <div id="statsCount">Palabras: 6 | Caracteres: 39</div>
     </div>
 
     <script>
-        // Referencia global al archivo abierto
-        let archivoActual = null;
+        let nombreArchivoActual = null;
+        let shaArchivoActual = null;
 
         function format(command, value = null) {
             document.execCommand(command, false, value);
@@ -381,63 +381,115 @@
             document.getElementById('statsCount').innerText = `Palabras: ${words} | Caracteres: ${chars}`;
         }
 
-        // --- FUNCIONES DE SISTEMA DE ARCHIVOS LOCALES ---
+        // --- INTEGRACIÓN CON API DE GITHUB ---
+
+        function obtenerConfig() {
+            let token = localStorage.getItem('gh_token');
+            let user = localStorage.getItem('gh_user');
+            let repo = localStorage.getItem('gh_repo');
+
+            if (!token || !user || !repo) {
+                user = prompt("Ingresa tu usuario de GitHub:", user || "");
+                repo = prompt("Ingresa el nombre del repositorio:", repo || "");
+                token = prompt("Ingresa tu Personal Access Token (PAT) de GitHub:", token || "");
+
+                if (token && user && repo) {
+                    localStorage.setItem('gh_user', user.trim());
+                    localStorage.setItem('gh_repo', repo.trim());
+                    localStorage.setItem('gh_token', token.trim());
+                } else {
+                    alert("No se completaron los datos de GitHub.");
+                    return null;
+                }
+            }
+            return { token, user, repo, folder: 'word-archivos' };
+        }
+
+        function resetearConfiguracion() {
+            localStorage.removeItem('gh_token');
+            localStorage.removeItem('gh_user');
+            localStorage.removeItem('gh_repo');
+            alert("Configuración de GitHub eliminada. Se solicitarán las credenciales al intentar realizar una acción.");
+        }
 
         async function abrirDocumento() {
+            const config = obtenerConfig();
+            if (!config) return;
+
             try {
-                // 1. Verifica si el navegador es compatible con la API
-                if (!window.showOpenFilePicker) {
-                    alert("Tu navegador no soporta la edición directa de archivos. Por favor, utiliza Google Chrome o Microsoft Edge en una computadora.");
+                // Obtener listado de la carpeta word-archivos
+                const resList = await fetch(`https://api.github.com/repos/${config.user}/${config.repo}/contents/${config.folder}`, {
+                    headers: { 'Authorization': `token ${config.token}` }
+                });
+
+                if (!resList.ok) {
+                    if (resList.status === 404) throw new Error(`La carpeta '${config.folder}' aún no existe en el repositorio.`);
+                    throw new Error(`Error ${resList.status}. Revisa el Token, Usuario y Repositorio.`);
+                }
+
+                const archivos = await resList.json();
+                const nombres = archivos.filter(a => a.name.endsWith('.html')).map(a => a.name);
+
+                if (nombres.length === 0) {
+                    alert(`No se encontraron archivos HTML dentro de la carpeta '${config.folder}'.`);
                     return;
                 }
 
-                // 2. Abre la ventana de selección
-                const [fileHandle] = await window.showOpenFilePicker({
-                    types: [{
-                        description: 'Archivos HTML',
-                        accept: {'text/html': ['.html']}
-                    }]
+                const elegido = prompt(`Archivos en '${config.folder}':\n\n- ${nombres.join('\n- ')}\n\nEscribe el nombre del archivo a abrir:`, nombres[0]);
+                if (!elegido) return;
+
+                // Leer archivo seleccionado
+                const resFile = await fetch(`https://api.github.com/repos/${config.user}/${config.repo}/contents/${config.folder}/${elegido}`, {
+                    headers: { 'Authorization': `token ${config.token}` }
                 });
-                
-                archivoActual = fileHandle; 
-                
-                const file = await fileHandle.getFile();
-                const contenido = await file.text();
-                
-                // 3. Carga el contenido en el editor
+
+                if (!resFile.ok) throw new Error("No se pudo obtener el contenido del archivo.");
+
+                const dataFile = await resFile.json();
+                const contenidoDecodificado = decodeURIComponent(escape(atob(dataFile.content.replace(/\s/g, ''))));
+
                 const parser = new DOMParser();
-                const doc = parser.parseFromString(contenido, 'text/html');
+                const doc = parser.parseFromString(contenidoDecodificado, 'text/html');
                 const loadedEditor = doc.querySelector('#editor') || doc.body;
 
                 document.getElementById('editor').innerHTML = loadedEditor.innerHTML;
+                nombreArchivoActual = elegido;
+                shaArchivoActual = dataFile.sha;
+
+                document.getElementById('fileInfo').innerText = `GitHub: ${config.folder}/${nombreArchivoActual}`;
                 updateWordCount();
-                
-            } catch (error) {
-                // Ignora el error si el usuario simplemente cerró la ventana de selección sin elegir nada
-                if (error.name !== 'AbortError') { 
-                    alert("Error al intentar abrir el archivo: " + error.message + "\n\nAsegúrate de estar ejecutando la página en un entorno seguro (HTTPS) o directamente desde tu disco duro.");
-                }
+                alert(`Archivo '${elegido}' cargado con éxito desde GitHub.`);
+
+            } catch (err) {
+                alert("Error al abrir desde GitHub: " + err.message);
             }
         }
 
         async function guardarDocumento() {
+            const config = obtenerConfig();
+            if (!config) return;
+
             try {
-                // Si es un documento nuevo sin archivo asociado, abrir "Guardar como..."
-                if (!archivoActual) {
-                    archivoActual = await window.showSaveFilePicker({
-                        suggestedName: 'Mi_Trabajo.html',
-                        types: [{
-                            description: 'Archivos HTML',
-                            accept: {'text/html': ['.html']}
-                        }]
-                    });
+                if (!nombreArchivoActual) {
+                    let nombreInput = prompt("Nombre del archivo a guardar (ejemplo: documento1.html):", "Mi_Trabajo.html");
+                    if (!nombreInput) return;
+                    if (!nombreInput.endsWith('.html')) nombreInput += '.html';
+                    nombreArchivoActual = nombreInput;
                 }
-                
-                const rawContent = document.getElementById('editor').innerHTML; 
-                
-                // Estructura HTML limpia para guardar el contenido
-                const contenidoEditado = `
-<!DOCTYPE html>
+
+                // Consultar si el archivo existe para recuperar el SHA
+                if (!shaArchivoActual) {
+                    const resCheck = await fetch(`https://api.github.com/repos/${config.user}/${config.repo}/contents/${config.folder}/${nombreArchivoActual}`, {
+                        headers: { 'Authorization': `token ${config.token}` }
+                    });
+                    if (resCheck.ok) {
+                        const dataCheck = await resCheck.json();
+                        shaArchivoActual = dataCheck.sha;
+                    }
+                }
+
+                const rawContent = document.getElementById('editor').innerHTML;
+                const HTMLCompleto = `<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -448,17 +500,37 @@
 </body>
 </html>`;
 
-                // Escribir y sobreescribir el archivo original
-                const writable = await archivoActual.createWritable();
-                await writable.write(contenidoEditado);
-                await writable.close();
-                
-                alert("¡Documento guardado exitosamente!");
-                
-            } catch (error) {
-                if (error.name !== 'AbortError') {
-                    alert("Error al intentar guardar el archivo: " + error.message);
+                const contentB64 = btoa(unescape(encodeURIComponent(HTMLCompleto)));
+
+                const bodyData = {
+                    message: `Actualizado desde Procesador de Texto: ${nombreArchivoActual}`,
+                    content: contentB64
+                };
+
+                if (shaArchivoActual) bodyData.sha = shaArchivoActual;
+
+                const resSave = await fetch(`https://api.github.com/repos/${config.user}/${config.repo}/contents/${config.folder}/${nombreArchivoActual}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${config.token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(bodyData)
+                });
+
+                if (!resSave.ok) {
+                    const errData = await resSave.json();
+                    throw new Error(errData.message || "Error al subir cambios.");
                 }
+
+                const resData = await resSave.json();
+                shaArchivoActual = resData.content.sha;
+
+                document.getElementById('fileInfo').innerText = `GitHub: ${config.folder}/${nombreArchivoActual}`;
+                alert(`¡Guardado y subido correctamente a ${config.folder}/${nombreArchivoActual}!`);
+
+            } catch (err) {
+                alert("Error al guardar en GitHub: " + err.message);
             }
         }
 
