@@ -6,7 +6,6 @@
     <title>Portal de Juegos - Prof. Gastón</title>
     <link rel="icon" type="image/png" href="logo.png">
     <style>
-        /* Importamos Noto Color Emoji de Google Fonts junto con las otras fuentes */
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;600;800&family=Noto+Color+Emoji&display=swap');
 
         :root {
@@ -56,7 +55,7 @@
         
         .login-footer { margin-top: 25px; font-size: 0.85rem; color: #777; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;}
 
-        /* --- ENVOLTORIO PRINCIPAL (Oculto al inicio) --- */
+        /* --- ENVOLTORIO PRINCIPAL --- */
         #main-app { opacity: 0; pointer-events: none; transition: opacity 0.5s ease; }
         #main-app.visible { opacity: 1; pointer-events: auto; }
 
@@ -229,7 +228,7 @@
         if (loader) loader.style.display = 'none';
     });
 
-    // --- BASE DE DATOS ACTUALIZADA ---
+    // --- BASE DE DATOS ---
     const data = [
         {
             category: "Lengua y Mecanografía", color: "#e50914",
@@ -238,7 +237,7 @@
                 { title: 'Constructor de Palabras', desc: 'Une las piezas correctamente.', icon: '🧩', url: 'Constructor de palabras.html' },
                 { title: 'Tren de Oraciones', desc: 'Ordena los vagones.', icon: '🚂', url: 'Tren de oraciones.html' },
                 { title: 'Carreras de Teclado', desc: '¡Escribe palabras para ganar la carrera!', icon: '🏎️', url: 'Carreras de teclado.html' },
-                { title: 'Regla Ortográfica', desc: 'Aprende las reglas de ortografía jugando.', icon: '📝', url: 'regla ortografica.html' },
+                { title: 'Regla Ortográfica', desc: 'Aprende las reglas de ortografía jugando.', icon: '🔤', url: 'regla ortografica.html' },
                 { title: 'Laboratorio de Clasificación', desc: 'Clasifica sustantivos, adjetivos y verbos volando.', icon: '🧪', url: 'Laboratorio de Clasificación.html' },
                 { title: 'Misión Pronombres', desc: 'Completa las oraciones con el pronombre correcto para recargar la nave.', icon: '🚀', url: 'pronombres.html' },
                 { title: 'Agencia de Detectives', desc: 'Analiza cada palabra y determina si es Diptongo, Triptongo o Hiato.', icon: '🔍', url: 'detective.html' },
@@ -312,7 +311,6 @@
     let currentRow = 0, currentCol = 0;
     const container = document.getElementById('rows-container');
 
-    // Función que transforma los datos en filas de a 4 juegos
     function buildRows() {
         processedRows = [];
         data.forEach(item => {
@@ -409,9 +407,10 @@
         document.getElementById('hero-cat').style.color = color;
     }
 
-    // --- SISTEMA SECRETO (KEYLOGGER) ---
+    // --- SISTEMAS SECRETOS (KEYLOGGER) ---
     let secretBuffer = "";
     let extrasUnlocked = false;
+    let officeUnlocked = false;
 
     function unlockExtras() {
         if (extrasUnlocked) return;
@@ -448,19 +447,56 @@
         }, 2000);
     }
 
+    function unlockOffice() {
+        if (officeUnlocked) return;
+        officeUnlocked = true;
+
+        data.push({
+            category: "Office", color: "#2b579a",
+            games: [
+                { title: 'Procesador de Texto', desc: 'Crea y edita tus documentos de texto.', icon: '📝', url: 'procesadordetexto.html' }
+            ]
+        });
+
+        const loader = document.getElementById('loader-overlay');
+        const msg = document.getElementById('loading-msg');
+        msg.innerHTML = "¡CÓDIGO DETECTADO!<br>MENÚ OFFICE DESBLOQUEADO";
+        msg.style.color = "#2b579a";
+        document.querySelector('.netflix-spinner').style.borderColor = "rgba(43, 87, 154, 0.2)";
+        document.querySelector('.netflix-spinner').style.borderTopColor = "#2b579a";
+        
+        loader.style.display = 'flex';
+        
+        setTimeout(() => { 
+            loader.style.display = 'none'; 
+            init();
+            
+            currentRow = processedRows.findIndex(r => r.realCategory === "Office");
+            currentCol = 0;
+            render();
+        }, 2000);
+    }
+
     window.addEventListener('keydown', e => {
         if(sessionStorage.getItem('acceso_gaston') !== 'true') {
             if(e.key === 'Enter') ingresarAlPortal();
             return; 
         }
 
-        secretBuffer += e.key;
-        if (secretBuffer.length > 3) secretBuffer = secretBuffer.substring(1);
-        if (secretBuffer === "031") {
+        secretBuffer += e.key.toLowerCase();
+        if (secretBuffer.length > 6) secretBuffer = secretBuffer.substring(1); 
+        
+        if (secretBuffer.includes("031")) {
             unlockExtras();
             secretBuffer = ""; 
         }
 
+        if (secretBuffer.includes("office")) {
+            unlockOffice();
+            secretBuffer = "";
+        }
+
+        // Controles de navegación
         if(e.key === 'ArrowUp' && currentRow > 0) {
             currentRow--;
             if (currentCol >= processedRows[currentRow].games.length) currentCol = processedRows[currentRow].games.length - 1;
