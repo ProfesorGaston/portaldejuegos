@@ -157,7 +157,6 @@
     <div class="header-bar">
         <h1><i class="fa-brands fa-github" style="margin-right: 8px;"></i> Procesador de Texto - GitHub</h1>
         <div class="header-actions">
-            <button class="btn-header" onclick="resetearConfiguracion()"><i class="fa-solid fa-gear"></i> Config. GitHub</button>
             <button class="btn-header" onclick="abrirDocumento()"><i class="fa-solid fa-folder-open"></i> Abrir de GitHub</button>
             <button class="btn-header" onclick="guardarDocumento()"><i class="fa-solid fa-cloud-arrow-up"></i> Guardar en GitHub</button>
         </div>
@@ -280,6 +279,15 @@
     </div>
 
     <script>
+        // ==========================================
+        // ⚙️ CONFIGURACIÓN DE GITHUB
+        // ==========================================
+        const GITHUB_USER = "ProfesorGaston";
+        const GITHUB_REPO = "portaldejuegos";
+        const GITHUB_FOLDER = "word-archivo";
+        const GITHUB_TOKEN = "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"; // Reemplaza solo esta cadena por tu token personal
+        // ==========================================
+
         let nombreArchivoActual = null;
         let shaArchivoActual = null;
 
@@ -381,35 +389,12 @@
             document.getElementById('statsCount').innerText = `Palabras: ${words} | Caracteres: ${chars}`;
         }
 
-        // --- INTEGRACIÓN CON API DE GITHUB ---
-
         function obtenerConfig() {
-            let token = localStorage.getItem('gh_token');
-            let user = localStorage.getItem('gh_user');
-            let repo = localStorage.getItem('gh_repo');
-
-            if (!token || !user || !repo) {
-                user = prompt("ProfesorGaston:", user || "");
-                repo = prompt("https://github.com/ProfesorGaston/portaldejuegos/blob/main/word-archivos:", repo || "");
-                token = prompt("Ingresa tu Personal Access Token (PAT) de GitHub:", token || "");
-
-                if (token && user && repo) {
-                    localStorage.setItem('gh_user', user.trim());
-                    localStorage.setItem('gh_repo', repo.trim());
-                    localStorage.setItem('gh_token', token.trim());
-                } else {
-                    alert("No se completaron los datos de GitHub.");
-                    return null;
-                }
+            if (GITHUB_TOKEN === "TU_TOKEN_PAT_AQUI" || !GITHUB_TOKEN) {
+                alert("Por favor ingresa tu Personal Access Token (PAT) en la variable GITHUB_TOKEN del código.");
+                return null;
             }
-            return { token, user, repo, folder: 'word-archivos' };
-        }
-
-        function resetearConfiguracion() {
-            localStorage.removeItem('gh_token');
-            localStorage.removeItem('gh_user');
-            localStorage.removeItem('gh_repo');
-            alert("Configuración de GitHub eliminada. Se solicitarán las credenciales al intentar realizar una acción.");
+            return { token: GITHUB_TOKEN, user: GITHUB_USER, repo: GITHUB_REPO, folder: GITHUB_FOLDER };
         }
 
         async function abrirDocumento() {
@@ -417,28 +402,26 @@
             if (!config) return;
 
             try {
-                // Obtener listado de la carpeta word-archivos
                 const resList = await fetch(`https://api.github.com/repos/${config.user}/${config.repo}/contents/${config.folder}`, {
                     headers: { 'Authorization': `token ${config.token}` }
                 });
 
                 if (!resList.ok) {
-                    if (resList.status === 404) throw new Error(`La carpeta '${config.folder}' aún no existe en el repositorio.`);
-                    throw new Error(`Error ${resList.status}. Revisa el Token, Usuario y Repositorio.`);
+                    if (resList.status === 404) throw new Error(`La carpeta '${config.folder}' no existe en el repositorio.`);
+                    throw new Error(`Error ${resList.status}. Revisa que el token posea permisos válidos.`);
                 }
 
                 const archivos = await resList.json();
                 const nombres = archivos.filter(a => a.name.endsWith('.html')).map(a => a.name);
 
                 if (nombres.length === 0) {
-                    alert(`No se encontraron archivos HTML dentro de la carpeta '${config.folder}'.`);
+                    alert(`No se encontraron archivos HTML en la carpeta '${config.folder}'.`);
                     return;
                 }
 
                 const elegido = prompt(`Archivos en '${config.folder}':\n\n- ${nombres.join('\n- ')}\n\nEscribe el nombre del archivo a abrir:`, nombres[0]);
                 if (!elegido) return;
 
-                // Leer archivo seleccionado
                 const resFile = await fetch(`https://api.github.com/repos/${config.user}/${config.repo}/contents/${config.folder}/${elegido}`, {
                     headers: { 'Authorization': `token ${config.token}` }
                 });
@@ -458,7 +441,7 @@
 
                 document.getElementById('fileInfo').innerText = `GitHub: ${config.folder}/${nombreArchivoActual}`;
                 updateWordCount();
-                alert(`Archivo '${elegido}' cargado con éxito desde GitHub.`);
+                alert(`Archivo '${elegido}' cargado con éxito.`);
 
             } catch (err) {
                 alert("Error al abrir desde GitHub: " + err.message);
@@ -477,7 +460,6 @@
                     nombreArchivoActual = nombreInput;
                 }
 
-                // Consultar si el archivo existe para recuperar el SHA
                 if (!shaArchivoActual) {
                     const resCheck = await fetch(`https://api.github.com/repos/${config.user}/${config.repo}/contents/${config.folder}/${nombreArchivoActual}`, {
                         headers: { 'Authorization': `token ${config.token}` }
@@ -527,7 +509,7 @@
                 shaArchivoActual = resData.content.sha;
 
                 document.getElementById('fileInfo').innerText = `GitHub: ${config.folder}/${nombreArchivoActual}`;
-                alert(`¡Guardado y subido correctamente a ${config.folder}/${nombreArchivoActual}!`);
+                alert(`¡Guardado exitosamente en ${config.folder}/${nombreArchivoActual}!`);
 
             } catch (err) {
                 alert("Error al guardar en GitHub: " + err.message);
