@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infiltración Digital - Prof. Gastón</title>
+    <style>
+        :root {
+            --bg-color: #020202;
+            --main-green: #00ff41;
+            --dark-green: #003b00;
+            --alert-red: #ff3333;
+            --cyan: #00ffff;
+            --yellow: #ffcc00;
+            --glow: 0 0 10px rgba(0, 255, 65, 0.5);
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            color: var(--main-green);
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Capa 1: Gradiente de monitor viejo */
+        body::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 10;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+
+        /* Capa 2: Ruido / Estática constante con SVG */
+        body::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background-image: url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noise"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noise)" opacity="1"/%3E%3C/svg%3E');
+            opacity: 0.06;
+            pointer-events: none;
+            z-index: 11;
+            animation: static-noise 0.2s steps(2) infinite;
+        }
+
+        @keyframes static-noise {
+            0% { transform: translate(0,0); }
+            100% { transform: translate(-1%, -1%); }
+        }
+
+        /* Efecto Glitch Constante y Aleatorio */
+        .glitch-active {
+            animation: glitch-anim 0.2s cubic-bezier(.25, .46, .45, .94) both infinite;
+            color: var(--cyan) !important;
+            text-shadow: -2px 0 red, 2px 0 blue !important;
+        }
+
+        @keyframes glitch-anim {
+            0% { transform: translate(0) }
+            20% { transform: translate(-2px, 2px) }
+            40% { transform: translate(-2px, -2px) }
+            60% { transform: translate(2px, 2px) }
+            80% { transform: translate(2px, -2px) }
+            100% { transform: translate(0) }
+        }
+
+        /* Glitch de Error */
+        @keyframes errorGlitch {
+            0% { transform: skew(0deg); filter: hue-rotate(0deg); }
+            20% { transform: skew(-10deg); filter: hue-rotate(90deg); }
+            40% { transform: skew(10deg); filter: hue-rotate(-90deg); }
+            60% { transform: skew(-5deg); filter: hue-rotate(180deg); }
+            80% { transform: skew(5deg); filter: hue-rotate(-180deg); }
+            100% { transform: skew(0deg); filter: hue-rotate(0deg); }
+        }
+        .error-glitch-effect { animation: errorGlitch 0.4s ease-in-out; }
+
+        #header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            border-bottom: 2px solid var(--main-green);
+            background: rgba(0, 59, 0, 0.3);
+            font-weight: bold;
+            font-size: 1.5rem;
+            text-shadow: var(--glow);
+            z-index: 5;
+            box-shadow: 0 4px 10px rgba(0,255,65,0.1);
+        }
+
+        #trace-timer {
+            color: var(--alert-red);
+            text-shadow: 0 0 15px var(--alert-red);
+            font-size: 1.8rem;
+            border: 1px solid var(--alert-red);
+            padding: 5px 15px;
+            border-radius: 5px;
+            background: rgba(255, 0, 0, 0.1);
+            letter-spacing: 2px;
+        }
+
+        #main-container {
+            display: flex;
+            flex-grow: 1;
+            height: calc(100% - 70px);
+            z-index: 5;
+        }
+
+        #side-panel {
+            width: 320px;
+            border-right: 2px solid var(--dark-green);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            background: rgba(0, 20, 0, 0.7);
+        }
+
+        .panel-box {
+            border: 1px solid var(--main-green);
+            padding: 15px;
+            position: relative;
+            box-shadow: inset 0 0 15px rgba(0,255,65,0.1);
+            background: rgba(0, 10, 0, 0.8);
+        }
+
+        .panel-box::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 10px; height: 10px; border-top: 2px solid var(--main-green); border-left: 2px solid var(--main-green);
+        }
+
+        .panel-title {
+            color: var(--cyan);
+            font-size: 1rem;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            border-bottom: 1px dashed var(--dark-green);
+            padding-bottom: 5px;
+            letter-spacing: 1px;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 15px;
+            background: #111;
+            border: 1px solid var(--main-green);
+            margin-top: 5px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--main-green);
+            width: 0%;
+            transition: width 0.5s ease;
+            box-shadow: 0 0 10px var(--main-green);
+        }
+        
+        /* Bloque de código desencriptándose */
+        #hex-stream {
+            font-size: 0.8rem;
+            color: var(--dark-green);
+            word-break: break-all;
+            height: 60px;
+            overflow: hidden;
+            line-height: 1.2;
+            margin-top: 10px;
+            text-shadow: none;
+        }
+
+        /* Botón Hackeo Automático */
+        #btn-auto-hack {
+            background-color: transparent;
+            color: var(--yellow);
+            border: 2px solid var(--yellow);
+            padding: 10px;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            font-size: 1.1rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.3s;
+            text-shadow: 0 0 5px var(--yellow);
+            box-shadow: inset 0 0 10px rgba(255,204,0,0.2);
+            margin-top: auto;
+        }
+
+        #btn-auto-hack:hover:not(:disabled) {
+            background-color: var(--yellow);
+            color: #000;
+        }
+
+        #btn-auto-hack:disabled {
+            border-color: #333;
+            color: #333;
+            text-shadow: none;
+            box-shadow: none;
+            cursor: not-allowed;
+            background: #111;
+        }
+
+        #terminal-container {
+            flex-grow: 1;
+            padding: 30px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            background: radial-gradient(circle at center, rgba(5,21,5,0.8) 0%, rgba(0,0,0,0.9) 100%);
+        }
+
+        #terminal-container::-webkit-scrollbar { width: 10px; }
+        #terminal-container::-webkit-scrollbar-thumb { background: var(--dark-green); }
+
+        .output-line {
+            margin: 8px 0;
+            word-wrap: break-word;
+            line-height: 1.5;
+            font-size: 1.3rem;
+            letter-spacing: 1px;
+        }
+
+        .system-msg { color: var(--cyan); text-shadow: 0 0 5px var(--cyan); }
+        .error-msg { color: var(--alert-red); text-shadow: 0 0 5px var(--alert-red); }
+        .success-msg { color: var(--main-green); font-weight: bold; text-shadow: var(--glow); }
+        .warning-msg { color: var(--yellow); text-shadow: 0 0 5px rgba(255,204,0,0.5); }
+        .user-msg { color: #fff; }
+
+        #input-container {
+            display: flex;
+            align-items: center;
+            margin-top: 15px;
+            font-size: 1.4rem;
+        }
+
+        #prompt { margin-right: 15px; font-weight: bold; color: var(--main-green); }
+
+        #cmd-input {
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.4rem;
+            flex-grow: 1;
+            outline: none;
+            caret-color: transparent;
+            text-shadow: 0 0 5px #fff;
+        }
+
+        .cursor-blink {
+            display: inline-block;
+            width: 12px;
+            height: 1.2em;
+            background-color: var(--main-green);
+            vertical-align: text-bottom;
+            animation: blink 1s step-end infinite;
+            margin-left: 2px;
+            box-shadow: 0 0 5px var(--main-green);
+        }
+
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    </style>
+</head>
+<body>
+
+    <div id="header">
+        <div>SYS_ADMIN: KALI INFILTRATOR_V4.2</div>
+        <div id="trace-timer">RASTREO: 07:00</div>
+    </div>
+
+    <div id="main-container">
+        <!-- Panel Izquierdo -->
+        <div id="side-panel">
+            <div class="panel-box">
+                <div class="panel-title">ESTADO DE RED</div>
+                <div>IP Local: 192.168.1.45</div>
+                <div>Proxy: [OCULTO]</div>
+                <div class="warning-msg" id="status-glitch" style="margin-top:10px;">Fuego Cruzado: ACTIVO</div>
+            </div>
+
+            <div class="panel-box">
+                <div class="panel-title">EXTRACCIÓN DE DATOS</div>
+                <div>Nodos Hackeados: <span id="nodes-hacked">0</span>/10</div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="hack-progress"></div>
+                </div>
+            </div>
+
+            <div class="panel-box" style="flex-grow: 1; display:flex; flex-direction: column;">
+                <div class="panel-title">TRÁFICO INTERCEPTADO</div>
+                <div id="hex-stream">0x0000 0000 0000</div>
+                
+                <div class="panel-title" style="margin-top: 20px;">REGISTRO</div>
+                <div id="log-text" style="font-size: 0.9rem; color: #888; margin-bottom: 20px;">Esperando conexión...</div>
+                
+                <button id="btn-auto-hack" onclick="useAutoHack()">⚡ HACKEO AUTOMÁTICO</button>
+            </div>
+        </div>
+
+        <!-- Terminal -->
+        <div id="terminal-container">
+            <div id="output"></div>
+            <div id="input-container" style="display: none;">
+                <span id="prompt">root@hacker:~#</span>
+                <input type="text" id="cmd-input" autocomplete="off" spellcheck="false" autofocus>
+                <span class="cursor-blink"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const outputDiv = document.getElementById('output');
+        const inputContainer = document.getElementById('input-container');
+        const cmdInput = document.getElementById('cmd-input');
+        const timerDisplay = document.getElementById('trace-timer');
+        const terminalContainer = document.getElementById('terminal-container');
+        const hackProgress = document.getElementById('hack-progress');
+        const nodesHacked = document.getElementById('nodes-hacked');
+        const logText = document.getElementById('log-text');
+        const btnAutoHack = document.getElementById('btn-auto-hack');
+        const hexStream = document.getElementById('hex-stream');
+
+        let timeLeft = 420; // 7 minutos
+        let timerInterval;
+        let hexInterval;
+        let currentQuestionIndex = 0;
+        let activeQuestions = [];
+        let isGameActive = false;
+        let hasSkip = true;
+        const totalNodes = 10;
+
+        // Base de datos de 25 preguntas
+        const masterQuestions = [
+            { q: "Comando de inicio: 1, 3, 5, 7, ?\nIngresa el número que sigue:", a: "9" },
+            { q: "Contraseña invertida: 'laudividni'\nEscribe la palabra correctamente:", a: "individual" },
+            { q: "Bug detectado en código: imprimir('Alerta'\nFalta un símbolo para cerrar. ¿Cuál es?", a: ")" },
+            { q: "Dron virtual mirando al Norte. Gira 90 grados a la derecha.\n¿Hacia qué punto cardinal mira ahora?", a: "este" },
+            { q: "Variable x = 5\nVariable y = 5\nx = x + y\n¿Cuánto vale 'x' ahora?", a: "10" },
+            { q: "SI (bateria < 10) { cargar() } SINO { usar() }\nBatería = 5%. ¿El sistema va a 'cargar' o 'usar'?", a: "cargar" },
+            { q: "Código binario: 0 es Apagado, 1 es Encendido.\nLuces: Encendido, Apagado, Encendido.\nEscribe el código de 3 números:", a: "101" },
+            { q: "Algoritmo matutino:\n1. Ir a la escuela\n2. Despertar\n3. Desayunar\nEscribe los números en el orden correcto (ej: 123):", a: "231" },
+            { q: "1 Mega = 1000 Kilos.\n¿Cuántos Kilos hay en 3 Megas?", a: "3000" },
+            { q: "Descarga: 10MB en total. Baja 2MB por segundo.\n¿Cuántos segundos tarda en bajar todo?", a: "5" },
+            { q: "Criptografía básica:\nA=1, B=2, C=3, D=4, E=5, F=6\nDescifra esta palabra: 3-1-6-5", a: "cafe" },
+            { q: "Coordenadas: Estás en X=2, Y=4. Te mueves 2 pasos adelante en el eje X.\n¿Cuál es el nuevo valor de X?", a: "4" },
+            { q: "Sistema Operativo intruso:\nWindows, Linux, Manzana, Android\n¿Qué palabra NO es un sistema operativo?", a: "manzana" },
+            { q: "Secuencia alfabética: A, C, E, G, ?\n¿Qué letra sigue en el abecedario?", a: "i" },
+            { q: "Bucle descendente: 50, 40, 30, 20, ?\n¿Qué número sigue?", a: "10" },
+            { q: "Concatenar texto: nombre = 'Ciber' + 'hacker'\n¿Qué palabra se guardó en la memoria?", a: "ciberhacker" },
+            { q: "Seguridad: ¿Cuál de estas 3 contraseñas es más segura?\n'1234', 'hola', 'H4ck3r!'\nEscríbela exactamente igual:", a: "H4ck3r!" },
+            { q: "Bug de ciclo infinito: repetir (4) { saltar() }\n¿Cuántas veces va a saltar el personaje?", a: "4" },
+            { q: "Adivinanza Hardware: Tengo teclas pero no hago música, te ayudo a escribir en la compu. ¿Qué soy?", a: "teclado" },
+            { q: "Patrones visuales: ⬛⬜⬛⬜⬛ ?\n¿Qué color sigue: 'blanco' o 'negro'?", a: "blanco" },
+            { q: "Lógica de red: Hay 3 computadoras. La compu A se conecta con la B y con la C. ¿Cuántos cables usó la compu A?", a: "2" },
+            { q: "memoria = 100\nmemoria = memoria - 50\n¿Cuánto vale la memoria ahora?", a: "50" },
+            { q: "Operador lógico: 10 es mayor que 15.\n¿Es 'falso' o 'verdadero'?", a: "falso" },
+            { q: "El 'ratón' de la computadora se conoce comúnmente por su nombre en inglés. ¿Cuál es?", a: "mouse" },
+            { q: "Un archivo PDF es un documento. Un archivo MP3 es un archivo de...\n(Opciones: video, audio, texto)", a: "audio" }
+        ];
+
+        // Simulador de datos encriptados (Hex Stream)
+        function startHexStream() {
+            hexInterval = setInterval(() => {
+                if(!isGameActive) return;
+                let stream = '';
+                for(let i=0; i<30; i++) {
+                    stream += Math.floor(Math.random()*16).toString(16).toUpperCase();
+                    if(i % 4 === 3) stream += ' ';
+                }
+                hexStream.innerText = stream;
+            }, 100);
+        }
+
+        // Efectos Glitch Aleatorios
+        setInterval(() => {
+            if (isGameActive && Math.random() > 0.7) {
+                const glitchEl = document.getElementById('status-glitch');
+                glitchEl.classList.add('glitch-active');
+                setTimeout(() => glitchEl.classList.remove('glitch-active'), 300);
+            }
+        }, 1500);
+
+        function shuffleArray(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+        }
+
+        function scrollToBottom() {
+            terminalContainer.scrollTop = terminalContainer.scrollHeight;
+        }
+
+        function updateSideLog(msg) { logText.innerText = msg; }
+
+        function printLine(text, className = 'output-line', speed = 10) {
+            return new Promise((resolve) => {
+                const line = document.createElement('div');
+                line.className = `output-line ${className}`;
+                line.style.whiteSpace = 'pre-wrap';
+                outputDiv.appendChild(line);
+                
+                let i = 0;
+                const typing = setInterval(() => {
+                    line.textContent += text.charAt(i);
+                    i++;
+                    scrollToBottom();
+                    if (i >= text.length) {
+                        clearInterval(typing);
+                        resolve();
+                    }
+                }, speed); 
+            });
+        }
+
+        async function initGame() {
+            shuffleArray(masterQuestions);
+            activeQuestions = masterQuestions.slice(0, totalNodes);
+            
+            updateSideLog("Cargando kernel...");
+            
+            // Secuencia de booteo ficticia
+            await printLine("BIOS VERSION 2.13.9 - INITIALIZING...", "system-msg", 5);
+            await printLine("Mounting root filesystem... [OK]", "system-msg", 5);
+            await printLine("Loading network drivers... [OK]", "system-msg", 5);
+            await printLine("Bypassing firewall protocols... [OK]", "system-msg", 5);
+            await printLine("==========================================", "success-msg", 2);
+            await printLine("SISTEMA CENTRAL: KALI INFILTRATOR v4.2", "success-msg", 2);
+            await printLine("==========================================\n", "success-msg", 2);
+            await printLine("Para iniciar la extracción de datos, escribe el comando: iniciar", "warning-msg");
+            
+            inputContainer.style.display = 'flex';
+            cmdInput.focus();
+        }
+
+        async function loadNextQuestion() {
+            if (currentQuestionIndex >= totalNodes) {
+                winGame();
+                return;
+            }
+
+            const qObj = activeQuestions[currentQuestionIndex];
+            inputContainer.style.display = 'none';
+
+            updateSideLog(`Explotando Nodo ${currentQuestionIndex + 1}...`);
+            await printLine("\n------------------------------------------", "system-msg", 2);
+            await printLine(`[ESCANEANDO SEGURIDAD - NODO ${currentQuestionIndex + 1} / ${totalNodes}]`, "system-msg", 2);
+            await printLine(qObj.q, 'warning-msg', 15);
+
+            inputContainer.style.display = 'flex';
+            cmdInput.value = '';
+            cmdInput.focus();
+            
+            if (!isGameActive) {
+                startTimer();
+                startHexStream();
+                isGameActive = true;
+                updateSideLog("Rastreo activado. ¡Cuidado!");
+            }
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                let m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+                let s = (timeLeft % 60).toString().padStart(2, '0');
+                timerDisplay.textContent = `RASTREO: ${m}:${s}`;
+
+                if (timeLeft <= 60) {
+                    timerDisplay.style.color = "#fff";
+                    timerDisplay.style.background = "var(--alert-red)";
+                }
+
+                if (timeLeft <= 0) loseGame();
+            }, 1000);
+        }
+
+        document.addEventListener('click', () => {
+            if (inputContainer.style.display !== 'none') cmdInput.focus();
+        });
+
+        async function processAnswer(answer, isAutoHack = false) {
+            inputContainer.style.display = 'none';
+            if (!isAutoHack) {
+                await printLine(`root@hacker:~# ${cmdInput.value}`, 'user-msg', 2);
+            }
+
+            if (!isGameActive && currentQuestionIndex === 0) {
+                if (answer === 'iniciar') {
+                    await printLine("[OK] ACCESO AUTORIZADO. LANZANDO EXPLOIT...", 'success-msg');
+                    setTimeout(() => { loadNextQuestion(); }, 500);
+                } else {
+                    await printLine("ERROR. Comando no reconocido. Escribe 'iniciar'.", 'error-msg');
+                    inputContainer.style.display = 'flex';
+                    cmdInput.value = '';
+                    cmdInput.focus();
+                }
+                return;
+            }
+
+            const qObj = activeQuestions[currentQuestionIndex];
+            let correctAnswer = qObj.a.toLowerCase().replace(/\s+/g, '').normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            let userAnswer = answer.toLowerCase().replace(/\s+/g, '').normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+            if (userAnswer === correctAnswer || isAutoHack) {
+                await printLine(">> VULNERABILIDAD ENCONTRADA. NODO HACKEADO.", 'success-msg', 10);
+                currentQuestionIndex++;
+                
+                let progressPercentage = (currentQuestionIndex / totalNodes) * 100;
+                hackProgress.style.width = `${progressPercentage}%`;
+                nodesHacked.innerText = currentQuestionIndex;
+                updateSideLog(`Nodo ${currentQuestionIndex} asegurado.`);
+                
+                setTimeout(() => { loadNextQuestion(); }, 600);
+            } else {
+                document.body.classList.add('error-glitch-effect');
+                setTimeout(() => document.body.classList.remove('error-glitch-effect'), 400);
+                
+                await printLine(">> FATAL ERROR. RESPUESTA INCORRECTA.", 'error-msg');
+                timeLeft = Math.max(0, timeLeft - 20);
+                await printLine(">> CORTAFUEGOS ACTIVADO: -20 SEGUNDOS.", 'error-msg');
+                updateSideLog("¡Fallo de inyección! Rastreando...");
+                
+                inputContainer.style.display = 'flex';
+                cmdInput.value = '';
+                cmdInput.focus();
+            }
+        }
+
+        cmdInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const answer = cmdInput.value.trim();
+                if (answer === '') return;
+                processAnswer(answer, false);
+            }
+        });
+
+        async function useAutoHack() {
+            if (!isGameActive || !hasSkip) return;
+            
+            hasSkip = false;
+            btnAutoHack.disabled = true;
+            btnAutoHack.innerText = "[ BYPASS USADO ]";
+            
+            inputContainer.style.display = 'none';
+            await printLine(`\nroot@hacker:~# EJECUTANDO FUERZA_BRUTA.sh`, 'warning-msg', 5);
+            await printLine(`INYECCIÓN DE CÓDIGO FORZADA...`, 'warning-msg', 10);
+            
+            setTimeout(() => { processAnswer('', true); }, 800);
+        }
+
+        async function winGame() {
+            clearInterval(timerInterval);
+            clearInterval(hexInterval);
+            isGameActive = false;
+            inputContainer.style.display = 'none';
+            timerDisplay.textContent = "CONEXIÓN ENCRIPTADA";
+            timerDisplay.style.background = "transparent";
+            timerDisplay.style.color = "var(--main-green)";
+            timerDisplay.style.borderColor = "var(--main-green)";
+            btnAutoHack.disabled = true;
+            hexStream.innerText = "[ DATOS DESCARGADOS CON ÉXITO ]";
+            hexStream.style.color = "var(--main-green)";
+            
+            updateSideLog("¡Hackeo completado 100%!");
+
+            await printLine("\n==========================================", "success-msg", 2);
+            await printLine("██████████████████████████████████████████", "success-msg", 2);
+            await printLine("¡SISTEMA CENTRAL COMPROMETIDO!", "success-msg", 15);
+            await printLine("LA BASE DE DATOS HA SIDO DESCARGADA.", "success-msg", 15);
+            await printLine("██████████████████████████████████████████", "success-msg", 2);
+            await printLine("\nBorrando huellas del servidor...\nApagando proxy de seguridad...\n", "system-msg");
+            await printLine("PRESIONA F5 PARA DESAPARECER DE LA RED.", "warning-msg");
+        }
+
+        async function loseGame() {
+            clearInterval(timerInterval);
+            clearInterval(hexInterval);
+            isGameActive = false;
+            inputContainer.style.display = 'none';
+            timerDisplay.textContent = "SISTEMA BLOQUEADO";
+            updateSideLog("Conexión interceptada por admin.");
+            btnAutoHack.disabled = true;
+            hexStream.innerText = "ACCESO DENEGADO.\nRASTREO DE IP COMPLETADO.";
+            hexStream.style.color = "var(--alert-red)";
+
+            document.body.style.boxShadow = "inset 0 0 100px rgba(255, 0, 0, 0.8)";
+            
+            await printLine("\n==========================================", "error-msg", 2);
+            await printLine("¡TIEMPO AGOTADO! RASTREO COMPLETADO AL 100%.", "error-msg", 10);
+            await printLine("TU DIRECCIÓN IP FUE ENVIADA A SEGURIDAD.", "error-msg", 10);
+            await printLine("CONEXIÓN CERRADA FORZOSAMENTE.", "error-msg", 10);
+            await printLine("\nPRESIONA F5 PARA INTENTARLO DE NUEVO.", "warning-msg");
+        }
+
+        window.onload = initGame;
+    </script>
+</body>
+</html>
