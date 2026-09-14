@@ -81,15 +81,74 @@
         /* --- HEADER --- */
         .top-header {
             position: absolute; top: 0; left: 0; width: 100%;
-            padding: 4vh 5vw; display: flex; justify-content: space-between; align-items: center; z-index: 100;
+            padding: 3vh 5vw; display: flex; justify-content: space-between; align-items: flex-start; z-index: 100;
         }
-        .brand { font-family: 'Bebas Neue', cursive; color: var(--accent-color); font-size: 2.5rem; letter-spacing: 3px; }
         
+        .header-left {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: flex-start;
+        }
+
+        .brand { font-family: 'Bebas Neue', cursive; color: var(--accent-color); font-size: 2.5rem; letter-spacing: 3px; line-height: 1; }
+        
+        /* --- CHAT DE CÓDIGOS SECRETOS --- */
+        .secret-chat-box {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(20, 20, 25, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 4px 8px;
+            border-radius: 20px;
+            backdrop-filter: blur(5px);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .secret-chat-box:focus-within {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 10px rgba(229, 9, 20, 0.4);
+        }
+
+        .secret-chat-box input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #fff;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.8rem;
+            width: 160px;
+            padding-left: 5px;
+        }
+
+        .secret-chat-box input::placeholder {
+            color: #888;
+        }
+
+        .secret-chat-box button {
+            background: var(--accent-color);
+            border: none;
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: bold;
+            padding: 5px 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        .secret-chat-box button:hover {
+            background: #b20710;
+            transform: scale(1.05);
+        }
+
         .prof-badge {
             font-size: 0.9rem; 
             font-weight: 600; 
             opacity: 0.8;
             font-family: 'Noto Color Emoji', 'Montserrat', sans-serif;
+            margin-top: 5px;
         }
 
         /* --- HERO SECTION --- */
@@ -186,7 +245,13 @@
         <div class="bg-fixed"></div>
 
         <div class="top-header">
-            <div class="brand" id="brand-logo">PORTAL DE JUEGOS</div>
+            <div class="header-left">
+                <div class="brand" id="brand-logo">PORTAL DE JUEGOS</div>
+                <div class="secret-chat-box">
+                    <input type="text" id="secret-input" placeholder="💬 Código secreto..." autocomplete="off">
+                    <button id="secret-btn" onclick="checkSecretCode()">Enviar</button>
+                </div>
+            </div>
             <div class="prof-badge">👨‍🏫 PROF. GASTÓN</div>
         </div>
 
@@ -220,6 +285,17 @@
             document.getElementById('login-overlay').style.display = 'none';
             document.getElementById('main-app').classList.add('visible');
             init();
+        }
+
+        // Prevenir interferencias de navegación al escribir en el chat secreto
+        const secretInput = document.getElementById('secret-input');
+        if(secretInput) {
+            secretInput.addEventListener('keydown', (e) => {
+                e.stopPropagation();
+                if (e.key === 'Enter') {
+                    checkSecretCode();
+                }
+            });
         }
     });
 
@@ -294,7 +370,8 @@
         {
             category: "Informática", color: "#00f2fe",
             games: [ 
-                { title: 'System_Search', desc: 'Sopa de letras de componentes.', icon: '🔍', url: 'System_Search.html' }
+                { title: 'System_Search', desc: 'Sopa de letras de componentes.', icon: '🔍', url: 'System_Search.html' },
+                { title: 'Infiltración Digital', desc: 'Supera los cortafuegos y hackea el sistema central.', icon: '💻', url: 'Infiltracion-digital.html' }
             ]
         },
         {
@@ -407,10 +484,29 @@
         document.getElementById('hero-cat').style.color = color;
     }
 
-    // --- SISTEMAS SECRETOS (KEYLOGGER) ---
+    // --- SISTEMAS SECRETOS (CHAT Y KEYLOGGER) ---
     let secretBuffer = "";
     let extrasUnlocked = false;
     let officeUnlocked = false;
+
+    function checkSecretCode() {
+        const input = document.getElementById('secret-input');
+        const code = input.value.trim().toLowerCase();
+
+        if (code === "031") {
+            unlockExtras();
+            input.value = "";
+        } else if (code === "office") {
+            unlockOffice();
+            input.value = "";
+        } else if (code !== "") {
+            input.style.color = "#ff4d4d";
+            setTimeout(() => {
+                input.style.color = "#fff";
+                input.value = "";
+            }, 800);
+        }
+    }
 
     function unlockExtras() {
         if (extrasUnlocked) return;
@@ -482,6 +578,9 @@
             if(e.key === 'Enter') ingresarAlPortal();
             return; 
         }
+
+        // Si el usuario está escribiendo dentro del cuadro de texto del chat, ignorar los atajos globales
+        if (document.activeElement.id === 'secret-input') return;
 
         secretBuffer += e.key.toLowerCase();
         if (secretBuffer.length > 6) secretBuffer = secretBuffer.substring(1); 
