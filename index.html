@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal de Juegos</title>
+    <title>Portal de Juegos | Prof. Gastón</title>
+    
+    <!-- ICONO DE PESTAÑA -->
+    <link rel="icon" type="image/png" href="logo.png">
     
     <!-- FUENTES E ICONOS -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Noto+Color+Emoji&display=swap" rel="stylesheet">
@@ -212,7 +215,7 @@
             transition: padding 0.3s ease;
         }
         body.light-mode .tile-label { background: linear-gradient(0deg, rgba(238,242,245,0.98) 15%, transparent 100%); color: var(--text-main); }
-        .tile:hover .tile-label, .tile.focused .tile-label { padding-bottom: 18px; } /* Levanta el texto ligeramente al enfocar */
+        .tile:hover .tile-label, .tile.focused .tile-label { padding-bottom: 18px; }
 
         .hero-tile { grid-column: 1 / span 2; grid-row: 1 / span 2; }
         .hero-tile .tile-icon { font-size: 90px; }
@@ -482,7 +485,6 @@
             return `rgba(${parseInt(hex.substring(0,2),16)}, ${parseInt(hex.substring(2,4),16)}, ${parseInt(hex.substring(4,6),16)}, ${alpha})`;
         }
 
-        /* --- OPTIMIZACIÓN: REGISTRO DINÁMICO DE EVENTOS DEL MOUSE --- */
         function attachMouseTracking() {
             if (mouseMoveHandler) return;
             mouseMoveHandler = (e) => {
@@ -491,7 +493,6 @@
                         document.documentElement.style.setProperty('--mouse-x', e.clientX + 'px');
                         document.documentElement.style.setProperty('--mouse-y', e.clientY + 'px');
                         
-                        // Efecto Parallax en el fondo Mesh
                         if(typeof gsap !== 'undefined') {
                             const normX = (e.clientX / window.innerWidth - 0.5) * 2;
                             const normY = (e.clientY / window.innerHeight - 0.5) * 2;
@@ -606,7 +607,6 @@
             isNavigating = true; 
             const grid = document.getElementById('games-grid');
             
-            // Destruir VanillaTilt de forma segura para evitar fugas de memoria
             document.querySelectorAll('.tile').forEach(tile => {
                 if (tile.vanillaTilt) tile.vanillaTilt.destroy();
             });
