@@ -3,622 +3,819 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal de Juegos - Prof. Gastón</title>
-    <link rel="icon" type="image/png" href="logo.png">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;600;800&family=Noto+Color+Emoji&display=swap');
+    <title>Xbox Dashboard Ultra | Alumno</title>
+    
+    <!-- FUENTES E ICONOS -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Noto+Color+Emoji&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@twemoji/api@latest/dist/twemoji.min.js" crossorigin="anonymous"></script>
+    
+    <!-- LIBRERÍAS EXTERNAS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.0/vanilla-tilt.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.net.min.js"></script>
 
+    <style>
+        /* --- VARIABLES GLOBALES Y MODO OSCURO (POR DEFECTO) --- */
         :root {
-            --bg-base: #0a0a0b;
-            --accent-color: #e50914;
-            --card-width: 19vw;
-            --card-gap: 2vw;
+            --bg-base: #0b0c10;
+            --panel-bg: rgba(20, 22, 28, 0.4);
+            --panel-border: rgba(255, 255, 255, 0.08);
+            --text-main: #f8f9fa;
+            --text-muted: #8b8d96;
+            --accent: #107C10;
+            --accent-glow: rgba(16, 124, 16, 0.5);
+            
+            --mouse-x: 50vw;
+            --mouse-y: 50vh;
+            
+            --tile-w: 210px;
+            --tile-h: 135px;
+            --font-family: 'Inter', system-ui, sans-serif;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+        /* --- VARIABLES MODO CLARO --- */
+        body.light-mode {
+            --bg-base: #eef2f5;
+            --panel-bg: rgba(255, 255, 255, 0.65);
+            --panel-border: rgba(0, 0, 0, 0.1);
+            --text-main: #1a1a24;
+            --text-muted: #5e606a;
+        }
+
+        * { 
+            margin: 0; padding: 0; box-sizing: border-box; user-select: none;
+            -webkit-font-smoothing: antialiased;
+        }
 
         body {
-            background-color: var(--bg-base);
-            color: #fff;
-            font-family: 'Montserrat', sans-serif;
-            overflow: hidden;
-            height: 100vh; width: 100vw;
+            font-family: var(--font-family); color: var(--text-main);
+            height: 100vh; width: 100vw; overflow: hidden;
+            display: flex; flex-direction: column; background-color: var(--bg-base);
+            transition: background-color 0.4s ease, color 0.4s ease;
+            perspective: 1000px; /* Añadido para mejor profundidad 3D en toda la vista */
         }
 
-        /* --- PANTALLA DE INICIO --- */
-        #login-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle at center, #1a1a1f 0%, #0a0a0b 100%);
-            z-index: 20000; 
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            transition: opacity 0.5s ease;
+        /* --- EFECTOS VISUALES OPTIMIZADOS PARA GPU --- */
+        .spotlight-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 5;
+            background: radial-gradient(800px circle at var(--mouse-x) var(--mouse-y), rgba(255, 255, 255, 0.08), transparent 45%);
+            opacity: 0; transition: opacity 0.5s ease; mix-blend-mode: screen;
+            will-change: background, opacity; transform: translateZ(0);
         }
+        body.light-mode .spotlight-overlay { mix-blend-mode: overlay; background: radial-gradient(800px circle at var(--mouse-x) var(--mouse-y), rgba(0, 0, 0, 0.05), transparent 45%); }
+        body.detail-mode .spotlight-overlay { opacity: 1; }
 
-        .login-card {
-            background: rgba(0, 0, 0, 0.6); padding: 50px 40px; border-radius: 10px;
-            border: 1px solid rgba(255,255,255,0.05); width: 100%; max-width: 400px;
-            text-align: center; box-shadow: 0 15px 40px rgba(0,0,0,0.8);
+        .crt-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%);
+            background-size: 100% 4px; z-index: 9995; pointer-events: none;
+            opacity: 0; mix-blend-mode: overlay; transform: translateZ(0);
+            pointer-events: none;
         }
-
-        .login-card h1 { 
-            font-family: 'Bebas Neue', cursive; font-size: 3rem; 
-            color: var(--accent-color); margin-bottom: 30px; letter-spacing: 2px; line-height: 1;
-        }
-
-        .login-btn {
-            width: 100%; padding: 15px; background: var(--accent-color); color: white; border: none;
-            border-radius: 5px; font-weight: bold; font-family: 'Montserrat', sans-serif; cursor: pointer;
-            font-size: 1.1rem; transition: background 0.3s; margin-top: 10px;
-        }
-
-        .login-btn:hover { background: #b20710; transform: scale(1.02); }
+        body.light-mode .crt-overlay { opacity: 0.3; }
+        body.detail-mode .crt-overlay { opacity: 1; animation: crtFlicker 0.15s infinite; }
         
-        .login-footer { margin-top: 25px; font-size: 0.85rem; color: #777; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;}
-
-        /* --- ENVOLTORIO PRINCIPAL --- */
-        #main-app { opacity: 0; pointer-events: none; transition: opacity 0.5s ease; }
-        #main-app.visible { opacity: 1; pointer-events: auto; }
-
-        /* --- FONDO --- */
-        .bg-fixed {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;
-            background: radial-gradient(circle at 0% 0%, #1a1a1f 0%, #0a0a0b 100%);
+        @keyframes crtFlicker {
+            0% { opacity: 0.95; } 50% { opacity: 1; } 100% { opacity: 0.95; }
         }
 
-        /* --- LOADER NETFLIX --- */
-        #loader-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; display: none; justify-content: center; align-items: center;
-            flex-direction: column; z-index: 10000;
-        }
-        .netflix-spinner {
-            width: 50px; height: 50px; border: 4px solid rgba(229, 9, 20, 0.2);
-            border-top: 4px solid var(--accent-color); border-radius: 50%;
-            animation: spin 0.7s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* --- HEADER --- */
-        .top-header {
-            position: absolute; top: 0; left: 0; width: 100%;
-            padding: 3vh 5vw; display: flex; justify-content: space-between; align-items: flex-start; z-index: 100;
+        #vanta-bg { 
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; pointer-events: none; 
+            transition: opacity 0.5s ease; transform: translateZ(0);
+            will-change: opacity;
         }
         
-        .header-left {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            align-items: flex-start;
+        .ambient-mesh { 
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 2; overflow: hidden; pointer-events: none; 
+            mix-blend-mode: screen; transform: translateZ(0);
+            will-change: transform;
         }
-
-        .brand { font-family: 'Bebas Neue', cursive; color: var(--accent-color); font-size: 2.5rem; letter-spacing: 3px; line-height: 1; }
+        body.light-mode .ambient-mesh { mix-blend-mode: multiply; opacity: 0.6; }
         
-        /* --- CHAT DE CÓDIGOS SECRETOS --- */
-        .secret-chat-box {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(20, 20, 25, 0.75);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            padding: 4px 8px;
-            border-radius: 20px;
-            backdrop-filter: blur(5px);
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        @keyframes floatOrb { 
+            0% { transform: translate3d(0, 0, 0) scale(1) rotate(0deg); } 
+            33% { transform: translate3d(40px, -60px, 0) scale(1.15) rotate(10deg); } 
+            66% { transform: translate3d(-30px, 30px, 0) scale(0.85) rotate(-10deg); } 
+            100% { transform: translate3d(0, 0, 0) scale(1) rotate(0deg); } 
+        }
+        .orb { 
+            position: absolute; border-radius: 50%; filter: blur(120px); opacity: 0.45; transition: background 1s ease; 
+            will-change: transform; backface-visibility: hidden;
+        }
+        .orb.animated { animation: floatOrb 25s ease-in-out infinite alternate; }
+        .orb-1 { top: -20%; left: -10%; width: 65vw; height: 65vw; }
+        .orb-2 { bottom: -20%; right: -10%; width: 55vw; height: 55vw; animation-delay: -12s; }
+
+        /* --- CABECERA --- */
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 35px 60px 20px; height: 120px; flex-shrink: 0; z-index: 10; position: relative;
+            background: linear-gradient(180deg, var(--bg-base) 0%, transparent 100%);
+            transition: background 0.4s ease;
         }
 
-        .secret-chat-box:focus-within {
-            border-color: var(--accent-color);
-            box-shadow: 0 0 10px rgba(229, 9, 20, 0.4);
-        }
-
-        .secret-chat-box input {
-            background: transparent;
-            border: none;
-            outline: none;
-            color: #fff;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 0.8rem;
-            width: 160px;
-            padding-left: 5px;
-        }
-
-        .secret-chat-box input::placeholder {
-            color: #888;
-        }
-
-        .secret-chat-box button {
-            background: var(--accent-color);
-            border: none;
-            color: #fff;
-            font-size: 0.75rem;
-            font-weight: bold;
-            padding: 5px 12px;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: transform 0.2s, background 0.2s;
-        }
-
-        .secret-chat-box button:hover {
-            background: #b20710;
-            transform: scale(1.05);
-        }
-
-        .prof-badge {
-            font-size: 0.9rem; 
-            font-weight: 600; 
-            opacity: 0.8;
-            font-family: 'Noto Color Emoji', 'Montserrat', sans-serif;
-            margin-top: 5px;
-        }
-
-        /* --- HERO SECTION --- */
-        .hero-section { 
-            position: absolute; 
-            top: 12vh; 
-            right: 0; 
-            width: 100%; 
-            z-index: 30; 
-            pointer-events: none; 
-        }
-        .hero-content { 
-            width: 45%; 
-            margin-left: auto; 
-            padding-right: 5vw; 
-            text-align: right; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: flex-end; 
-        }
-        .hero-category { color: var(--accent-color); font-weight: 800; text-transform: uppercase; font-size: 1.2vw; letter-spacing: 2px; margin-bottom: 10px; }
-        .hero-logo { font-family: 'Bebas Neue', cursive; font-size: 3.5vw; line-height: 1; margin-bottom: 15px; text-shadow: 2px 2px 10px rgba(0,0,0,0.5); }
-        .hero-desc { font-size: 1.1vw; color: #ccc; max-width: 90%; line-height: 1.5; font-weight: 400; }
-
-        /* --- FILAS DE JUEGOS --- */
-        .rows-viewport { 
-            position: absolute; bottom: 0; left: 0; width: 100%; 
-            height: 85vh; 
-            z-index: 20; 
-            overflow: hidden; 
-            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 100%);
-            mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 100%);
-        }
-        .rows-container { 
-            display: flex; flex-direction: column; gap: 5vh; 
-            padding-top: 15vh; 
-            padding-bottom: 10vh; 
-            transition: transform 0.5s cubic-bezier(0.2, 1, 0.3, 1); 
-            will-change: transform; transform: translateZ(0); 
-        }
-        .row { display: flex; flex-direction: column; gap: 15px; }
-        .row-title { font-size: 1vw; font-weight: 600; color: rgba(255,255,255,0.4); padding-left: 5vw; text-transform: uppercase; letter-spacing: 1px; }
-        .row.active-row .row-title { color: #fff; }
-        .row-cards { display: flex; gap: var(--card-gap); padding-left: 5vw; align-items: center; }
-
-        /* --- TARJETAS --- */
-        .card {
-            flex: 0 0 var(--card-width); aspect-ratio: 16 / 9;
-            border-radius: 6px; 
-            display: flex; justify-content: center; align-items: center; flex-direction: column;
-            cursor: pointer; border: 2px solid transparent;
-            transition: transform 0.3s ease, background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        .profile-btn {
+            display: flex; align-items: center; gap: 15px; padding: 8px 20px 8px 8px; 
+            border-radius: 50px; cursor: pointer; transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), background 0.3s, border-color 0.3s, box-shadow 0.3s;
+            background: var(--panel-bg); border: 1px solid var(--panel-border); backdrop-filter: blur(10px);
             transform: translateZ(0);
         }
-        .card.locked-game {
-            opacity: 0.55;
-            cursor: not-allowed;
-        }
-        .card-icon { 
-            font-size: 3vw; 
-            margin-bottom: 8px; 
-            transition: transform 0.3s; 
-            font-family: 'Noto Color Emoji', sans-serif;
-            font-weight: normal; 
-        }
-        .card-title { font-size: 0.85vw; font-weight: 600; color: #ccc; text-align: center; }
+        .profile-btn:hover { background: rgba(128,128,128,0.1); border-color: var(--accent); box-shadow: 0 10px 25px rgba(0,0,0,0.15), 0 0 15px var(--accent-glow); transform: translateY(-2px) translateZ(0); }
+        .profile-pic { width: 45px; height: 45px; border-radius: 50%; display: flex; justify-content: center; align-items: center; background: var(--accent); font-size: 24px; box-shadow: 0 0 15px var(--accent-glow); color: white; position: relative; overflow: hidden; }
+        body.detail-mode .profile-pic::after { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent); transform: rotate(45deg); animation: shine 3s infinite; }
+        @keyframes shine { 0% { left: -100%; } 20%, 100% { left: 100%; } }
+        .profile-pic img.emoji { width: 28px; height: 28px; pointer-events: none; z-index: 2; position: relative; }
+        .profile-info { display: flex; flex-direction: column; }
+        .gamertag { font-size: 16px; font-weight: 800; letter-spacing: 0.5px; color: var(--text-main); }
+        .gamerscore { font-size: 12px; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 5px; }
+        .gs-icon { display: inline-flex; justify-content: center; align-items: center; width: 14px; height: 14px; border: 1.5px solid var(--text-muted); border-radius: 50%; font-size: 9px; font-weight: 800; }
 
-        .card.active {
-            transform: scale(1.1) translateZ(0);
-            z-index: 50;
+        .header-center { display: flex; gap: 12px; flex: 1; justify-content: center; }
+        .nav-tab { 
+            cursor: pointer; font-size: 14px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;
+            padding: 10px 20px; border-radius: 30px; transition: color 0.3s, background 0.3s, box-shadow 0.3s, transform 0.2s;
         }
-        .card.active .card-icon { transform: scale(1.2); }
-        .card.active .card-title { color: #fff; font-weight: 800; }
+        .nav-tab:hover { color: var(--text-main); background: rgba(128,128,128,0.1); transform: translateY(-1px); }
+        .nav-tab.active { color: white; background: var(--accent); box-shadow: 0 4px 15px var(--accent-glow); transform: scale(1.05); }
+
+        .header-right { display: flex; align-items: center; gap: 20px; color: var(--text-main); }
+        #clock { font-size: 18px; font-weight: 300; letter-spacing: 1px; font-variant-numeric: tabular-nums; }
+        .guide-btn {
+            background: none; border: none; color: var(--text-main); cursor: pointer; padding: 12px; 
+            border-radius: 50%; background: var(--panel-bg); backdrop-filter: blur(10px);
+            transition: transform 0.3s ease, background 0.3s, color 0.3s, border-color 0.3s, box-shadow 0.3s; 
+            display: flex; align-items: center; justify-content: center; border: 1px solid var(--panel-border);
+            transform: translateZ(0);
+        }
+        .guide-btn:hover { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 0 20px var(--accent-glow); transform: rotate(90deg) translateZ(0); }
+
+        /* --- CONTENIDO PRINCIPAL --- */
+        .main-content {
+            flex-grow: 1; padding: 10px 60px 40px; overflow-y: auto; overflow-x: hidden;
+            display: flex; flex-direction: column; scroll-behavior: smooth; z-index: 10; position: relative;
+        }
+        .main-content::-webkit-scrollbar { width: 0; }
+
+        .dashboard-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--tile-w), 1fr)); 
+            grid-auto-rows: var(--tile-h); gap: 15px; width: 100%;
+        }
+
+        /* --- TARJETAS --- */
+        .tile {
+            background: var(--panel-bg); backdrop-filter: blur(15px); border-radius: 12px;
+            border: 1px solid var(--panel-border); cursor: pointer; position: relative;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15); transform-style: preserve-3d;
+            transition: border-color 0.3s, box-shadow 0.3s, background 0.3s;
+            opacity: 0; visibility: hidden; will-change: transform, opacity;
+            contain: layout style paint;
+        }
+        .tile.locked { filter: grayscale(100%) opacity(0.5); cursor: not-allowed; }
+        
+        .tile::before {
+            content: ''; position: absolute; inset: -3px; border-radius: 15px; border: 3px solid transparent;
+            transition: border-color 0.2s, box-shadow 0.2s; pointer-events: none; z-index: 10;
+        }
+        
+        .tile:hover, .tile.focused { z-index: 15; background: rgba(128,128,128,0.1); box-shadow: 0 20px 45px rgba(0,0,0,0.4), 0 0 25px var(--accent-glow); border-color: transparent; }
+        body.light-mode .tile:hover, body.light-mode .tile.focused { box-shadow: 0 15px 35px rgba(0,0,0,0.1), 0 0 20px var(--accent-glow); }
+        .tile:hover::before, .tile.focused::before { border-color: var(--accent); box-shadow: inset 0 0 10px var(--accent-glow); }
+        .tile:active { transform: scale(0.95) !important; transition: transform 0.1s !important; }
+
+        @keyframes rgb-glitch {
+            0% { filter: drop-shadow(0 0 0 rgba(255,0,0,0.8)) drop-shadow(0 0 0 rgba(0,255,255,0.8)); }
+            20% { filter: drop-shadow(-4px 2px 0 rgba(255,0,0,0.9)) drop-shadow(4px -2px 0 rgba(0,255,255,0.9)); transform: translateZ(50px) scale(1.15) skewX(2deg); }
+            40% { filter: drop-shadow(3px -3px 0 rgba(255,0,0,0.9)) drop-shadow(-3px 3px 0 rgba(0,255,255,0.9)); transform: translateZ(50px) scale(1.15) skewX(-2deg); }
+            60% { filter: drop-shadow(-2px 4px 0 rgba(255,0,0,0.9)) drop-shadow(2px -4px 0 rgba(0,255,255,0.9)); transform: translateZ(50px) scale(1.15) skewX(1deg); }
+            100% { filter: drop-shadow(0 0 0 rgba(255,0,0,0)) drop-shadow(0 0 0 rgba(0,255,255,0)); transform: translateZ(50px) scale(1.15) skewX(0); }
+        }
+
+        .tile-icon { 
+            font-size: 55px; margin-bottom: 20px; transform: translateZ(40px); 
+            filter: drop-shadow(0 10px 10px rgba(0,0,0,0.3)); 
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            will-change: transform, filter;
+        }
+        body.detail-mode .tile:hover .tile-icon { animation: rgb-glitch 0.45s ease-out forwards; }
+        body:not(.detail-mode) .tile:hover .tile-icon { transform: translateZ(50px) scale(1.15); }
+        .tile-icon img.emoji { width: 55px; height: 55px; pointer-events: none; }
+
+        .tile-label {
+            position: absolute; bottom: 0; left: 0; width: 100%; padding: 12px;
+            font-size: 13px; font-weight: 600; color: white; background: linear-gradient(0deg, rgba(0,0,0,0.95) 0%, transparent 100%);
+            border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transform: translateZ(25px); text-align: center;
+            transition: padding 0.3s ease;
+        }
+        body.light-mode .tile-label { background: linear-gradient(0deg, rgba(238,242,245,0.98) 15%, transparent 100%); color: var(--text-main); }
+        .tile:hover .tile-label, .tile.focused .tile-label { padding-bottom: 18px; } /* Levanta el texto ligeramente al enfocar */
+
+        .hero-tile { grid-column: 1 / span 2; grid-row: 1 / span 2; }
+        .hero-tile .tile-icon { font-size: 90px; }
+        .hero-tile .tile-icon img.emoji { width: 90px; height: 90px; }
+        .hero-tile .tile-label { font-size: 18px; padding: 20px; }
+
+        /* --- BARRA INFERIOR --- */
+        .controls-bar { 
+            padding: 20px 60px; background: linear-gradient(to top, var(--bg-base), transparent);
+            display: flex; justify-content: flex-end; align-items: center; z-index: 10; position: relative;
+            transition: background 0.4s ease;
+        }
+        .search-box {
+            display: flex; align-items: center; background: var(--panel-bg); border: 1px solid var(--panel-border);
+            border-radius: 30px; padding: 5px 20px; width: 350px; transition: border-color 0.3s, box-shadow 0.3s, background 0.3s, transform 0.3s; 
+            backdrop-filter: blur(10px); transform: translateZ(0);
+        }
+        .search-box:focus-within { border-color: var(--accent); box-shadow: 0 0 20px var(--accent-glow); background: rgba(128,128,128,0.1); transform: translateY(-2px); }
+        .search-icon { color: var(--text-muted); width: 20px; transition: color 0.3s, transform 0.3s; }
+        .search-box:focus-within .search-icon { color: var(--accent); transform: scale(1.1); }
+        .cmd-input { background: transparent; border: none; color: var(--text-main); font-family: var(--font-family); font-size: 14px; padding: 12px; width: 100%; outline: none; }
+
+        /* --- MENÚ LATERAL --- */
+        .sidebar-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px); z-index: 9998; opacity: 0; visibility: hidden; transition: opacity 0.4s ease, visibility 0.4s ease; transform: translateZ(0); }
+        .sidebar { position: fixed; top: 0; left: -420px; width: 420px; height: 100vh; background: var(--panel-bg); backdrop-filter: blur(35px); border-right: 1px solid var(--panel-border); z-index: 9999; transition: left 0.5s cubic-bezier(0.19, 1, 0.22, 1), background 0.4s ease; display: flex; flex-direction: column; padding: 40px; box-shadow: 20px 0 50px rgba(0,0,0,0.5); transform: translateZ(0); }
+        body.light-mode .sidebar { background: rgba(245, 247, 250, 0.85); border-right-color: rgba(0,0,0,0.1); }
+        .sidebar.open { left: 0; }
+        .sidebar-overlay.open { opacity: 1; visibility: visible; }
+        .sidebar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .sidebar-title { font-size: 22px; font-weight: 800; display: flex; align-items: center; gap: 10px; color: var(--text-main); }
+        .close-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 8px; transition: color 0.2s, transform 0.2s, background 0.2s; border-radius: 50%; }
+        .close-btn:hover { color: var(--accent); background: rgba(128,128,128,0.1); transform: rotate(90deg); }
+
+        .settings-section { display: flex; flex-direction: column; gap: 28px; overflow-y: auto; scrollbar-width: none; flex-grow:1; }
+        .setting-block { display: flex; flex-direction: column; gap: 12px; }
+        .setting-label { font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; }
+        
+        .color-picker { display: flex; gap: 12px; flex-wrap: wrap; }
+        .color-swatch { width: 34px; height: 34px; border-radius: 50%; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; position: relative; }
+        .color-swatch:hover { transform: scale(1.2); box-shadow: 0 0 15px currentColor; }
+        .color-swatch.active::after { content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid var(--text-main); }
+        
+        .avatar-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+        .avatar-opt { font-size: 24px; text-align: center; display: flex; justify-content: center; align-items: center; height: 48px; background: rgba(128,128,128,0.05); border-radius: 10px; cursor: pointer; border: 1px solid var(--panel-border); transition: background 0.2s, border-color 0.2s, transform 0.2s; }
+        .avatar-opt:hover { background: rgba(128,128,128,0.15); transform: translateY(-2px); }
+        .avatar-opt.active { background: var(--accent-glow); border-color: var(--accent); transform: scale(1.05); }
+        .avatar-opt img.emoji { width: 26px; height: 26px; pointer-events: none; }
+
+        .perf-group { display: flex; gap: 10px; }
+        .btn-perf { flex: 1; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; background: rgba(128,128,128,0.05); border: 1px solid var(--panel-border); color: var(--text-muted); transition: background 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s; font-size: 12px; font-family: inherit; }
+        .btn-perf:hover { background: rgba(128,128,128,0.15); color: var(--text-main); }
+        .btn-perf.active { background: var(--accent); border-color: var(--accent); color: white; box-shadow: 0 0 15px var(--accent-glow); }
+        
+        .sidebar-footer { margin-top: 30px; display: flex; gap: 10px; }
+        .btn { flex: 1; padding: 14px; border-radius: 10px; font-weight: 800; cursor: pointer; font-family: var(--font-family); transition: background 0.2s, box-shadow 0.2s, transform 0.2s; border: none; color: white; text-transform: uppercase; letter-spacing: 1px;}
+        .btn-primary { background: var(--accent); } 
+        .btn-primary:hover { filter: brightness(1.15); box-shadow: 0 8px 20px var(--accent-glow); transform: translateY(-2px); }
+
+        /* --- PANTALLAS Y ALERTAS --- */
+        .achievement-toast {
+            position: fixed; top: -100px; left: 50%; transform: translateX(-50%);
+            background: #107C10; color: white; padding: 15px 25px; border-radius: 50px;
+            display: flex; align-items: center; gap: 15px; box-shadow: 0 10px 30px rgba(16, 124, 16, 0.6);
+            z-index: 10000; font-family: var(--font-family); transition: top 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            will-change: top;
+        }
+        .achievement-toast.show { top: 40px; }
+        .ach-icon { background: white; color: #107C10; width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; }
+        .ach-text-sm { font-size: 12px; font-weight: 600; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px;}
+        .ach-text-lg { font-size: 18px; font-weight: 800; }
+
+        #boot-screen, .launch-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: var(--bg-base); display: flex; justify-content: center; align-items: center;
+            flex-direction: column; z-index: 10001; transition: opacity 0.6s ease, background 0.4s ease;
+        }
+        .launch-overlay { z-index: 9997; opacity: 0; pointer-events: none; gap: 20px; backdrop-filter: blur(10px); }
+        .xbox-loader { width: 70px; height: 70px; border-radius: 50%; border: 4px solid var(--panel-border); border-top-color: var(--accent); animation: spin 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite; margin-bottom: 25px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .launch-title { font-size: 36px; font-weight: 900; color: var(--text-main); letter-spacing: 3px; transform: scale(0.8) translateZ(50px); transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
     </style>
 </head>
 <body>
 
-    <div id="login-overlay">
-        <div class="login-card">
-            <h1>PORTAL DE JUEGOS</h1>
-            <div class="login-form">
-                <button class="login-btn" onclick="ingresarAlPortal()">Acceder</button>
-            </div>
-            <div class="login-footer">Creado por el Prof. Gastón</div>
+    <div class="spotlight-overlay"></div>
+    <div class="crt-overlay"></div>
+
+    <div id="vanta-bg"></div>
+    <div class="ambient-mesh">
+        <div class="orb orb-1 animated" id="orb1"></div>
+        <div class="orb orb-2 animated" id="orb2"></div>
+    </div>
+
+    <div id="boot-screen">
+        <div class="xbox-loader" id="boot-spinner"></div>
+        <div style="font-weight: 800; letter-spacing: 4px; font-size: 14px; color: var(--text-main);">SISTEMA INICIANDO</div>
+    </div>
+
+    <div class="launch-overlay" id="launch-overlay">
+        <div class="xbox-loader" id="launch-spinner"></div>
+        <div class="launch-title" id="launch-title">CARGANDO</div>
+    </div>
+
+    <div class="achievement-toast" id="achievement">
+        <div class="ach-icon"><i data-lucide="trophy"></i></div>
+        <div>
+            <div class="ach-text-sm">Logro Desbloqueado - 100G</div>
+            <div class="ach-text-lg" id="ach-title">Secreto Revelado</div>
         </div>
     </div>
 
-    <div id="loader-overlay">
-        <div class="netflix-spinner"></div>
-        <div id="loading-msg" style="margin-top:15px; font-family:'Bebas Neue'; color:#e50914; letter-spacing:2px; font-size: 1.5rem; text-align: center;">INICIANDO...</div>
-    </div>
-
-    <div id="main-app">
-        <div class="bg-fixed"></div>
-
-        <div class="top-header">
-            <div class="header-left">
-                <div class="brand" id="brand-logo">PORTAL DE JUEGOS</div>
-                <div class="secret-chat-box">
-                    <input type="text" id="secret-input" placeholder="💬 Código secreto..." autocomplete="off">
-                    <button id="secret-btn" onclick="checkSecretCode()">Enviar</button>
+    <!-- SIDEBAR XBOX GUIDE -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title"><i data-lucide="xbox"></i> Menú Guía</div>
+            <button class="close-btn" onclick="toggleSidebar()"><i data-lucide="x" size="24"></i></button>
+        </div>
+        
+        <div class="settings-section">
+            <div class="setting-block">
+                <span class="setting-label">Tema del Sistema</span>
+                <div class="perf-group">
+                    <button class="btn-perf" id="btn-theme-dark" onclick="setTheme('dark')">OSCURO</button>
+                    <button class="btn-perf" id="btn-theme-light" onclick="setTheme('light')">CLARO</button>
                 </div>
             </div>
-            <div class="prof-badge">👨‍🏫 PROF. GASTÓN</div>
-        </div>
 
-        <div class="hero-section">
-            <div class="hero-content">
-                <div class="hero-category" id="hero-cat">CATEGORÍA</div>
-                <h1 class="hero-logo" id="hero-title">TÍTULO DEL JUEGO</h1>
-                <p class="hero-desc" id="hero-desc">Descripción...</p>
+            <div class="setting-block">
+                <span class="setting-label">Rendimiento Visual</span>
+                <div class="perf-group">
+                    <button class="btn-perf" id="btn-detail" onclick="setPerformance('detail')">MÁX. DETALLE</button>
+                    <button class="btn-perf" id="btn-perf" onclick="setPerformance('performance')">MÁX. REND. (Rápido)</button>
+                </div>
+            </div>
+            
+            <div class="setting-block">
+                <span class="setting-label">Color del Sistema</span>
+                <div class="color-picker" id="accent-group">
+                    <div class="color-swatch" style="background: #107C10;" onclick="setAccent('#107C10', this)"></div>
+                    <div class="color-swatch" style="background: #0078D7;" onclick="setAccent('#0078D7', this)"></div>
+                    <div class="color-swatch" style="background: #E81123;" onclick="setAccent('#E81123', this)"></div>
+                    <div class="color-swatch" style="background: #881798;" onclick="setAccent('#881798', this)"></div>
+                    <div class="color-swatch" style="background: #FF8C00;" onclick="setAccent('#FF8C00', this)"></div>
+                    <div class="color-swatch" style="background: #00f2fe;" onclick="setAccent('#00f2fe', this)"></div>
+                </div>
+            </div>
+
+            <div class="setting-block">
+                <span class="setting-label">Elegir Avatar</span>
+                <div class="avatar-grid" id="avatar-grid"></div>
             </div>
         </div>
 
-        <div class="rows-viewport">
-            <div class="rows-container" id="rows-container"></div>
+        <div class="sidebar-footer">
+            <button class="btn btn-primary" onclick="saveSettings()">Aplicar Cambios</button>
         </div>
-    </div>
+    </aside>
 
-<script>
-    // --- LÓGICA DE ACCESO ---
-    function ingresarAlPortal() {
-        sessionStorage.setItem('acceso_gaston', 'true');
-        document.getElementById('login-overlay').style.opacity = '0';
-        setTimeout(() => {
-            document.getElementById('login-overlay').style.display = 'none';
-            document.getElementById('main-app').classList.add('visible');
-            init(); 
-        }, 500);
-    }
+    <header class="header">
+        <div class="profile-btn" onclick="toggleSidebar()">
+            <div class="profile-pic" id="profile-pic"><span id="avatar-emoji">😎</span></div>
+            <div class="profile-info">
+                <div class="gamertag" id="gamertag-display">Alumno</div>
+                <div class="gamerscore"><span class="gs-icon">G</span> 15420</div>
+            </div>
+        </div>
+        <div class="header-center" id="tabs-container"></div>
+        <div class="header-right">
+            <div id="clock">12:00</div>
+            <button class="guide-btn" onclick="toggleSidebar()"><i data-lucide="settings"></i></button>
+        </div>
+    </header>
 
-    document.addEventListener('DOMContentLoaded', () => {
-        if(sessionStorage.getItem('acceso_gaston') === 'true') {
-            document.getElementById('login-overlay').style.display = 'none';
-            document.getElementById('main-app').classList.add('visible');
-            init();
+    <main class="main-content" id="main-scroll">
+        <div class="dashboard-grid" id="games-grid"></div>
+    </main>
+
+    <footer class="controls-bar">
+        <div class="search-box">
+            <i data-lucide="search" class="search-icon"></i>
+            <input type="text" id="cmd-input" class="cmd-input" placeholder="Buscar juego o código secreto..." autocomplete="off">
+        </div>
+    </footer>
+
+    <script>
+        const data = [
+            { category: "Lengua", color: "#e50914", games: [
+                { title: 'Lluvia de Letras', url: 'Lluvia de letras.html', emoji: '⌨️' },
+                { title: 'Constructor', url: 'Constructor de palabras.html', emoji: '🧩' },
+                { title: 'Tren de Oraciones', url: 'Tren de oraciones.html', emoji: '🚂' },
+                { title: 'Carreras de Teclado', url: 'Carreras de teclado.html', emoji: '🏎️' },
+                { title: 'Regla Ortográfica', url: 'regla ortografica.html', emoji: '🔤' },
+                { title: 'Laboratorio', url: 'Laboratorio de Clasificación.html', emoji: '🧪' },
+                { title: 'Misión Pronombres', url: 'pronombres.html', emoji: '🚀' },
+                { title: 'Detectives', url: 'detective.html', emoji: '🔍' },
+                { title: 'Archery Ortográfico', url: 'archery.html', emoji: '🏹' },
+                { title: 'Cave Runner', url: 'cave_runner.html', emoji: '🏃' }
+            ]},
+            { category: "Lógica", color: "#f5b041", games: [
+                { title: 'La Hormiga', url: 'La hormiga.html', emoji: '🐜' },
+                { title: 'Memoria Gamer', url: 'Rompe-cabezas.html', emoji: '🎮' },
+                { title: 'Pesca Marítima', url: '#', locked: true, emoji: '🔒' },
+                { title: '¿Quién suena?', url: 'Juego de sonidos animales.html', emoji: '👂' },
+                { title: 'Conectando Oficios', url: 'Juego de oficios.html', emoji: '👨‍🔧' },
+                { title: 'Burbujas', url: 'Explosion de burbujas.html', emoji: '🔵' },
+                { title: 'Reciclaje', url: 'Reciclaje.html', emoji: '♻️' },
+                { title: 'Simón Dice', url: 'Simon dice.html', emoji: '🔔' },
+                { title: 'Supermercado', url: 'Supermercado.html', emoji: '🛒' },
+                { title: 'Cuerpo Humano', url: 'Cuerpo humano.html', emoji: '🦴' },
+                { title: 'Desafío Saludable', url: 'Desafio saludable.html', emoji: '🍎' },
+                { title: '¿Qué hora es?', url: 'La hora.html', emoji: '⏰' },
+                { title: 'Sombras', url: 'Sombras Misteriosas.html', emoji: '👤' },
+                { title: 'Golpea al Topo', url: 'Golpea al topo.html', emoji: '🔨' },
+                { title: 'Orden', url: 'orden.html', emoji: '📖' },
+                { title: 'Misión Galáctica', url: 'mision galactica.html', emoji: '🌌' }
+            ]},
+            { category: "Matemática", color: "#3498db", games: [
+                { title: 'Proporción Gamer', url: 'prop.html', emoji: '🕹️' },
+                { title: 'Pizzería Pipe', url: 'pizzeria.html', emoji: '🍕' },
+                { title: 'Raft Math', url: 'raft-math.html', emoji: '🛶' },
+                { title: 'Penales Math', url: 'Penales Multiplicativos.html', emoji: '⚽' },
+                { title: 'Math Invaders', url: 'Math Invaders.html', emoji: '👽' },
+                { title: 'Pac-Mates', url: 'Pacman de sumas.html', emoji: '👻' },
+                { title: 'Safari Numérico', url: '#', locked: true, emoji: '🔒' },
+                { title: 'La Huerta', url: '#', locked: true, emoji: '🔒' },
+                { title: 'Estación Numérica', url: 'Juego de conteo del 1 al 20 transportes.html', emoji: '🚢' },
+                { title: 'Flappy Fractions', url: 'Flappy fractions.html', emoji: '🐦' },
+                { title: 'Mario X', url: 'Mario X.html', emoji: '🍄' },
+                { title: 'A contar', url: 'A contar.html', emoji: '🧸' }
+            ]},
+            { category: "Programación", color: "#2ecc71", games: [ 
+                { title: 'Robot Explorador', url: 'Robot explorador.html', emoji: '🤖' },
+                { title: 'El Infiltrado', url: 'El infiltrado.html', emoji: '👾' },
+                { title: 'Rover', url: 'rover.html', emoji: '🚙' }
+            ]},
+            { category: "Informática", color: "#00f2fe", games: [ 
+                { title: 'System_Search', url: 'System_Search.html', emoji: '🔍' },
+                { title: 'Infiltración', url: 'Infiltracion-digital.html', emoji: '💻' }
+            ]},
+            { category: "Arduino", color: "#e67e22", games: [
+                { title: 'Caja Fuerte', url: 'caja_fuerte.html', emoji: '🔐' },
+                { title: 'Arquero', url: '#', locked: true, emoji: '🔒' },
+                { title: 'Tetris', url: 'tetris arduino.html', emoji: '🧱' }
+            ]}
+        ];
+
+        let currentTab = 0; let currentTile = 0; let displayedGames = []; let isNavigating = false;
+        
+        let prefs = {
+            accent: localStorage.getItem('xb_accent') || '#107C10',
+            avatar: localStorage.getItem('xb_avatar') || '😎',
+            performance: localStorage.getItem('xb_performance') || 'detail',
+            theme: localStorage.getItem('xb_theme') || 'dark'
+        };
+        let tempPrefs = { ...prefs };
+        const avatarEmojis = ['😎','🤖','🎮','🚀','🦊','🦁','REX','🦄','⚽','👾'];
+        
+        let vantaEffect = null;
+        let mouseTicking = false;
+        let mouseMoveHandler = null;
+
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+        function hexToRgba(hex, alpha) {
+            hex = hex.replace('#', '');
+            return `rgba(${parseInt(hex.substring(0,2),16)}, ${parseInt(hex.substring(2,4),16)}, ${parseInt(hex.substring(4,6),16)}, ${alpha})`;
         }
 
-        // Prevenir interferencias de navegación al escribir en el chat secreto
-        const secretInput = document.getElementById('secret-input');
-        if(secretInput) {
-            secretInput.addEventListener('keydown', (e) => {
-                e.stopPropagation();
-                if (e.key === 'Enter') {
-                    checkSecretCode();
+        /* --- OPTIMIZACIÓN: REGISTRO DINÁMICO DE EVENTOS DEL MOUSE --- */
+        function attachMouseTracking() {
+            if (mouseMoveHandler) return;
+            mouseMoveHandler = (e) => {
+                if(!mouseTicking) {
+                    requestAnimationFrame(() => {
+                        document.documentElement.style.setProperty('--mouse-x', e.clientX + 'px');
+                        document.documentElement.style.setProperty('--mouse-y', e.clientY + 'px');
+                        
+                        // Efecto Parallax en el fondo Mesh
+                        if(typeof gsap !== 'undefined') {
+                            const normX = (e.clientX / window.innerWidth - 0.5) * 2;
+                            const normY = (e.clientY / window.innerHeight - 0.5) * 2;
+                            gsap.to('.ambient-mesh', { x: normX * -30, y: normY * -30, duration: 1.5, ease: 'power2.out' });
+                        }
+                        mouseTicking = false;
+                    });
+                    mouseTicking = true;
                 }
-            });
+            };
+            window.addEventListener('mousemove', mouseMoveHandler, { passive: true });
         }
-    });
 
-    window.addEventListener('pageshow', function(event) {
-        const loader = document.getElementById('loader-overlay');
-        if (loader) loader.style.display = 'none';
-    });
-
-    // --- BASE DE DATOS ---
-    const data = [
-        {
-            category: "Lengua y Mecanografía", color: "#e50914",
-            games: [
-                { title: 'Lluvia de Letras', desc: 'Escribe rápido y destruye las letras.', icon: '⌨️', url: 'Lluvia de letras.html' },
-                { title: 'Constructor de Palabras', desc: 'Une las piezas correctamente.', icon: '🧩', url: 'Constructor de palabras.html' },
-                { title: 'Tren de Oraciones', desc: 'Ordena los vagones.', icon: '🚂', url: 'Tren de oraciones.html' },
-                { title: 'Carreras de Teclado', desc: '¡Escribe palabras para ganar la carrera!', icon: '🏎️', url: 'Carreras de teclado.html' },
-                { title: 'Regla Ortográfica', desc: 'Aprende las reglas de ortografía jugando.', icon: '🔤', url: 'regla ortografica.html' },
-                { title: 'Laboratorio de Clasificación', desc: 'Clasifica sustantivos, adjetivos y verbos volando.', icon: '🧪', url: 'Laboratorio de Clasificación.html' },
-                { title: 'Misión Pronombres', desc: 'Completa las oraciones con el pronombre correcto para recargar la nave.', icon: '🚀', url: 'pronombres.html' },
-                { title: 'Agencia de Detectives', desc: 'Analiza cada palabra y determina si es Diptongo, Triptongo o Hiato.', icon: '🔍', url: 'detective.html' },
-                { title: 'Archery Ortográfico', desc: 'Acierta a las palabras agudas, graves y esdrújulas.', icon: '🏹', url: 'archery.html' },
-                { title: 'Cave Runner', desc: 'Atraviesa la cueva buscando sinónimos y antónimos.', icon: '🏃', url: 'cave_runner.html' }
-            ]
-        },
-        {
-            category: "Lógica, Habilidad y Memoria", color: "#f5b041",
-            games: [
-                { title: 'La Hormiga', desc: 'Guía a la hormiga por el túnel.', icon: '🐜', url: 'La hormiga.html' },
-                { title: 'Memoria Gamer', desc: 'Encuentra las parejas.', icon: '🎮', url: 'Rompe-cabezas.html' },
-                { title: 'Pesca Marítima 🔒', desc: 'Juego en mantenimiento por el momento.', icon: '🔒', url: '#', locked: true },
-                { title: '¿Quién suena?', desc: 'Descubre qué animal se oculta.', icon: '👂', url: 'Juego de sonidos animales.html' },
-                { title: 'Conectando Oficios', desc: 'Relaciona a los profesionales.', icon: '👨‍🔧', url: 'Juego de oficios.html' },
-                { title: 'Explosión de Burbujas', desc: 'Revienta las burbujas.', icon: '🔵', url: 'Explosion de burbujas.html' },
-                { title: 'Héroe del Reciclaje', desc: 'Aprende a cuidar el planeta.', icon: '♻️', url: 'Reciclaje.html' },
-                { title: 'Simón Dice', desc: 'Repite la secuencia.', icon: '🔔', url: 'Simon dice.html' },
-                { title: 'Supermercado', desc: 'Administra tu dinero.', icon: '🛒', url: 'Supermercado.html' },
-                { title: 'Cuerpo Humano', desc: 'Ubica los huesos y órganos.', icon: '🦴', url: 'Cuerpo humano.html' },
-                { title: 'Desafío Saludable', desc: 'Alimentos nutritivos vs chatarra.', icon: '🍎', url: 'Desafio saludable.html' },
-                { title: '¿Qué hora es?', desc: 'Aprende a leer relojes.', icon: '⏰', url: 'La hora.html' },
-                { title: 'Sombras Misteriosas', desc: 'Adivina a quién pertenece la sombra.', icon: '👤', url: 'Sombras Misteriosas.html' },
-                { title: 'Golpea al Topo', desc: '¡Sé rápido y golpea al topo!', icon: '🔨', url: 'Golpea al topo.html' },
-                { title: 'Orden', desc: 'Ordena la historieta correctamente.', icon: '📖', url: 'orden.html' },
-                { title: 'Misión Galáctica', desc: 'Completa los patrones espaciales.', icon: '🌌', url: 'mision galactica.html' }
-            ]
-        },
-        {
-            category: "Matemática Numérica", color: "#3498db",
-            games: [
-                { title: 'Proporción Gamer', desc: 'Analiza si la relación es Directa o Inversa y resuelve los cálculos.', icon: '🕹️', url: 'prop.html' },
-                { title: 'Pizzería lo del Pipe', desc: 'Aprende y practica fracciones preparando deliciosas pizzas.', icon: '🍕', url: 'pizzeria.html' },
-                { title: 'Raft Math', desc: 'Calcula divisiones exactas para lanzar proyectiles y defenderte.', icon: '🛶', url: 'raft-math.html' },
-                { title: 'Penales Multiplicativos', desc: 'Calculá, apuntá y anota un golazo de matemáticas.', icon: '⚽', url: 'Penales Multiplicativos.html' },
-                { title: 'Math Invaders', desc: 'Resuelve operaciones rápidas.', icon: '👽', url: 'Math Invaders.html' },
-                { title: 'Pac-Mates', desc: 'Recorre el laberinto.', icon: '👻', url: 'Pacman de sumas.html' },
-                { title: 'Safari Numérico 🔒', desc: 'Juego en mantenimiento por el momento.', icon: '🔒', url: '#', locked: true },
-                { title: 'La Huerta 🔒', desc: 'Juego en mantenimiento por el momento.', icon: '🔒', url: '#', locked: true },
-                { title: 'Estación Numérica', desc: 'Cuenta transportes.', icon: '🚢', url: 'Juego de conteo del 1 al 20 transportes.html' },
-                { title: 'Flappy Fractions', desc: 'Aprende fracciones volando.', icon: '🐦', url: 'Flappy fractions.html' },
-                { title: 'Mario X', desc: 'Aprende a multiplicar.', icon: '🍄', url: 'Mario X.html' },
-                { title: 'A contar', desc: 'Cuenta y guarda los objetos.', icon: '🧸', url: 'A contar.html' }
-            ]
-        },
-        {
-            category: "Programación", color: "#2ecc71",
-            games: [ 
-                { title: 'Robot Explorador', desc: 'Utiliza bloques lógicos para llegar a la meta.', icon: '🤖', url: 'Robot explorador.html' },
-                { title: 'El Infiltrado', desc: 'Programa un malware utilizando secuencias y bucles lógicos.', icon: '👾', url: 'El infiltrado.html' },
-                { title: 'Rover', desc: 'Maneja y explora con el Rover.', icon: '🚙', url: 'rover.html' }
-            ]
-        },
-        {
-            category: "Informática", color: "#00f2fe",
-            games: [ 
-                { title: 'System_Search', desc: 'Sopa de letras de componentes.', icon: '🔍', url: 'System_Search.html' },
-                { title: 'Infiltración Digital', desc: 'Supera los cortafuegos y hackea el sistema central.', icon: '💻', url: 'Infiltracion-digital.html' }
-            ]
-        },
-        {
-            category: "Juegos de arduino", color: "#e67e22",
-            games: [
-                { title: 'Caja Fuerte', desc: 'Ingresa la combinación correcta.', icon: '🔐', url: 'caja_fuerte.html' },
-                { title: 'Arquero 🔒', desc: 'Juego en mantenimiento por el momento.', icon: '🔒', url: '#', locked: true },
-                { title: 'Tetris', desc: 'Clásico juego de Tetris retro controlable mediante Arduino o teclado.', icon: '🧱', url: 'tetris arduino.html' }
-            ]
-        }
-    ];
-
-    let processedRows = [];
-    let currentRow = 0, currentCol = 0;
-    const container = document.getElementById('rows-container');
-
-    function buildRows() {
-        processedRows = [];
-        data.forEach(item => {
-            for (let i = 0; i < item.games.length; i += 4) {
-                processedRows.push({ 
-                    displayTitle: i === 0 ? item.category : "", 
-                    realCategory: item.category, 
-                    color: item.color, 
-                    games: item.games.slice(i, i + 4) 
-                });
+        function detachMouseTracking() {
+            if (mouseMoveHandler) {
+                window.removeEventListener('mousemove', mouseMoveHandler);
+                mouseMoveHandler = null;
+                if(typeof gsap !== 'undefined') gsap.to('.ambient-mesh', { x: 0, y: 0, duration: 1 });
             }
-        });
-    }
-
-    function launchGame(game) {
-        if (game.locked) {
-            alert("Este juego se encuentra actualmente en mantenimiento.");
-            return;
         }
-        const loader = document.getElementById('loader-overlay');
-        document.getElementById('loading-msg').innerText = game.title.toUpperCase();
-        document.getElementById('loading-msg').style.color = processedRows[currentRow].color;
-        loader.style.display = 'flex';
-        setTimeout(() => { window.location.href = game.url; }, 1000); 
-    }
 
-    function init() {
-        buildRows();
-        container.innerHTML = '';
-        
-        processedRows.forEach((row, rIdx) => {
-            const rowDiv = document.createElement('div');
-            rowDiv.className = 'row'; rowDiv.id = `row-${rIdx}`;
-            rowDiv.innerHTML = `<div class="row-title">${row.displayTitle}</div><div class="row-cards" id="cards-${rIdx}"></div>`;
-            container.appendChild(rowDiv);
+        function initVantaBackground() {
+            if (typeof VANTA === 'undefined') return;
             
-            row.games.forEach((game, cIdx) => {
-                const card = document.createElement('div');
-                card.className = game.locked ? 'card locked-game' : 'card'; 
-                card.id = `card-${rIdx}-${cIdx}`;
-                card.innerHTML = `<div class="card-icon">${game.icon}</div><div class="card-title">${game.title}</div>`;
-                
-                card.dataset.baseBg = row.color + '15'; 
-                card.dataset.baseBorder = row.color + '40'; 
-                card.style.backgroundColor = card.dataset.baseBg;
-                card.style.borderColor = card.dataset.baseBorder;
+            if (prefs.performance === 'performance') {
+                if (vantaEffect) { vantaEffect.destroy(); vantaEffect = null; }
+                document.getElementById('vanta-bg').style.opacity = '0';
+                return;
+            }
 
-                card.onclick = () => { 
-                    currentRow = rIdx; 
-                    currentCol = cIdx; 
-                    render();
-                    launchGame(game); 
+            document.getElementById('vanta-bg').style.opacity = prefs.theme === 'light' ? '0.7' : '0.5';
+            
+            let colorHexNum = parseInt(prefs.accent.replace('#', '0x'));
+            let bgColorNum = prefs.theme === 'light' ? 0xeef2f5 : 0x0b0c10;
+
+            if (!vantaEffect) {
+                vantaEffect = VANTA.NET({
+                    el: "#vanta-bg",
+                    mouseControls: true, touchControls: true, gyroControls: false,
+                    minHeight: 200.00, minWidth: 200.00, scale: 1.00, scaleMobile: 1.00,
+                    color: colorHexNum, backgroundColor: bgColorNum,
+                    points: 12.00, maxDistance: 22.00, spacing: 18.00, showDots: true
+                });
+            } else {
+                vantaEffect.setOptions({ color: colorHexNum, backgroundColor: bgColorNum });
+            }
+        }
+
+        function applyPreferences() {
+            document.documentElement.style.setProperty('--accent', prefs.accent);
+            document.documentElement.style.setProperty('--accent-glow', hexToRgba(prefs.accent, 0.4));
+            
+            if(prefs.theme === 'light') document.body.classList.add('light-mode');
+            else document.body.classList.remove('light-mode');
+
+            document.getElementById('gamertag-display').innerText = "Alumno";
+            document.getElementById('profile-pic').style.background = prefs.accent;
+            document.getElementById('avatar-emoji').innerText = prefs.avatar;
+            
+            if(prefs.performance === 'detail') {
+                document.body.classList.add('detail-mode');
+                attachMouseTracking();
+            } else {
+                document.body.classList.remove('detail-mode');
+                detachMouseTracking();
+            }
+
+            if (typeof twemoji !== 'undefined') twemoji.parse(document.getElementById('profile-pic'));
+            updateBackground();
+        }
+
+        function updateBackground() {
+            if(!data[currentTab]) return;
+            const cColor = data[currentTab].color;
+            const orb1 = document.getElementById('orb1');
+            const orb2 = document.getElementById('orb2');
+            
+            if (prefs.performance === 'performance') {
+                orb1.style.display = 'none'; orb2.style.display = 'none';
+            } else {
+                orb1.style.display = 'block'; orb2.style.display = 'block';
+                orb1.style.background = `radial-gradient(circle, ${hexToRgba(cColor, 0.35)} 0%, transparent 60%)`;
+                orb2.style.background = `radial-gradient(circle, ${hexToRgba(cColor, 0.25)} 0%, transparent 60%)`;
+            }
+            
+            const spinner = document.getElementById('boot-spinner');
+            if(spinner) spinner.style.borderTopColor = prefs.accent;
+            
+            initVantaBackground();
+        }
+
+        function renderTabs() {
+            const container = document.getElementById('tabs-container');
+            container.innerHTML = '';
+            data.forEach((cat, idx) => {
+                const tab = document.createElement('div');
+                tab.className = `nav-tab ${idx === currentTab ? 'active' : ''}`;
+                tab.innerText = cat.category;
+                tab.onclick = () => { 
+                    if (currentTab !== idx && !isNavigating) {
+                        currentTab = idx; document.getElementById('cmd-input').value = ""; 
+                        renderTabs(); renderGrid(); updateBackground();
+                    }
                 };
-                document.getElementById(`cards-${rIdx}`).appendChild(card);
+                container.appendChild(tab);
             });
-        });
-        render();
-    }
-
-    function render() {
-        if(processedRows.length === 0) return;
-
-        document.querySelectorAll('.card').forEach(c => {
-            c.classList.remove('active');
-            c.style.backgroundColor = c.dataset.baseBg;
-            c.style.borderColor = c.dataset.baseBorder;
-            c.style.boxShadow = 'none'; 
-        });
-        
-        document.querySelectorAll('.row').forEach(r => r.classList.remove('active-row'));
-
-        const color = processedRows[currentRow].color;
-        const currentCard = document.getElementById(`card-${currentRow}-${currentCol}`);
-        
-        if(currentCard) {
-            currentCard.classList.add('active');
-            currentCard.style.backgroundColor = color + '35'; 
-            currentCard.style.borderColor = color; 
-            currentCard.style.boxShadow = `0 0 20px ${color}60`; 
-            document.getElementById(`row-${currentRow}`).classList.add('active-row');
+            const active = document.querySelector('.nav-tab.active');
+            if(active) active.scrollIntoView({ behavior: 'smooth', inline: 'center' });
         }
 
-        const rowElement = document.querySelector('.row');
-        if(rowElement) {
-            const rowHeight = rowElement.offsetHeight + (window.innerHeight * 0.05);
-            container.style.transform = `translate3d(0, -${currentRow * rowHeight}px, 0)`;
-        }
-
-        const game = processedRows[currentRow].games[currentCol];
-
-        document.getElementById('hero-title').innerText = game.title;
-        document.getElementById('hero-desc').innerText = game.desc;
-        document.getElementById('hero-cat').innerText = processedRows[currentRow].realCategory;
-        document.getElementById('hero-cat').style.color = color;
-    }
-
-    // --- SISTEMAS SECRETOS (CHAT Y KEYLOGGER) ---
-    let secretBuffer = "";
-    let extrasUnlocked = false;
-    let officeUnlocked = false;
-
-    function checkSecretCode() {
-        const input = document.getElementById('secret-input');
-        const code = input.value.trim().toLowerCase();
-
-        if (code === "031") {
-            unlockExtras();
-            input.value = "";
-        } else if (code === "office") {
-            unlockOffice();
-            input.value = "";
-        } else if (code !== "") {
-            input.style.color = "#ff4d4d";
-            setTimeout(() => {
-                input.style.color = "#fff";
-                input.value = "";
-            }, 800);
-        }
-    }
-
-    function unlockExtras() {
-        if (extrasUnlocked) return;
-        extrasUnlocked = true;
-
-        data.push({
-            category: "Extras Secretos", color: "#9b59b6",
-            games: [
-                { title: 'Buuñ Shooter', desc: 'Acción de disparos, flechas y cosméticos.', icon: '🏹', url: '10.4.html' },
-                { title: 'Neon Rider', desc: 'Carreras a toda velocidad en vista superior.', icon: '🏎️', url: 'anda sin parar.html' },
-                { title: 'Fútbol 1vs1', desc: 'Partido de fútbol estilo 8-bits cara a cara.', icon: '⚽', url: 'Fut 1vs1 fin.html' },
-                { title: 'Hell Zombi', desc: 'Sobrevive en la arena y derrota a los zombis.', icon: '🧟', url: 'hell zombi.html' },
-                { title: 'Penalty Cup', desc: 'Patea penales, ataja y sé el campeón.', icon: '🥅', url: 'penales.html' },
-                { title: 'Emoji Blast', desc: 'Explosión de colores y emojis al ritmo.', icon: '✨', url: 'tata y titi.html' }
-            ]
-        });
-
-        const loader = document.getElementById('loader-overlay');
-        const msg = document.getElementById('loading-msg');
-        msg.innerHTML = "¡CÓDIGO DETECTADO!<br>EXTRAS DESBLOQUEADOS";
-        msg.style.color = "#9b59b6";
-        document.querySelector('.netflix-spinner').style.borderColor = "rgba(155, 89, 182, 0.2)";
-        document.querySelector('.netflix-spinner').style.borderTopColor = "#9b59b6";
-        
-        loader.style.display = 'flex';
-        
-        setTimeout(() => { 
-            loader.style.display = 'none'; 
-            init();
+        function renderGrid(searchTerm = "") {
+            isNavigating = true; 
+            const grid = document.getElementById('games-grid');
             
-            currentRow = processedRows.findIndex(r => r.realCategory === "Extras Secretos");
-            currentCol = 0;
-            render();
-        }, 2000);
-    }
+            // Destruir VanillaTilt de forma segura para evitar fugas de memoria
+            document.querySelectorAll('.tile').forEach(tile => {
+                if (tile.vanillaTilt) tile.vanillaTilt.destroy();
+            });
 
-    function unlockOffice() {
-        if (officeUnlocked) return;
-        officeUnlocked = true;
+            grid.innerHTML = '';
+            
+            const catColor = data[currentTab].color;
+            displayedGames = searchTerm ? 
+                data.flatMap(c => c.games.map(g => ({...g, catColor: c.color}))).filter(g => g.title.toLowerCase().includes(searchTerm)) : 
+                data[currentTab].games.map(g => ({...g, catColor: catColor}));
 
-        data.push({
-            category: "Office", color: "#2b579a",
-            games: [
-                { title: 'Procesador de Texto', desc: 'Crea y edita tus documentos de texto.', icon: '📝', url: 'procesadordetexto.html' }
-            ]
+            if(displayedGames.length === 0) {
+                grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 50px; color: var(--text-muted); font-size: 1.2rem; font-weight: 600;">No se encontraron resultados en el archivo del sistema.</div>`;
+                isNavigating = false; return;
+            }
+
+            displayedGames.forEach((game, idx) => {
+                const tile = document.createElement('div');
+                tile.className = `tile ${idx === 0 && !searchTerm ? 'hero-tile' : ''} ${game.locked ? 'locked' : ''}`;
+                tile.id = `tile-${idx}`;
+                tile.innerHTML = `
+                    <div class="tile-icon">${game.emoji}</div>
+                    <div class="tile-label" style="border-bottom: 4px solid ${game.catColor}">${game.title}</div>
+                `;
+                tile.onmouseenter = () => { if(!isNavigating) { currentTile = idx; updateFocus(); }};
+                tile.onclick = () => { 
+                    if(!isNavigating) {
+                        if(prefs.performance === 'detail' && !game.locked && typeof confetti !== 'undefined') {
+                            const rect = tile.getBoundingClientRect();
+                            const x = (rect.left + (rect.width / 2)) / window.innerWidth;
+                            const y = (rect.top + (rect.height / 2)) / window.innerHeight;
+                            confetti({ particleCount: 120, spread: 80, origin: { x: x, y: y }, colors: [prefs.accent, game.catColor, '#ffffff'], disableForReducedMotion: true });
+                        }
+                        launchGame(game, game.catColor); 
+                    }
+                };
+                grid.appendChild(tile);
+            });
+
+            if (typeof twemoji !== 'undefined') twemoji.parse(grid);
+            
+            if (typeof VanillaTilt !== 'undefined' && prefs.performance === 'detail') {
+                VanillaTilt.init(document.querySelectorAll(".tile"), { max: 12, speed: 500, glare: true, "max-glare": 0.3, scale: 1.05, perspective: 1200 });
+            }
+            
+            currentTile = 0; updateFocus();
+
+            if (typeof gsap !== 'undefined' && prefs.performance === 'detail') {
+                gsap.fromTo(".tile", 
+                    { y: 60, opacity: 0, scale: 0.85, rotationX: 15, visibility: 'visible' }, 
+                    { y: 0, opacity: 1, scale: 1, rotationX: 0, duration: 0.45, stagger: 0.03, ease: "back.out(1.2)", force3D: true,
+                      onComplete: () => isNavigating = false }
+                );
+            } else {
+                document.querySelectorAll(".tile").forEach(t => { t.style.opacity = 1; t.style.visibility = 'visible'; });
+                isNavigating = false;
+            }
+        }
+
+        function updateFocus() {
+            if(displayedGames.length === 0) return;
+            document.querySelectorAll('.tile').forEach((tile, idx) => {
+                if (idx === currentTile) tile.classList.add('focused');
+                else tile.classList.remove('focused');
+            });
+            const activeTile = document.getElementById(`tile-${currentTile}`);
+            if(activeTile) activeTile.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function launchGame(game, color) {
+            if (game.locked) return;
+            isNavigating = true; 
+            const overlay = document.getElementById('launch-overlay');
+            const title = document.getElementById('launch-title');
+            const spinner = document.getElementById('launch-spinner');
+            
+            title.innerText = game.title.toUpperCase();
+            title.style.textShadow = `0 0 25px ${color}`;
+            spinner.style.borderTopColor = color; spinner.style.borderRightColor = color;
+            
+            overlay.style.opacity = '1'; overlay.style.pointerEvents = 'all';
+            
+            if (typeof gsap !== 'undefined' && prefs.performance === 'detail') {
+                gsap.to(title, { scale: 1.1, duration: 0.6, ease: "back.out(1.5)", force3D: true });
+            } else {
+                title.style.transform = "scale(1)";
+            }
+            setTimeout(() => { window.location.href = game.url; }, 1600);
+        }
+
+        function toggleSidebar() {
+            const sb = document.getElementById('sidebar');
+            const ov = document.getElementById('sidebar-overlay');
+            const isOpen = sb.classList.contains('open');
+            
+            if(!isOpen) {
+                tempPrefs = {...prefs}; 
+                setPerformance(tempPrefs.performance); 
+                setTheme(tempPrefs.theme);
+                
+                document.querySelectorAll('.color-swatch').forEach(s => {
+                    s.classList.remove('active');
+                    if(s.style.backgroundColor === hexToRgba(tempPrefs.accent, 1) || s.style.backgroundColor === tempPrefs.accent) s.classList.add('active');
+                });
+                
+                const grid = document.getElementById('avatar-grid');
+                grid.innerHTML = '';
+                avatarEmojis.forEach(em => {
+                    const d = document.createElement('div');
+                    d.className = `avatar-opt ${em === tempPrefs.avatar ? 'active' : ''}`;
+                    d.innerText = em;
+                    d.onclick = () => { tempPrefs.avatar = em; Array.from(grid.children).forEach(c=>c.classList.remove('active')); d.classList.add('active'); };
+                    grid.appendChild(d);
+                });
+                if (typeof twemoji !== 'undefined') twemoji.parse(grid);
+                
+                sb.classList.add('open'); ov.classList.add('open');
+                
+                if (typeof gsap !== 'undefined' && prefs.performance === 'detail') {
+                    gsap.fromTo('.settings-section > *', { x: -30, opacity: 0 }, { x: 0, opacity: 1, stagger: 0.05, duration: 0.4, ease: "power2.out", delay: 0.2 });
+                }
+            } else {
+                sb.classList.remove('open'); ov.classList.remove('open');
+            }
+        }
+
+        function setPerformance(mode) {
+            tempPrefs.performance = mode;
+            document.getElementById('btn-detail').classList.toggle('active', mode === 'detail');
+            document.getElementById('btn-perf').classList.toggle('active', mode === 'performance');
+        }
+
+        function setTheme(mode) {
+            tempPrefs.theme = mode;
+            document.getElementById('btn-theme-dark').classList.toggle('active', mode === 'dark');
+            document.getElementById('btn-theme-light').classList.toggle('active', mode === 'light');
+        }
+
+        function setAccent(hex, el) { 
+            tempPrefs.accent = hex; 
+            document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active')); 
+            el.classList.add('active'); 
+        }
+
+        function saveSettings() {
+            prefs = {...tempPrefs};
+            localStorage.setItem('xb_accent', prefs.accent);
+            localStorage.setItem('xb_avatar', prefs.avatar);
+            localStorage.setItem('xb_performance', prefs.performance);
+            localStorage.setItem('xb_theme', prefs.theme);
+            
+            applyPreferences(); toggleSidebar(); renderGrid();
+        }
+
+        let extrasUnlocked = false; let officeUnlocked = false;
+        document.getElementById('cmd-input').addEventListener('input', (e) => {
+            if(isNavigating) return;
+            const val = e.target.value.trim().toLowerCase();
+            
+            if(val === "031" && !extrasUnlocked) { unlockSecret("Extras Secretos", "#9b59b6", [{ title: 'Buuñ Shooter', url: '10.4.html', emoji: '🔫' }, { title: 'Neon Rider', url: 'anda.html', emoji: '🏍️' }, { title: 'Emoji Blast', url: 'titi.html', emoji: '😂' }]); return; }
+            if(val === "office" && !officeUnlocked) { unlockSecret("Office", "#2b579a", [{ title: 'Procesador Texto', url: 'procesadordetexto.html', emoji: '📝' }]); return; }
+            renderGrid(val);
         });
 
-        const loader = document.getElementById('loader-overlay');
-        const msg = document.getElementById('loading-msg');
-        msg.innerHTML = "¡CÓDIGO DETECTADO!<br>MENÚ OFFICE DESBLOQUEADO";
-        msg.style.color = "#2b579a";
-        document.querySelector('.netflix-spinner').style.borderColor = "rgba(43, 87, 154, 0.2)";
-        document.querySelector('.netflix-spinner').style.borderTopColor = "#2b579a";
-        
-        loader.style.display = 'flex';
-        
-        setTimeout(() => { 
-            loader.style.display = 'none'; 
-            init();
+        function unlockSecret(name, color, gamesArr) {
+            if(name === "Office") officeUnlocked = true; else extrasUnlocked = true;
+            data.push({ category: name, color: color, games: gamesArr });
+            document.getElementById('cmd-input').value = "";
             
-            currentRow = processedRows.findIndex(r => r.realCategory === "Office");
-            currentCol = 0;
-            render();
-        }, 2000);
-    }
-
-    window.addEventListener('keydown', e => {
-        if(sessionStorage.getItem('acceso_gaston') !== 'true') {
-            if(e.key === 'Enter') ingresarAlPortal();
-            return; 
+            const toast = document.getElementById('achievement');
+            document.getElementById('ach-title').innerText = `${name} Desbloqueado`;
+            toast.style.background = color; toast.classList.add('show');
+            
+            if (prefs.performance === 'detail' && typeof confetti !== 'undefined') {
+                setTimeout(() => { confetti({ particleCount: 150, spread: 100, origin: { y: 0.1 }, colors: [color, '#ffffff'] }); }, 300);
+            }
+            setTimeout(() => { toast.classList.remove('show'); }, 4000);
+            currentTab = data.length - 1; renderTabs(); renderGrid(); updateBackground();
         }
 
-        // Si el usuario está escribiendo dentro del cuadro de texto del chat, ignorar los atajos globales
-        if (document.activeElement.id === 'secret-input') return;
+        setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); }, 1000);
 
-        secretBuffer += e.key.toLowerCase();
-        if (secretBuffer.length > 6) secretBuffer = secretBuffer.substring(1); 
+        window.addEventListener('keydown', (e) => {
+            if(document.getElementById('sidebar').classList.contains('open') || isNavigating) return;
+            if(document.activeElement.id === 'cmd-input' && e.key !== 'Enter' && e.key !== 'ArrowDown') return;
+            
+            const cols = window.getComputedStyle(document.getElementById('games-grid')).getPropertyValue('grid-template-columns').split(' ').length;
+            
+            if (e.key === 'ArrowRight') { if (currentTile < displayedGames.length - 1) { currentTile++; updateFocus(); } e.preventDefault(); } 
+            else if (e.key === 'ArrowLeft') { if (currentTile > 0) { currentTile--; updateFocus(); } e.preventDefault(); } 
+            else if (e.key === 'ArrowDown') { if(document.activeElement.id === 'cmd-input') { document.activeElement.blur(); } else if (currentTile + cols < displayedGames.length) currentTile += cols; else currentTile = displayedGames.length - 1; updateFocus(); e.preventDefault(); } 
+            else if (e.key === 'ArrowUp') { if (currentTile - cols >= 0) currentTile -= cols; updateFocus(); e.preventDefault(); } 
+            else if (e.key === 'Tab') { e.preventDefault(); currentTab = (currentTab + 1) % data.length; renderTabs(); renderGrid(); updateBackground(); } 
+            else if (e.key === 'Enter') { if(displayedGames.length > 0 && document.activeElement.id !== 'cmd-input') document.getElementById(`tile-${currentTile}`).click(); }
+        });
+
+        function forceStart() {
+            const boot = document.getElementById('boot-screen');
+            if(boot && boot.style.display !== 'none') {
+                boot.style.display = 'none';
+                try { renderGrid(); } catch(e) { console.error("Error renderizando:", e); }
+            }
+        }
         
-        if (secretBuffer.includes("031")) {
-            unlockExtras();
-            secretBuffer = ""; 
-        }
-
-        if (secretBuffer.includes("office")) {
-            unlockOffice();
-            secretBuffer = "";
-        }
-
-        // Controles de navegación
-        if(e.key === 'ArrowUp' && currentRow > 0) {
-            currentRow--;
-            if (currentCol >= processedRows[currentRow].games.length) currentCol = processedRows[currentRow].games.length - 1;
-        }
-        else if(e.key === 'ArrowDown' && currentRow < processedRows.length - 1) { 
-            currentRow++; 
-            if (currentCol >= processedRows[currentRow].games.length) currentCol = processedRows[currentRow].games.length - 1;
-        }
-        else if(e.key === 'ArrowLeft' && currentCol > 0) currentCol--;
-        else if(e.key === 'ArrowRight' && currentCol < processedRows[currentRow].games.length - 1) currentCol++;
-        else if(e.key === 'Enter') launchGame(processedRows[currentRow].games[currentCol]);
-        
-        render();
-    });
-
-    window.addEventListener('wheel', e => {
-        if(sessionStorage.getItem('acceso_gaston') !== 'true') return;
-
-        if (e.deltaY > 0 && currentRow < processedRows.length - 1) { currentRow++; currentCol = 0; }
-        else if (e.deltaY < 0 && currentRow > 0) { currentRow--; currentCol = 0; }
-        render();
-    }, { passive: true });
-
-</script>
+        document.addEventListener("DOMContentLoaded", () => {
+            try { applyPreferences(); renderTabs(); } catch (e) { console.error(e); }
+            setTimeout(forceStart, 500); 
+        });
+        window.onload = forceStart; setTimeout(forceStart, 1500); 
+    </script>
 </body>
 </html>
