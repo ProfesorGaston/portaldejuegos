@@ -58,7 +58,7 @@
             height: 100vh; width: 100vw; overflow: hidden;
             display: flex; flex-direction: column; background-color: var(--bg-base);
             transition: background-color 0.4s ease, color 0.4s ease;
-            perspective: 1000px; /* Añadido para mejor profundidad 3D en toda la vista */
+            perspective: 1000px; 
         }
 
         /* --- EFECTOS VISUALES OPTIMIZADOS PARA GPU --- */
@@ -174,7 +174,7 @@
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             box-shadow: 0 10px 25px rgba(0,0,0,0.15); transform-style: preserve-3d;
             transition: border-color 0.3s, box-shadow 0.3s, background 0.3s;
-            opacity: 0; visibility: hidden; will-change: transform, opacity;
+            will-change: transform, opacity;
             contain: layout style paint;
         }
         .tile.locked { filter: grayscale(100%) opacity(0.5); cursor: not-allowed; }
@@ -463,7 +463,7 @@
             ]}
         ];
 
-        let currentTab = 0; let currentTile = 0; let displayedGames = []; let isNavigating = false;
+        let currentTab = 0; let isNavigating = false;
         
         let prefs = {
             accent: localStorage.getItem('xb_accent') || '#107C10',
@@ -472,9 +472,8 @@
             theme: localStorage.getItem('xb_theme') || 'dark'
         };
         let tempPrefs = { ...prefs };
-        const avatarEmojis = ['😎','🤖','🎮','🚀','🦊','🦁','REX','🦄','⚽','👾'];
+        const avatarEmojis = ['😎','🤖','🎮','🚀','🦊','🦁','🦖','🦄','⚽','👾'];
         
-        let vantaEffect = null;
         let mouseTicking = false;
         let mouseMoveHandler = null;
 
@@ -510,227 +509,38 @@
             if (mouseMoveHandler) {
                 window.removeEventListener('mousemove', mouseMoveHandler);
                 mouseMoveHandler = null;
-                if(typeof gsap !== 'undefined') gsap.to('.ambient-mesh', { x: 0, y: 0, duration: 1 });
             }
         }
 
-        function initVantaBackground() {
-            if (typeof VANTA === 'undefined') return;
-            
-            if (prefs.performance === 'performance') {
-                if (vantaEffect) { vantaEffect.destroy(); vantaEffect = null; }
-                document.getElementById('vanta-bg').style.opacity = '0';
-                return;
-            }
-
-            document.getElementById('vanta-bg').style.opacity = prefs.theme === 'light' ? '0.7' : '0.5';
-            
-            let colorHexNum = parseInt(prefs.accent.replace('#', '0x'));
-            let bgColorNum = prefs.theme === 'light' ? 0xeef2f5 : 0x0b0c10;
-
-            if (!vantaEffect) {
-                vantaEffect = VANTA.NET({
-                    el: "#vanta-bg",
-                    mouseControls: true, touchControls: true, gyroControls: false,
-                    minHeight: 200.00, minWidth: 200.00, scale: 1.00, scaleMobile: 1.00,
-                    color: colorHexNum, backgroundColor: bgColorNum,
-                    points: 12.00, maxDistance: 22.00, spacing: 18.00, showDots: true
-                });
-            } else {
-                vantaEffect.setOptions({ color: colorHexNum, backgroundColor: bgColorNum });
-            }
-        }
-
-        function applyPreferences() {
-            document.documentElement.style.setProperty('--accent', prefs.accent);
-            document.documentElement.style.setProperty('--accent-glow', hexToRgba(prefs.accent, 0.4));
-            
-            if(prefs.theme === 'light') document.body.classList.add('light-mode');
-            else document.body.classList.remove('light-mode');
-
-            document.getElementById('gamertag-display').innerText = "Alumno";
-            document.getElementById('profile-pic').style.background = prefs.accent;
-            document.getElementById('avatar-emoji').innerText = prefs.avatar;
-            
-            if(prefs.performance === 'detail') {
-                document.body.classList.add('detail-mode');
-                attachMouseTracking();
-            } else {
-                document.body.classList.remove('detail-mode');
-                detachMouseTracking();
-            }
-
-            if (typeof twemoji !== 'undefined') twemoji.parse(document.getElementById('profile-pic'));
-            updateBackground();
-        }
-
-        function updateBackground() {
-            if(!data[currentTab]) return;
-            const cColor = data[currentTab].color;
-            const orb1 = document.getElementById('orb1');
-            const orb2 = document.getElementById('orb2');
-            
-            if (prefs.performance === 'performance') {
-                orb1.style.display = 'none'; orb2.style.display = 'none';
-            } else {
-                orb1.style.display = 'block'; orb2.style.display = 'block';
-                orb1.style.background = `radial-gradient(circle, ${hexToRgba(cColor, 0.35)} 0%, transparent 60%)`;
-                orb2.style.background = `radial-gradient(circle, ${hexToRgba(cColor, 0.25)} 0%, transparent 60%)`;
-            }
-            
-            const spinner = document.getElementById('boot-spinner');
-            if(spinner) spinner.style.borderTopColor = prefs.accent;
-            
-            initVantaBackground();
-        }
-
-        function renderTabs() {
-            const container = document.getElementById('tabs-container');
-            container.innerHTML = '';
-            data.forEach((cat, idx) => {
-                const tab = document.createElement('div');
-                tab.className = `nav-tab ${idx === currentTab ? 'active' : ''}`;
-                tab.innerText = cat.category;
-                tab.onclick = () => { 
-                    if (currentTab !== idx && !isNavigating) {
-                        currentTab = idx; document.getElementById('cmd-input').value = ""; 
-                        renderTabs(); renderGrid(); updateBackground();
-                    }
-                };
-                container.appendChild(tab);
-            });
-            const active = document.querySelector('.nav-tab.active');
-            if(active) active.scrollIntoView({ behavior: 'smooth', inline: 'center' });
-        }
-
-        function renderGrid(searchTerm = "") {
-            isNavigating = true; 
-            const grid = document.getElementById('games-grid');
-            
-            document.querySelectorAll('.tile').forEach(tile => {
-                if (tile.vanillaTilt) tile.vanillaTilt.destroy();
-            });
-
-            grid.innerHTML = '';
-            
-            const catColor = data[currentTab].color;
-            displayedGames = searchTerm ? 
-                data.flatMap(c => c.games.map(g => ({...g, catColor: c.color}))).filter(g => g.title.toLowerCase().includes(searchTerm)) : 
-                data[currentTab].games.map(g => ({...g, catColor: catColor}));
-
-            if(displayedGames.length === 0) {
-                grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 50px; color: var(--text-muted); font-size: 1.2rem; font-weight: 600;">No se encontraron resultados en el archivo del sistema.</div>`;
-                isNavigating = false; return;
-            }
-
-            displayedGames.forEach((game, idx) => {
-                const tile = document.createElement('div');
-                tile.className = `tile ${idx === 0 && !searchTerm ? 'hero-tile' : ''} ${game.locked ? 'locked' : ''}`;
-                tile.id = `tile-${idx}`;
-                tile.innerHTML = `
-                    <div class="tile-icon">${game.emoji}</div>
-                    <div class="tile-label" style="border-bottom: 4px solid ${game.catColor}">${game.title}</div>
-                `;
-                tile.onmouseenter = () => { if(!isNavigating) { currentTile = idx; updateFocus(); }};
-                tile.onclick = () => { 
-                    if(!isNavigating) {
-                        if(prefs.performance === 'detail' && !game.locked && typeof confetti !== 'undefined') {
-                            const rect = tile.getBoundingClientRect();
-                            const x = (rect.left + (rect.width / 2)) / window.innerWidth;
-                            const y = (rect.top + (rect.height / 2)) / window.innerHeight;
-                            confetti({ particleCount: 120, spread: 80, origin: { x: x, y: y }, colors: [prefs.accent, game.catColor, '#ffffff'], disableForReducedMotion: true });
-                        }
-                        launchGame(game, game.catColor); 
-                    }
-                };
-                grid.appendChild(tile);
-            });
-
-            if (typeof twemoji !== 'undefined') twemoji.parse(grid);
-            
-            if (typeof VanillaTilt !== 'undefined' && prefs.performance === 'detail') {
-                VanillaTilt.init(document.querySelectorAll(".tile"), { max: 12, speed: 500, glare: true, "max-glare": 0.3, scale: 1.05, perspective: 1200 });
-            }
-            
-            currentTile = 0; updateFocus();
-
-            if (typeof gsap !== 'undefined' && prefs.performance === 'detail') {
-                gsap.fromTo(".tile", 
-                    { y: 60, opacity: 0, scale: 0.85, rotationX: 15, visibility: 'visible' }, 
-                    { y: 0, opacity: 1, scale: 1, rotationX: 0, duration: 0.45, stagger: 0.03, ease: "back.out(1.2)", force3D: true,
-                      onComplete: () => isNavigating = false }
-                );
-            } else {
-                document.querySelectorAll(".tile").forEach(t => { t.style.opacity = 1; t.style.visibility = 'visible'; });
-                isNavigating = false;
-            }
-        }
-
-        function updateFocus() {
-            if(displayedGames.length === 0) return;
-            document.querySelectorAll('.tile').forEach((tile, idx) => {
-                if (idx === currentTile) tile.classList.add('focused');
-                else tile.classList.remove('focused');
-            });
-            const activeTile = document.getElementById(`tile-${currentTile}`);
-            if(activeTile) activeTile.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-
-        function launchGame(game, color) {
-            if (game.locked) return;
-            isNavigating = true; 
+        /* --- FIX PARA EL DESTELLO AL VOLVER CON EL BOTÓN ATRÁS --- */
+        window.addEventListener('pageshow', function(event) {
             const overlay = document.getElementById('launch-overlay');
-            const title = document.getElementById('launch-title');
-            const spinner = document.getElementById('launch-spinner');
-            
-            title.innerText = game.title.toUpperCase();
-            title.style.textShadow = `0 0 25px ${color}`;
-            spinner.style.borderTopColor = color; spinner.style.borderRightColor = color;
-            
-            overlay.style.opacity = '1'; overlay.style.pointerEvents = 'all';
-            
-            if (typeof gsap !== 'undefined' && prefs.performance === 'detail') {
-                gsap.to(title, { scale: 1.1, duration: 0.6, ease: "back.out(1.5)", force3D: true });
-            } else {
-                title.style.transform = "scale(1)";
+            if (overlay) {
+                // Desactivamos la transición temporalmente para que el ocultamiento sea instantáneo
+                overlay.style.transition = 'none'; 
+                overlay.style.opacity = '0';
+                overlay.style.pointerEvents = 'none';
+                
+                // Forzamos un reflujo (reflow) del navegador para que procese el cambio al instante
+                void overlay.offsetWidth; 
+                
+                // Le devolvemos su transición original para cuando se vuelva a hacer click en un juego
+                overlay.style.transition = ''; 
             }
-            setTimeout(() => { window.location.href = game.url; }, 1600);
+            isNavigating = false;
+        });
+
+        /* --- FUNCIONES DEL MENÚ LATERAL Y CONFIGURACIÓN --- */
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('sidebar-overlay').classList.toggle('open');
+            tempPrefs = { ...prefs }; // Resetear temporal si se cierra sin guardar
         }
 
-        function toggleSidebar() {
-            const sb = document.getElementById('sidebar');
-            const ov = document.getElementById('sidebar-overlay');
-            const isOpen = sb.classList.contains('open');
-            
-            if(!isOpen) {
-                tempPrefs = {...prefs}; 
-                setPerformance(tempPrefs.performance); 
-                setTheme(tempPrefs.theme);
-                
-                document.querySelectorAll('.color-swatch').forEach(s => {
-                    s.classList.remove('active');
-                    if(s.style.backgroundColor === hexToRgba(tempPrefs.accent, 1) || s.style.backgroundColor === tempPrefs.accent) s.classList.add('active');
-                });
-                
-                const grid = document.getElementById('avatar-grid');
-                grid.innerHTML = '';
-                avatarEmojis.forEach(em => {
-                    const d = document.createElement('div');
-                    d.className = `avatar-opt ${em === tempPrefs.avatar ? 'active' : ''}`;
-                    d.innerText = em;
-                    d.onclick = () => { tempPrefs.avatar = em; Array.from(grid.children).forEach(c=>c.classList.remove('active')); d.classList.add('active'); };
-                    grid.appendChild(d);
-                });
-                if (typeof twemoji !== 'undefined') twemoji.parse(grid);
-                
-                sb.classList.add('open'); ov.classList.add('open');
-                
-                if (typeof gsap !== 'undefined' && prefs.performance === 'detail') {
-                    gsap.fromTo('.settings-section > *', { x: -30, opacity: 0 }, { x: 0, opacity: 1, stagger: 0.05, duration: 0.4, ease: "power2.out", delay: 0.2 });
-                }
-            } else {
-                sb.classList.remove('open'); ov.classList.remove('open');
-            }
+        function setTheme(theme) {
+            tempPrefs.theme = theme;
+            document.getElementById('btn-theme-dark').classList.toggle('active', theme === 'dark');
+            document.getElementById('btn-theme-light').classList.toggle('active', theme === 'light');
         }
 
         function setPerformance(mode) {
@@ -739,101 +549,181 @@
             document.getElementById('btn-perf').classList.toggle('active', mode === 'performance');
         }
 
-        function setTheme(mode) {
-            tempPrefs.theme = mode;
-            document.getElementById('btn-theme-dark').classList.toggle('active', mode === 'dark');
-            document.getElementById('btn-theme-light').classList.toggle('active', mode === 'light');
+        function setAccent(color, el) {
+            tempPrefs.accent = color;
+            document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+            if (el) el.classList.add('active');
         }
 
-        function setAccent(hex, el) { 
-            tempPrefs.accent = hex; 
-            document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active')); 
-            el.classList.add('active'); 
+        function selectAvatar(emoji, el) {
+            tempPrefs.avatar = emoji;
+            document.querySelectorAll('.avatar-opt').forEach(a => a.classList.remove('active'));
+            if (el) el.classList.add('active');
         }
 
         function saveSettings() {
-            prefs = {...tempPrefs};
+            prefs = { ...tempPrefs };
+            localStorage.setItem('xb_theme', prefs.theme);
+            localStorage.setItem('xb_performance', prefs.performance);
             localStorage.setItem('xb_accent', prefs.accent);
             localStorage.setItem('xb_avatar', prefs.avatar);
-            localStorage.setItem('xb_performance', prefs.performance);
-            localStorage.setItem('xb_theme', prefs.theme);
-            
-            applyPreferences(); toggleSidebar(); renderGrid();
+            applySettings();
+            toggleSidebar();
         }
 
-        let extrasUnlocked = false; let officeUnlocked = false;
-        document.getElementById('cmd-input').addEventListener('input', (e) => {
-            if(isNavigating) return;
-            const val = e.target.value.trim().toLowerCase();
+        function applySettings() {
+            // Tema
+            if (prefs.theme === 'light') document.body.classList.add('light-mode');
+            else document.body.classList.remove('light-mode');
             
-            if(val === "031" && !extrasUnlocked) { unlockSecret("Extras Secretos", "#9b59b6", [{ title: 'Buuñ Shooter', url: '10.4.html', emoji: '🔫' }, { title: 'Neon Rider', url: 'anda.html', emoji: '🏍️' }, { title: 'Emoji Blast', url: 'titi.html', emoji: '😂' }]); return; }
-            if(val === "office" && !officeUnlocked) { unlockSecret("Office", "#2b579a", [{ title: 'Procesador Texto', url: 'procesadordetexto.html', emoji: '📝' }]); return; }
-            renderGrid(val);
-        });
-
-        function unlockSecret(name, color, gamesArr) {
-            if(name === "Office") officeUnlocked = true; else extrasUnlocked = true;
-            data.push({ category: name, color: color, games: gamesArr });
-            document.getElementById('cmd-input').value = "";
-            
-            const toast = document.getElementById('achievement');
-            document.getElementById('ach-title').innerText = `${name} Desbloqueado`;
-            toast.style.background = color; toast.classList.add('show');
-            
-            if (prefs.performance === 'detail' && typeof confetti !== 'undefined') {
-                setTimeout(() => { confetti({ particleCount: 150, spread: 100, origin: { y: 0.1 }, colors: [color, '#ffffff'] }); }, 300);
+            // Rendimiento
+            if (prefs.performance === 'detail') {
+                document.body.classList.add('detail-mode');
+                attachMouseTracking();
+            } else {
+                document.body.classList.remove('detail-mode');
+                detachMouseTracking();
             }
-            setTimeout(() => { toast.classList.remove('show'); }, 4000);
-            currentTab = data.length - 1; renderTabs(); renderGrid(); updateBackground();
-        }
 
-        setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); }, 1000);
-
-        window.addEventListener('keydown', (e) => {
-            if(document.getElementById('sidebar').classList.contains('open') || isNavigating) return;
-            if(document.activeElement.id === 'cmd-input' && e.key !== 'Enter' && e.key !== 'ArrowDown') return;
+            // Acento
+            document.documentElement.style.setProperty('--accent', prefs.accent);
+            document.documentElement.style.setProperty('--accent-glow', hexToRgba(prefs.accent, 0.5));
             
-            const cols = window.getComputedStyle(document.getElementById('games-grid')).getPropertyValue('grid-template-columns').split(' ').length;
+            // Avatar
+            document.getElementById('avatar-emoji').innerText = prefs.avatar;
             
-            if (e.key === 'ArrowRight') { if (currentTile < displayedGames.length - 1) { currentTile++; updateFocus(); } e.preventDefault(); } 
-            else if (e.key === 'ArrowLeft') { if (currentTile > 0) { currentTile--; updateFocus(); } e.preventDefault(); } 
-            else if (e.key === 'ArrowDown') { if(document.activeElement.id === 'cmd-input') { document.activeElement.blur(); } else if (currentTile + cols < displayedGames.length) currentTile += cols; else currentTile = displayedGames.length - 1; updateFocus(); e.preventDefault(); } 
-            else if (e.key === 'ArrowUp') { if (currentTile - cols >= 0) currentTile -= cols; updateFocus(); e.preventDefault(); } 
-            else if (e.key === 'Tab') { e.preventDefault(); currentTab = (currentTab + 1) % data.length; renderTabs(); renderGrid(); updateBackground(); } 
-            else if (e.key === 'Enter') { if(displayedGames.length > 0 && document.activeElement.id !== 'cmd-input') document.getElementById(`tile-${currentTile}`).click(); }
-        });
-
-        function forceStart() {
-            const boot = document.getElementById('boot-screen');
-            if(boot && boot.style.display !== 'none') {
-                boot.style.display = 'none';
-                try { renderGrid(); } catch(e) { console.error("Error renderizando:", e); }
-            }
-        }
-        
-        document.addEventListener("DOMContentLoaded", () => {
-            try { applyPreferences(); renderTabs(); } catch (e) { console.error(e); }
-            setTimeout(forceStart, 500); 
-        });
-        window.onload = forceStart; setTimeout(forceStart, 1500); 
-
-        function detachMouseTracking() {
-            if (mouseMoveHandler) {
-                window.removeEventListener('mousemove', mouseMoveHandler);
-                mouseMoveHandler = null;
-            }
+            // Refrescar estado visual de los botones del menú
+            setTheme(prefs.theme);
+            setPerformance(prefs.performance);
+            
+            document.querySelectorAll('.color-swatch').forEach(s => {
+                s.classList.remove('active');
+                if(hexToRgba(s.style.backgroundColor, 1) === hexToRgba(prefs.accent, 1)) {
+                    s.classList.add('active');
+                }
+            });
         }
 
-        // Ocultar la pantalla de carga al usar el botón "Atrás" del navegador
-        window.addEventListener('pageshow', function(event) {
+        /* --- CARGA DE LA INTERFAZ PRINCIPAL --- */
+        function renderAvatars() {
+            const avatarGrid = document.getElementById('avatar-grid');
+            avatarGrid.innerHTML = '';
+            avatarEmojis.forEach(emoji => {
+                const div = document.createElement('div');
+                div.className = 'avatar-opt' + (prefs.avatar === emoji ? ' active' : '');
+                div.innerText = emoji;
+                div.onclick = () => selectAvatar(emoji, div);
+                avatarGrid.appendChild(div);
+            });
+        }
+
+        function renderTabs() {
+            const container = document.getElementById('tabs-container');
+            container.innerHTML = '';
+            data.forEach((cat, index) => {
+                const tab = document.createElement('div');
+                tab.className = 'nav-tab' + (currentTab === index ? ' active' : '');
+                tab.innerText = cat.category;
+                tab.onclick = () => {
+                    currentTab = index;
+                    document.getElementById('cmd-input').value = '';
+                    renderTabs();
+                    renderGames();
+                };
+                container.appendChild(tab);
+            });
+        }
+
+        function renderGames(searchQuery = '') {
+            const grid = document.getElementById('games-grid');
+            grid.innerHTML = '';
+            
+            let gamesToRender = [];
+            
+            if (searchQuery) {
+                // Buscador activo: buscar en todas las categorías
+                data.forEach(cat => {
+                    cat.games.forEach(g => {
+                        if (g.title.toLowerCase().includes(searchQuery.toLowerCase())) {
+                            gamesToRender.push({...g, color: cat.color});
+                        }
+                    });
+                });
+            } else {
+                // Buscador vacío: cargar la categoría actual
+                gamesToRender = data[currentTab].games.map(g => ({...g, color: data[currentTab].color}));
+            }
+
+            gamesToRender.forEach((game, index) => {
+                const tile = document.createElement('div');
+                tile.className = 'tile' + (game.locked ? ' locked' : '') + (index === 0 && !searchQuery ? ' hero-tile' : '');
+                
+                // Si la librería VanillaTilt está disponible y el juego no está bloqueado
+                if (typeof VanillaTilt !== 'undefined' && !game.locked) {
+                    VanillaTilt.init(tile, { max: 10, speed: 400, glare: true, "max-glare": 0.2 });
+                }
+
+                tile.innerHTML = `
+                    <div class="tile-icon">${game.emoji}</div>
+                    <div class="tile-label" style="background: linear-gradient(0deg, ${game.color} 0%, transparent 100%);">${game.title}</div>
+                `;
+
+                if (!game.locked) {
+                    tile.onclick = () => launchGame(game);
+                }
+
+                grid.appendChild(tile);
+                
+                // Animación escalonada al entrar
+                setTimeout(() => {
+                    tile.style.opacity = '1';
+                    tile.style.visibility = 'visible';
+                }, 50 + (index * 30));
+            });
+        }
+
+        function launchGame(game) {
+            if (isNavigating) return;
+            isNavigating = true;
+            
             const overlay = document.getElementById('launch-overlay');
-            if (overlay) {
-                overlay.style.opacity = '0';
-                overlay.style.pointerEvents = 'none';
-            }
-            isNavigating = false; // Permite volver a hacer clic en los juegos
+            const title = document.getElementById('launch-title');
+            
+            title.innerText = "CARGANDO " + game.title.toUpperCase();
+            overlay.style.transition = 'opacity 0.6s ease, background 0.4s ease'; // Asegurarnos de que tenga transición al lanzar
+            overlay.style.opacity = '1';
+            overlay.style.pointerEvents = 'all';
+            
+            setTimeout(() => {
+                window.location.href = game.url;
+            }, 1200);
+        }
+
+        // Buscador interactivo
+        document.getElementById('cmd-input').addEventListener('input', (e) => {
+            renderGames(e.target.value);
         });
-        
+
+        // Reloj de la cabecera
+        setInterval(() => {
+            const d = new Date();
+            document.getElementById('clock').innerText = d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+        }, 1000);
+
+        // Inicialización
+        window.addEventListener('load', () => {
+            applySettings();
+            renderAvatars();
+            renderTabs();
+            renderGames();
+
+            // Ocultar pantalla de carga inicial
+            setTimeout(() => {
+                const bootScreen = document.getElementById('boot-screen');
+                bootScreen.style.opacity = '0';
+                setTimeout(() => bootScreen.style.display = 'none', 600);
+            }, 1000);
+        });
     </script>
 </body>
 </html>
