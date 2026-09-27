@@ -816,6 +816,24 @@
             setTimeout(forceStart, 500); 
         });
         window.onload = forceStart; setTimeout(forceStart, 1500); 
+
+        function detachMouseTracking() {
+            if (mouseMoveHandler) {
+                window.removeEventListener('mousemove', mouseMoveHandler);
+                mouseMoveHandler = null;
+            }
+        }
+
+        // Ocultar la pantalla de carga al usar el botón "Atrás" del navegador
+        window.addEventListener('pageshow', function(event) {
+            const overlay = document.getElementById('launch-overlay');
+            if (overlay) {
+                overlay.style.opacity = '0';
+                overlay.style.pointerEvents = 'none';
+            }
+            isNavigating = false; // Permite volver a hacer clic en los juegos
+        });
+        
     </script>
 </body>
 </html>
