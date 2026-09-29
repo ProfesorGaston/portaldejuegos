@@ -31,9 +31,6 @@
             --accent: #107C10;
             --accent-glow: rgba(16, 124, 16, 0.5);
             
-            --mouse-x: 50vw;
-            --mouse-y: 50vh;
-            
             --tile-w: 210px;
             --tile-h: 135px;
             --font-family: 'Inter', system-ui, sans-serif;
@@ -62,15 +59,6 @@
         }
 
         /* --- EFECTOS VISUALES OPTIMIZADOS PARA GPU --- */
-        .spotlight-overlay {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 5;
-            background: radial-gradient(800px circle at var(--mouse-x) var(--mouse-y), rgba(255, 255, 255, 0.08), transparent 45%);
-            opacity: 0; transition: opacity 0.5s ease; mix-blend-mode: screen;
-            will-change: background, opacity; transform: translateZ(0);
-        }
-        body.light-mode .spotlight-overlay { mix-blend-mode: overlay; background: radial-gradient(800px circle at var(--mouse-x) var(--mouse-y), rgba(0, 0, 0, 0.05), transparent 45%); }
-        body.detail-mode .spotlight-overlay { opacity: 1; }
-
         .crt-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%);
@@ -300,7 +288,6 @@
 </head>
 <body>
 
-    <div class="spotlight-overlay"></div>
     <div class="crt-overlay"></div>
 
     <div id="vanta-bg"></div>
@@ -435,9 +422,9 @@
             ]},
             { category: "Matemática", color: "#3498db", games: [
                 { title: 'Proporción Gamer', url: 'prop.html', emoji: '🕹️' },
-                { title: 'Pizzería Pipe', url: 'pizzeria.html', emoji: '🍕' },
+                { title: 'Pizzería lo del Pipe', url: 'pizzeria.html', emoji: '🍕' },
                 { title: 'Raft Math', url: 'raft-math.html', emoji: '🛶' },
-                { title: 'Penales Math', url: 'Penales Multiplicativos.html', emoji: '⚽' },
+                { title: 'Penales Multiplicativos', url: 'Penales Multiplicativos.html', emoji: '⚽' },
                 { title: 'Math Invaders', url: 'Math Invaders.html', emoji: '👽' },
                 { title: 'Pac-Mates', url: 'Pacman de sumas.html', emoji: '👻' },
                 { title: 'Safari Numérico', url: '#', locked: true, emoji: '🔒' },
@@ -454,7 +441,7 @@
             ]},
             { category: "Informática", color: "#00f2fe", games: [ 
                 { title: 'System_Search', url: 'System_Search.html', emoji: '🔍' },
-                { title: 'Infiltración', url: 'Infiltracion-digital.html', emoji: '💻' }
+                { title: 'Infiltración Digital', url: 'Infiltracion-digital.html', emoji: '💻' }
             ]},
             { category: "Arduino", color: "#e67e22", games: [
                 { title: 'Caja Fuerte', url: 'caja_fuerte.html', emoji: '🔐' },
@@ -490,9 +477,6 @@
             mouseMoveHandler = (e) => {
                 if(!mouseTicking) {
                     requestAnimationFrame(() => {
-                        document.documentElement.style.setProperty('--mouse-x', e.clientX + 'px');
-                        document.documentElement.style.setProperty('--mouse-y', e.clientY + 'px');
-                        
                         if(typeof gsap !== 'undefined') {
                             const normX = (e.clientX / window.innerWidth - 0.5) * 2;
                             const normY = (e.clientY / window.innerHeight - 0.5) * 2;
