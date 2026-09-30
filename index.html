@@ -21,7 +21,7 @@
     <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.net.min.js"></script>
 
     <style>
-        /* --- VARIABLES GLOBALES Y MODO OSCURO (POR DEFECTO) --- */
+        /* --- VARIABLES GLOBALES Y MODO OSCURO --- */
         :root {
             --bg-base: #0b0c10;
             --panel-bg: rgba(20, 22, 28, 0.4);
@@ -34,15 +34,6 @@
             --tile-w: 210px;
             --tile-h: 135px;
             --font-family: 'Inter', system-ui, sans-serif;
-        }
-
-        /* --- VARIABLES MODO CLARO --- */
-        body.light-mode {
-            --bg-base: #eef2f5;
-            --panel-bg: rgba(255, 255, 255, 0.65);
-            --panel-border: rgba(0, 0, 0, 0.1);
-            --text-main: #1a1a24;
-            --text-muted: #5e606a;
         }
 
         * { 
@@ -68,7 +59,6 @@
             background-size: 100% 4px; z-index: 9995; pointer-events: none;
             opacity: 0; mix-blend-mode: overlay; transform: translateZ(0);
         }
-        body.light-mode .crt-overlay { opacity: 0.3; }
         body.detail-mode .crt-overlay { opacity: 1; animation: crtFlicker 0.15s infinite; }
         
         @keyframes crtFlicker {
@@ -86,7 +76,6 @@
             mix-blend-mode: screen; transform: translateZ(0);
             will-change: transform;
         }
-        body.light-mode .ambient-mesh { mix-blend-mode: multiply; opacity: 0.6; }
         
         @keyframes floatOrb { 
             0% { transform: translate3d(0, 0, 0) scale(1) rotate(0deg); } 
@@ -175,7 +164,6 @@
         }
         
         .tile:hover, .tile.focused { z-index: 15; background: rgba(128,128,128,0.1); box-shadow: 0 20px 45px rgba(0,0,0,0.4), 0 0 25px var(--accent-glow); border-color: transparent; }
-        body.light-mode .tile:hover, body.light-mode .tile.focused { box-shadow: 0 15px 35px rgba(0,0,0,0.1), 0 0 20px var(--accent-glow); }
         .tile:hover::before, .tile.focused::before { border-color: var(--accent); box-shadow: inset 0 0 10px var(--accent-glow); }
         .tile:active { transform: scale(0.95) !important; transition: transform 0.1s !important; }
 
@@ -204,7 +192,6 @@
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transform: translateZ(25px); text-align: center;
             transition: padding 0.3s ease;
         }
-        body.light-mode .tile-label { background: linear-gradient(0deg, rgba(238,242,245,0.98) 15%, transparent 100%); color: var(--text-main); }
         .tile:hover .tile-label, .tile.focused .tile-label { padding-bottom: 18px; }
 
         .hero-tile { grid-column: 1 / span 2; grid-row: 1 / span 2; }
@@ -231,7 +218,6 @@
         /* --- MENÚ LATERAL --- */
         .sidebar-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px); z-index: 9998; opacity: 0; visibility: hidden; transition: opacity 0.4s ease, visibility 0.4s ease; transform: translateZ(0); }
         .sidebar { position: fixed; top: 0; left: -420px; width: 420px; height: 100vh; background: var(--panel-bg); backdrop-filter: blur(35px); border-right: 1px solid var(--panel-border); z-index: 9999; transition: left 0.5s cubic-bezier(0.19, 1, 0.22, 1), background 0.4s ease; display: flex; flex-direction: column; padding: 40px; box-shadow: 20px 0 50px rgba(0,0,0,0.5); transform: translateZ(0); }
-        body.light-mode .sidebar { background: rgba(245, 247, 250, 0.85); border-right-color: rgba(0,0,0,0.1); }
         .sidebar.open { left: 0; }
         .sidebar-overlay.open { opacity: 1; visibility: visible; }
         .sidebar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
@@ -325,14 +311,6 @@
         </div>
         
         <div class="settings-section">
-            <div class="setting-block">
-                <span class="setting-label">Tema del Sistema</span>
-                <div class="perf-group">
-                    <button class="btn-perf" id="btn-theme-dark" onclick="setTheme('dark')">OSCURO</button>
-                    <button class="btn-perf" id="btn-theme-light" onclick="setTheme('light')">CLARO</button>
-                </div>
-            </div>
-
             <div class="setting-block">
                 <span class="setting-label">Rendimiento Visual</span>
                 <div class="perf-group">
@@ -457,8 +435,7 @@
         let prefs = {
             accent: localStorage.getItem('xb_accent') || '#107C10',
             avatar: localStorage.getItem('xb_avatar') || '😎',
-            performance: localStorage.getItem('xb_performance') || 'detail',
-            theme: localStorage.getItem('xb_theme') || 'dark'
+            performance: localStorage.getItem('xb_performance') || 'detail'
         };
         let tempPrefs = { ...prefs };
         const avatarEmojis = ['😎','🤖','🎮','🚀','🦊','🦁','REX','🦄','⚽','👾'];
@@ -509,10 +486,10 @@
                 return;
             }
 
-            document.getElementById('vanta-bg').style.opacity = prefs.theme === 'light' ? '0.7' : '0.5';
+            document.getElementById('vanta-bg').style.opacity = '0.5';
             
             let colorHexNum = parseInt(prefs.accent.replace('#', '0x'));
-            let bgColorNum = prefs.theme === 'light' ? 0xeef2f5 : 0x0b0c10;
+            let bgColorNum = 0x0b0c10;
 
             if (!vantaEffect) {
                 vantaEffect = VANTA.NET({
@@ -530,9 +507,6 @@
         function applyPreferences() {
             document.documentElement.style.setProperty('--accent', prefs.accent);
             document.documentElement.style.setProperty('--accent-glow', hexToRgba(prefs.accent, 0.4));
-            
-            if(prefs.theme === 'light') document.body.classList.add('light-mode');
-            else document.body.classList.remove('light-mode');
 
             document.getElementById('gamertag-display').innerText = "Alumno";
             document.getElementById('profile-pic').style.background = prefs.accent;
@@ -553,12 +527,10 @@
         function updateBackground() {
             if(!data[currentTab]) return;
 
-            // --- CONFIGURACIÓN DE IMÁGENES / GIFS DE FONDO ---
             const bgImage = data[currentTab].bgGif;
             const vantaEl = document.getElementById('vanta-bg');
 
             if (bgImage) {
-                // Aplicar la imagen o GIF de fondo con encodeURI para manejar los espacios en los nombres
                 document.body.style.backgroundImage = "url('" + encodeURI(bgImage) + "')";
                 if (vantaEl) vantaEl.style.display = 'none';
             } else {
@@ -704,7 +676,6 @@
             if(!isOpen) {
                 tempPrefs = {...prefs}; 
                 setPerformance(tempPrefs.performance); 
-                setTheme(tempPrefs.theme);
                 
                 document.querySelectorAll('.color-swatch').forEach(s => {
                     s.classList.remove('active');
@@ -738,12 +709,6 @@
             document.getElementById('btn-perf').classList.toggle('active', mode === 'performance');
         }
 
-        function setTheme(mode) {
-            tempPrefs.theme = mode;
-            document.getElementById('btn-theme-dark').classList.toggle('active', mode === 'dark');
-            document.getElementById('btn-theme-light').classList.toggle('active', mode === 'light');
-        }
-
         function setAccent(hex, el) { 
             tempPrefs.accent = hex; 
             document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active')); 
@@ -755,23 +720,39 @@
             localStorage.setItem('xb_accent', prefs.accent);
             localStorage.setItem('xb_avatar', prefs.avatar);
             localStorage.setItem('xb_performance', prefs.performance);
-            localStorage.setItem('xb_theme', prefs.theme);
             
             applyPreferences(); toggleSidebar(); renderGrid();
         }
 
-        let extrasUnlocked = false; let officeUnlocked = false;
+        let officeUnlocked = false;
+        let extrasUnlocked = false;
+        
         document.getElementById('cmd-input').addEventListener('input', (e) => {
             if(isNavigating) return;
             const val = e.target.value.trim().toLowerCase();
             
-            if(val === "031" && !extrasUnlocked) { unlockSecret("Extras Secretos", "#9b59b6", [{ title: 'Buuñ Shooter', url: '10.4.html', emoji: '🔫' }, { title: 'Neon Rider', url: 'anda.html', emoji: '🏍️' }, { title: 'Emoji Blast', url: 'titi.html', emoji: '😂' }]); return; }
-            if(val === "office" && !officeUnlocked) { unlockSecret("Office", "#2b579a", [{ title: 'Procesador Texto', url: 'procesadordetexto.html', emoji: '📝' }]); return; }
+            // Códigos secretos
+            if(val === "office" && !officeUnlocked) { 
+                unlockSecret("Office", "#2b579a", [{ title: 'Procesador Texto', url: 'procesadordetexto.html', emoji: '📝' }]); 
+                return; 
+            }
+            if(val === "031" && !extrasUnlocked) {
+                unlockSecret("Extras Secretos", "#9b59b6", [
+                    { title: 'Buuñ Shooter', url: '10.4.html', emoji: '🏹' },
+                    { title: 'Neon Rider', url: 'anda sin parar.html', emoji: '🏎️' },
+                    { title: 'Fútbol 1vs1', url: 'Fut 1vs1 fin.html', emoji: '⚽' },
+                    { title: 'Hell Zombi', url: 'hell zombi.html', emoji: '🧟' },
+                    { title: 'Penalty Cup', url: 'penales.html', emoji: '🥅' },
+                    { title: 'Emoji Blast', url: 'tata y titi.html', emoji: '✨' }
+                ]);
+                extrasUnlocked = true;
+                return;
+            }
             renderGrid(val);
         });
 
         function unlockSecret(name, color, gamesArr) {
-            if(name === "Office") officeUnlocked = true; else extrasUnlocked = true;
+            if(name === "Office") officeUnlocked = true;
             data.push({ category: name, color: color, games: gamesArr });
             document.getElementById('cmd-input').value = "";
             
@@ -816,7 +797,6 @@
         });
         window.onload = forceStart; setTimeout(forceStart, 1500);
 
-        // Ocultar la pantalla de carga al usar el botón "Atrás" del navegador
         window.addEventListener('pageshow', function(event) {
             const overlay = document.getElementById('launch-overlay');
             if (overlay) {
