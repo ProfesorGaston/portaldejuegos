@@ -54,8 +54,11 @@
             font-family: var(--font-family); color: var(--text-main);
             height: 100vh; width: 100vw; overflow: hidden;
             display: flex; flex-direction: column; background-color: var(--bg-base);
-            transition: background-color 0.4s ease, color 0.4s ease;
-            perspective: 1000px; /* Añadido para mejor profundidad 3D en toda la vista */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            transition: background-color 0.4s ease, color 0.4s ease, background-image 0.5s ease-in-out;
+            perspective: 1000px;
         }
 
         /* --- EFECTOS VISUALES OPTIMIZADOS PARA GPU --- */
@@ -64,7 +67,6 @@
             background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%);
             background-size: 100% 4px; z-index: 9995; pointer-events: none;
             opacity: 0; mix-blend-mode: overlay; transform: translateZ(0);
-            pointer-events: none;
         }
         body.light-mode .crt-overlay { opacity: 0.3; }
         body.detail-mode .crt-overlay { opacity: 1; animation: crtFlicker 0.15s infinite; }
@@ -390,7 +392,7 @@
 
     <script>
         const data = [
-            { category: "Lengua", color: "#e50914", games: [
+            { category: "Lengua", color: "#e50914", bgGif: "fondo_gamer_lite.gif", games: [
                 { title: 'Lluvia de Letras', url: 'Lluvia de letras.html', emoji: '⌨️' },
                 { title: 'Constructor', url: 'Constructor de palabras.html', emoji: '🧩' },
                 { title: 'Tren de Oraciones', url: 'Tren de oraciones.html', emoji: '🚂' },
@@ -402,7 +404,7 @@
                 { title: 'Archery Ortográfico', url: 'archery.html', emoji: '🏹' },
                 { title: 'Cave Runner', url: 'cave_runner.html', emoji: '🏃' }
             ]},
-            { category: "Lógica", color: "#f5b041", games: [
+            { category: "Lógica", color: "#f5b041", bgGif: "fondo_gamer_logi.gif", games: [
                 { title: 'La Hormiga', url: 'La hormiga.html', emoji: '🐜' },
                 { title: 'Memoria Gamer', url: 'Rompe-cabezas.html', emoji: '🎮' },
                 { title: 'Pesca Marítima', url: '#', locked: true, emoji: '🔒' },
@@ -420,7 +422,7 @@
                 { title: 'Orden', url: 'orden.html', emoji: '📖' },
                 { title: 'Misión Galáctica', url: 'mision galactica.html', emoji: '🌌' }
             ]},
-            { category: "Matemática", color: "#3498db", games: [
+            { category: "Matemática", color: "#3498db", bgGif: "fondo_gamer_mtae.gif", games: [
                 { title: 'Proporción Gamer', url: 'prop.html', emoji: '🕹️' },
                 { title: 'Pizzería lo del Pipe', url: 'pizzeria.html', emoji: '🍕' },
                 { title: 'Raft Math', url: 'raft-math.html', emoji: '🛶' },
@@ -434,16 +436,16 @@
                 { title: 'Mario X', url: 'Mario X.html', emoji: '🍄' },
                 { title: 'A contar', url: 'A contar.html', emoji: '🧸' }
             ]},
-            { category: "Programación", color: "#2ecc71", games: [ 
+            { category: "Programación", color: "#2ecc71", bgGif: "fondo_gamer_programa.gif", games: [ 
                 { title: 'Robot Explorador', url: 'Robot explorador.html', emoji: '🤖' },
                 { title: 'El Infiltrado', url: 'El infiltrado.html', emoji: '👾' },
                 { title: 'Rover', url: 'rover.html', emoji: '🚙' }
             ]},
-            { category: "Informática", color: "#00f2fe", games: [ 
+            { category: "Informática", color: "#00f2fe", bgGif: "fondo_gamer_info.gif", games: [ 
                 { title: 'System_Search', url: 'System_Search.html', emoji: '🔍' },
                 { title: 'Infiltración Digital', url: 'Infiltracion-digital.html', emoji: '💻' }
             ]},
-            { category: "Arduino", color: "#e67e22", games: [
+            { category: "Arduino", color: "#e67e22", bgGif: "fondo_gamer_ardu.gif", games: [
                 { title: 'Caja Fuerte', url: 'caja_fuerte.html', emoji: '🔐' },
                 { title: 'Arquero', url: '#', locked: true, emoji: '🔒' },
                 { title: 'Tetris', url: 'tetris arduino.html', emoji: '🧱' }
@@ -550,6 +552,21 @@
 
         function updateBackground() {
             if(!data[currentTab]) return;
+
+            // --- CONFIGURACIÓN DE IMÁGENES / GIFS DE FONDO ---
+            const bgImage = data[currentTab].bgGif;
+            const vantaEl = document.getElementById('vanta-bg');
+
+            if (bgImage) {
+                // Aplicar la imagen o GIF de fondo con encodeURI para manejar los espacios en los nombres
+                document.body.style.backgroundImage = "url('" + encodeURI(bgImage) + "')";
+                if (vantaEl) vantaEl.style.display = 'none';
+            } else {
+                document.body.style.backgroundImage = "none";
+                if (vantaEl) vantaEl.style.display = 'block';
+                initVantaBackground();
+            }
+
             const cColor = data[currentTab].color;
             const orb1 = document.getElementById('orb1');
             const orb2 = document.getElementById('orb2');
@@ -564,8 +581,6 @@
             
             const spinner = document.getElementById('boot-spinner');
             if(spinner) spinner.style.borderTopColor = prefs.accent;
-            
-            initVantaBackground();
         }
 
         function renderTabs() {
@@ -799,12 +814,7 @@
             try { applyPreferences(); renderTabs(); } catch (e) { console.error(e); }
             setTimeout(forceStart, 500); 
         });
-        window.onload = forceStart; setTimeout(forceStart, 1500); function detachMouseTracking() {
-            if (mouseMoveHandler) {
-                window.removeEventListener('mousemove', mouseMoveHandler);
-                mouseMoveHandler = null;
-            }
-        }
+        window.onload = forceStart; setTimeout(forceStart, 1500);
 
         // Ocultar la pantalla de carga al usar el botón "Atrás" del navegador
         window.addEventListener('pageshow', function(event) {
@@ -813,7 +823,7 @@
                 overlay.style.opacity = '0';
                 overlay.style.pointerEvents = 'none';
             }
-            isNavigating = false; // Permite volver a hacer clic en los juegos
+            isNavigating = false;
         });
         
     </script>
