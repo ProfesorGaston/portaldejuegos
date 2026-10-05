@@ -669,7 +669,10 @@
             { t: "Atacar", tipo: "V" }, { t: "Defender", tipo: "V" }, { t: "Capturar", tipo: "V" }, 
             { t: "Huir", tipo: "V" }, { t: "Curar", tipo: "V" }, { t: "Aprender", tipo: "V" }, 
             { t: "Olvidar", tipo: "V" }, { t: "Evolucionar", tipo: "V" }, { t: "Intercambiar", tipo: "V" }, 
-            { t: "Luchar", tipo: "V" }
+            { t: "Luchar", tipo: "V" },
+            { t: "Pokebola", tipo: "S" }, { t: "Region", tipo: "S" }, { t: "Huevo", tipo: "S" }, { t: "Torneo", tipo: "S" }, { t: "Laguna", tipo: "S" }, { t: "Volcan", tipo: "S" }, { t: "Estadio", tipo: "S" }, { t: "Rival", tipo: "S" }, { t: "Pueblo", tipo: "S" }, { t: "Mapa", tipo: "S" },
+            { t: "Venenoso", tipo: "A" }, { t: "Legendario", tipo: "A" }, { t: "Raro", tipo: "A" }, { t: "Poderoso", tipo: "A" }, { t: "Agil", tipo: "A" }, { t: "Resistente", tipo: "A" }, { t: "Envenenado", tipo: "A" }, { t: "Agotado", tipo: "A" }, { t: "Confundido", tipo: "A" }, { t: "Misterioso", tipo: "A" },
+            { t: "Explorar", tipo: "V" }, { t: "Entrenar", tipo: "V" }, { t: "Nadar", tipo: "V" }, { t: "Volar", tipo: "V" }, { t: "Esquivar", tipo: "V" }, { t: "Descansar", tipo: "V" }, { t: "Recuperar", tipo: "V" }, { t: "Derrotar", tipo: "V" }, { t: "Buscar", tipo: "V" }, { t: "Perseguir", tipo: "V" }
         ];
 
         const frasesMago = {
@@ -701,11 +704,21 @@
         };
 
         const enemigos = [
-            { nombre: "MUK", hp: 100, twemoji: "1f47e" },
-            { nombre: "GOLBAT", hp: 100, twemoji: "1f987" },
-            { nombre: "ARBOK", hp: 120, twemoji: "1f40d" },
-            { nombre: "GENGAR", hp: 150, twemoji: "1f47b" },
-            { nombre: "DRAGONITE", hp: 220, twemoji: "1f409" }
+            { nombre: "GASTLY", hp: 80, twemoji: "1f47b", poke: 92 },
+            { nombre: "ZUBAT", hp: 80, twemoji: "1f987", poke: 41 },
+            { nombre: "KOFFING", hp: 90, twemoji: "1f4a8", poke: 109 },
+            { nombre: "EKANS", hp: 90, twemoji: "1f40d", poke: 23 },
+            { nombre: "GRIMER", hp: 100, twemoji: "1f47e", poke: 88 },
+            { nombre: "MUK", hp: 100, twemoji: "1f47e", poke: 89 },
+            { nombre: "HAUNTER", hp: 110, twemoji: "1f47b", poke: 93 },
+            { nombre: "GOLBAT", hp: 100, twemoji: "1f987", poke: 42 },
+            { nombre: "WEEZING", hp: 120, twemoji: "1f4a8", poke: 110 },
+            { nombre: "ARBOK", hp: 120, twemoji: "1f40d", poke: 24 },
+            { nombre: "MISDREAVUS", hp: 130, twemoji: "1f52e", poke: 200 },
+            { nombre: "SABLEYE", hp: 140, twemoji: "1f48e", poke: 302 },
+            { nombre: "GENGAR", hp: 150, twemoji: "1f47b", poke: 94 },
+            { nombre: "TYRANITAR", hp: 180, twemoji: "1f996", poke: 248 },
+            { nombre: "DRAGONITE", hp: 220, twemoji: "1f409", poke: 149 }
         ];
 
         let baraja = [];
@@ -852,8 +865,8 @@
 
         async function siguienteTurno() {
             if (baraja.length === 0) {
-                await escribirTexto("Tu grimorio se ha quedado sin pergaminos...");
-                return;
+                await escribirTexto("Tu grimorio se rebaraja con nuevos pergaminos...");
+                baraja = mezclarBaraja([...diccionarioMaestro]);
             }
 
             palabraActual = baraja.pop();
@@ -956,7 +969,7 @@
 const SPR_URL = 'https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/versions/generation-v/black-white';
 const POKE = {"1f47e":89,"1f987":42,"1f40d":24,"1f47b":94,"1f409":149};
 function setEnemySprite(e){
-  const id = POKE[e.twemoji];
+  const id = e.poke || POKE[e.twemoji];
   elImgEnemigo.onerror = () => { elImgEnemigo.onerror = null; elImgEnemigo.style.imageRendering = 'auto';
     elImgEnemigo.src = `https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/svg/${e.twemoji}.svg`; };
   elImgEnemigo.style.imageRendering = 'pixelated';
