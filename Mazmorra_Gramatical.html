@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Batalla Gramatical - Prof. Gastón</title>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Cinzel:wght@800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gb-white: #f0ebd8;
+            --gb-black: #080a0f;
+            --hp-green: #2ecc71;
+            --hp-yellow: #f1c40f;
+            --hp-red: #e74c3c;
+            --ui-border: #d4af37;
+            --ui-bg: #121620;
+            --magic-purple: #a855f7;
+        }
+
+        * {
+            margin: 0; padding: 0; box-sizing: border-box;
+            user-select: none; font-family: 'VT323', monospace;
+        }
+
+        body {
+            background-color: var(--gb-black);
+            height: 100vh; width: 100vw;
+            display: flex; flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- PANTALLA DE INICIO --- */
+        #start-screen {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: radial-gradient(circle, #1a2332 0%, #05070a 100%); z-index: 100;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+        #start-screen h1 { 
+            font-size: 5rem; color: #f1c40f; 
+            text-shadow: 0 0 10px #f1c40f, 4px 4px #000, 0 0 25px #e67e22; 
+            text-align: center; margin-bottom: 20px; letter-spacing: 3px;
+        }
+        #start-screen p { color: #a855f7; font-size: 2rem; margin-bottom: 30px; text-shadow: 0 0 8px #9333ea; }
+        .start-btn {
+            background: #212836; border: 4px solid var(--ui-border); border-radius: 10px;
+            padding: 15px 45px; font-size: 2.8rem; cursor: pointer; color: #f0ebd8;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.5); animation: pulseBtn 1.5s infinite;
+            transition: transform 0.1s;
+        }
+        .start-btn:active { transform: scale(0.95); }
+        @keyframes pulseBtn { 
+            0%, 100% { opacity: 1; box-shadow: 0 0 20px rgba(212, 175, 55, 0.5); } 
+            50% { opacity: 0.85; box-shadow: 0 0 35px rgba(241, 196, 15, 0.8); } 
+        }
+
+        /* --- ESCENARIO MAZMORRA Y CANVAS DE PARTÍCULAS --- */
+        #battle-scene {
+            flex: 1; position: relative; width: 100%;
+            background-color: #0b0e14; overflow: hidden;
+        }
+
+        #particle-canvas {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 4; pointer-events: none;
+        }
+
+        /* Pared de Ladrillos */
+        .dungeon-wall {
+            position: absolute; top: 0; left: 0; width: 100%; height: 55%;
+            background-color: #10141e;
+            background-image: 
+                linear-gradient(335deg, #07090f 20px, transparent 20px),
+                linear-gradient(155deg, #07090f 20px, transparent 20px),
+                linear-gradient(335deg, #07090f 20px, transparent 20px),
+                linear-gradient(155deg, #07090f 20px, transparent 20px);
+            background-size: 50px 50px;
+            background-position: 0 2px, 4px 30px, 25px 27px, 28px 5px;
+            box-shadow: inset 0 -40px 60px #05070a, inset 0 0 120px #000;
+        }
+
+        /* Suelo de Mazmorra */
+        .dungeon-floor {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 48%;
+            background: linear-gradient(to bottom, #161d2a 0%, #0a0d14 100%);
+            border-top: 4px solid #283347;
+            box-shadow: inset 0 20px 30px rgba(0,0,0,0.9);
+        }
+
+        /* Pilares */
+        .pillar {
+            position: absolute; top: 0; width: 70px; height: 100%;
+            background: linear-gradient(90deg, #0a0d14 0%, #222b3d 50%, #07090f 100%);
+            border-right: 2px solid #05070a; border-left: 2px solid #323f59;
+            z-index: 3;
+        }
+        .pillar.left { left: 0; }
+        .pillar.right { right: 0; }
+
+        /* Antorchas */
+        .torch { position: absolute; top: 20%; width: 22px; height: 55px; z-index: 3; }
+        .torch.left { left: 90px; }
+        .torch.right { right: 90px; }
+
+        .torch-holder {
+            position: absolute; bottom: 0; width: 100%; height: 28px;
+            background: #3e2b1d; border: 2px solid #120b06; border-radius: 3px;
+        }
+        .flame {
+            position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
+            width: 18px; height: 30px;
+            background: radial-gradient(circle, #fff7b3 20%, #ff6600 60%, transparent 100%);
+            border-radius: 50% 50% 20% 20%;
+            animation: flameFlicker 0.25s infinite alternate;
+            filter: drop-shadow(0 0 12px #ff5500);
+        }
+        .torch-glow {
+            position: absolute; top: -60px; left: 50%; transform: translateX(-50%);
+            width: 250px; height: 250px;
+            background: radial-gradient(circle, rgba(255, 120, 0, 0.28) 0%, rgba(255, 60, 0, 0.08) 50%, transparent 70%);
+            pointer-events: none; animation: glowPulse 0.15s infinite alternate;
+        }
+
+        @keyframes flameFlicker {
+            0% { transform: translateX(-50%) scale(1) rotate(-4deg); }
+            100% { transform: translateX(-50%) scale(1.15, 0.9) rotate(4deg); }
+        }
+        @keyframes glowPulse {
+            0% { opacity: 0.8; transform: translateX(-50%) scale(0.96); }
+            100% { opacity: 1; transform: translateX(-50%) scale(1.06); }
+        }
+
+        /* Plataformas Rúnicas Místicas */
+        .platform {
+            position: absolute; border-radius: 50%; z-index: 2;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.9), 0 0 25px rgba(0,0,0,0.8);
+        }
+        .platform.enemy { 
+            top: 40%; right: 20%; width: 230px; height: 65px; 
+            background: radial-gradient(ellipse at center, #1e2838 0%, #0a0e17 80%);
+            border: 3px solid #3b82f6; box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+            transform: translateX(50%);
+        }
+        .platform.player { 
+            bottom: 10%; left: 20%; width: 280px; height: 75px; 
+            background: radial-gradient(ellipse at center, #2e1a3a 0%, #0e0714 80%);
+            border: 3px solid var(--magic-purple); box-shadow: 0 0 25px rgba(168, 85, 247, 0.5);
+            transform: translateX(-50%);
+        }
+
+        /* Contenedores de Sprites */
+        .sprite-container {
+            position: absolute; display: flex; justify-content: center; align-items: center;
+            transition: transform 0.2s; z-index: 5;
+        }
+        .sprite-container img {
+            width: 100%; height: 100%; object-fit: contain;
+            filter: drop-shadow(0 12px 10px rgba(0,0,0,0.7));
+        }
+
+        #enemy-sprite { top: 19%; right: 20%; width: 145px; height: 145px; transform: translateX(50%); }
+        #player-sprite { bottom: 13%; left: 20%; width: 175px; height: 175px; transform: translateX(-50%); }
+
+        /* HUD Cajas de Estado */
+        .hud-box {
+            position: absolute; background: var(--ui-bg); border: 4px solid var(--ui-border);
+            border-radius: 10px; padding: 10px 18px; width: 310px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.8), inset 0 0 10px rgba(0,0,0,0.6); z-index: 10;
+            color: var(--gb-white);
+        }
+        .hud-box.enemy { top: 20px; left: 100px; border-radius: 0 12px 12px 12px; }
+        .hud-box.player { bottom: 20px; right: 100px; border-radius: 12px 12px 0 12px; }
+
+        .hud-header { display: flex; justify-content: space-between; font-size: 2.1rem; margin-bottom: 6px; font-weight: bold; color: #f1c40f; }
+        
+        .hp-bar-bg {
+            background: #090c10; width: 100%; height: 16px; border-radius: 8px;
+            border: 2px solid #30363d; position: relative; overflow: hidden;
+            display: flex; justify-content: flex-end;
+        }
+        .hp-bar-fill {
+            background: var(--hp-green); width: 100%; height: 100%;
+            transition: width 0.4s ease-out, background-color 0.3s;
+        }
+        
+        .hp-numbers { text-align: right; font-size: 1.4rem; margin-top: 4px; font-weight: bold; color: #94a3b8; }
+
+        /* Multiplicador de Combo */
+        #combo-badge {
+            position: absolute; top: -20px; right: 10px;
+            background: #e11d48; color: white; border: 2px solid #f1c40f;
+            border-radius: 20px; padding: 2px 12px; font-size: 1.3rem; font-weight: bold;
+            display: none; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 10px #e11d48;
+        }
+        @keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+
+        /* Textos de Daño Flotantes */
+        .damage-pop {
+            position: absolute; z-index: 30; font-size: 3rem; font-weight: bold;
+            color: #ff2a2a; text-shadow: 2px 2px 0 #000, 0 0 10px #ff0000;
+            pointer-events: none; animation: floatUp 0.9s forwards ease-out;
+        }
+        .damage-pop.heal { color: #2ecc71; text-shadow: 2px 2px 0 #000, 0 0 10px #2ecc71; }
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(0.8); }
+            50% { transform: translateY(-40px) scale(1.3); }
+            100% { opacity: 0; transform: translateY(-70px) scale(1); }
+        }
+
+        /* --- INTERFAZ INFERIOR --- */
+        #ui-panel {
+            height: 26vh; min-height: 180px; background: #080a0f; border-top: 5px solid var(--ui-border);
+            display: flex; position: relative; padding: 12px; z-index: 20;
+            box-shadow: 0 -10px 25px rgba(0,0,0,0.9);
+        }
+
+        #dialog-box {
+            flex: 1; padding: 18px 22px; font-size: 2.3rem; line-height: 1.25;
+            border: 4px solid #1e293b; border-radius: 8px; background: #0f172a;
+            cursor: pointer; display: block; position: relative; color: #f8fafc;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.7);
+        }
+
+        .blink-arrow {
+            display: inline-block; animation: blinkArrow 0.8s infinite; color: #f1c40f;
+        }
+        @keyframes blinkArrow { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        #action-menu {
+            flex: 1; padding: 6px; display: none;
+            grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 10px;
+            border: 4px solid #1e293b; border-radius: 8px; background: #0f172a;
+        }
+        .action-btn {
+            background: #1e293b; border: 3px solid var(--ui-border); border-radius: 8px;
+            font-size: 1.9rem; cursor: pointer; text-transform: uppercase; font-weight: bold;
+            color: #f8fafc; transition: all 0.15s; display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 4px 0 #0f172a;
+        }
+        .action-btn:hover { background: #334155; border-color: #f1c40f; color: #f1c40f; transform: translateY(-2px); }
+        .action-btn:active { transform: translateY(2px); box-shadow: none; }
+
+        /* --- ANIMACIONES DE COMBATE --- */
+        .anim-damage { animation: blinkDamage 0.4s 2; }
+        .anim-attack { animation: tackle 0.3s forwards; }
+        .anim-faint { animation: faint 1s forwards; }
+        .screen-shake { animation: shake 0.35s cubic-bezier(.36,.07,.19,.97) both; }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-3px, 2px, 0); }
+            20%, 80% { transform: translate3d(4px, -3px, 0); }
+            30%, 50%, 70% { transform: translate3d(-6px, 5px, 0); }
+            40%, 60% { transform: translate3d(6px, -5px, 0); }
+        }
+        @keyframes blinkDamage { 0%, 100% { opacity: 1; filter: brightness(1); } 50% { opacity: 0; filter: brightness(4) drop-shadow(0 0 15px red); } }
+        @keyframes tackle { 0%, 100% { transform: translateX(50%); } 50% { transform: translate(30%, -20%); } }
+        @keyframes faint { to { transform: translate(50%, 120%); opacity: 0; } }
+
+        @media (max-width: 768px) {
+            #start-screen h1 { font-size: 3rem; }
+            .hud-box { width: 190px; padding: 6px 10px; }
+            .hud-box.enemy { left: 75px; }
+            .hud-box.player { right: 75px; }
+            .hud-header { font-size: 1.2rem; }
+            #dialog-box { font-size: 1.5rem; padding: 10px; }
+            .action-btn { font-size: 1.1rem; }
+            .platform.enemy { right: 15%; width: 130px; height: 38px; }
+            .platform.player { left: 20%; width: 150px; height: 45px; }
+            #enemy-sprite { right: 15%; width: 85px; height: 85px; top: 21%; }
+            #player-sprite { left: 20%; width: 100px; height: 100px; bottom: 12%; }
+            .pillar { width: 45px; }
+            .torch.left { left: 50px; }
+            .torch.right { right: 50px; }
+        }
+
+/* ===== MEJORA GRÁFICA ===== */
+/* ===== v3: HUD intercambiado + más pulido ===== */
+.hud-box.enemy{top:16px;left:auto;right:30px;width:280px;border-radius:12px 0 12px 12px;animation:hudR .7s .5s cubic-bezier(.2,1,.3,1) backwards}
+.hud-box.player{bottom:16px;right:auto;left:30px;width:280px;border-radius:12px 12px 12px 0;animation:hudL .7s .7s cubic-bezier(.2,1,.3,1) backwards}
+.platform.player{left:32%}#player-sprite{left:32%}
+#enemy-sprite{top:18%}.platform.enemy{top:42%}
+.hp-bar-fill.low{animation:lowhp .5s infinite alternate}
+@keyframes lowhp{to{filter:brightness(1.8);box-shadow:0 0 12px #e74c3c}}
+.floor-glow{position:absolute;bottom:22%;width:360px;height:140px;z-index:1;pointer-events:none;mix-blend-mode:screen;
+ background:radial-gradient(ellipse,rgba(255,130,30,.22),transparent 70%);animation:glowPulse .3s infinite alternate}
+.floor-glow.l{left:3%}.floor-glow.r{right:3%}
+.wall-flicker{position:absolute;inset:0 0 40% 0;z-index:1;pointer-events:none;mix-blend-mode:screen;
+ background:radial-gradient(circle at 12% 30%,rgba(255,120,30,.22),transparent 30%),radial-gradient(circle at 88% 30%,rgba(255,120,30,.22),transparent 30%);animation:flick .2s infinite alternate}
+@keyframes flick{to{opacity:.65}}
+.arch{animation:storm 9s infinite}
+@keyframes storm{0%,92%,96%,100%{filter:none}93%,95%{filter:brightness(3.2) saturate(.6)}94%{filter:brightness(1.2)}}
+.card{perspective:600px;position:relative;overflow:hidden;transition:box-shadow .15s}
+.card::after{content:'';position:absolute;top:0;left:-80%;width:50%;height:100%;background:linear-gradient(105deg,transparent,rgba(255,255,255,.28),transparent);transform:skewX(-20deg);transition:left .6s}
+.card:hover::after{left:130%}
+.card.picked{transform:scale(1.15)!important}.card.dim{transform:scale(.85)!important}
+@media(max-width:768px){
+ .hud-box.enemy{left:auto;right:6px;width:160px}.hud-box.player{right:auto;left:6px;width:160px}
+ .platform.player{left:52%}#player-sprite{left:52%}.floor-glow{display:none}}
+
+/* ===== FONDO + ANIMACIONES v2 ===== */
+.dungeon-wall::after{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='.6'/%3E%3C/svg%3E");mix-blend-mode:overlay;opacity:.4}
+.arch{position:absolute;top:7%;width:110px;height:230px;border-radius:55px 55px 0 0;z-index:1;border:6px solid #2d3858;border-bottom:none;translate:calc(var(--px,0)*10px) 0;
+ background:radial-gradient(1.5px 1.5px at 30% 40%,#fff,transparent),radial-gradient(1.5px 1.5px at 70% 25%,#fff,transparent),radial-gradient(1px 1px at 55% 60%,#fff,transparent),linear-gradient(#070b24,#1a2a5e 65%,#34479a);
+ box-shadow:inset 0 0 28px #000,0 0 40px rgba(120,150,255,.3)}
+.arch::before{content:'';position:absolute;top:26px;left:50%;width:34px;height:34px;margin-left:-17px;border-radius:50%;background:#eef2ff;box-shadow:0 0 26px 6px rgba(170,190,255,.6)}
+.arch.l{left:34%}.arch.r{right:34%}
+.banner{position:absolute;top:0;width:54px;height:190px;z-index:1;border-top:6px solid #d4af37;transform-origin:50% 0;animation:sway 5s ease-in-out infinite alternate;
+ background:linear-gradient(#6b21a8,#2b0a45);clip-path:polygon(0 0,100% 0,100% 86%,50% 100%,0 86%);translate:calc(var(--px,0)*5px) 0}
+.banner::after{content:'';position:absolute;top:60px;left:50%;width:18px;height:18px;margin-left:-9px;background:#f1c40f;transform:rotate(45deg);box-shadow:0 0 12px #f1c40f}
+.banner.l{left:14%}.banner.r{right:14%;animation-delay:-2.5s}
+@keyframes sway{from{transform:rotate(-2.5deg)}to{transform:rotate(2.5deg)}}
+.fade-in{animation:fadeIn .6s ease-out}
+@keyframes fadeIn{from{opacity:0;transform:scale(1.04)}to{opacity:1;transform:none}}
+#start-screen h1{animation:titleIn 1.1s cubic-bezier(.2,1.2,.3,1) both}
+@keyframes titleIn{from{opacity:0;letter-spacing:22px;filter:blur(10px)}to{opacity:1}}
+.hero.a{animation:slideL .9s .3s cubic-bezier(.2,1,.3,1) both}.hero.b{animation:slideR .9s .3s cubic-bezier(.2,1,.3,1) both}
+@keyframes slideL{from{transform:translateX(-120px);opacity:0}}@keyframes slideR{from{transform:translateX(120px);opacity:0}}
+.card{animation:cardIn .55s cubic-bezier(.2,1.2,.3,1) backwards}
+.card:nth-child(2){animation-delay:.08s}.card:nth-child(3){animation-delay:.16s}.card:nth-child(4){animation-delay:.24s}.card:nth-child(5){animation-delay:.32s}
+@keyframes cardIn{from{opacity:0;transform:translateY(40px) scale(.8)}}
+.card.picked{transform:scale(1.15);box-shadow:0 0 60px var(--c);transition:.3s}
+.card.dim{opacity:0;transform:scale(.85);transition:.35s}
+#battle-scene.intro{animation:sceneIn 1.2s ease-out}
+@keyframes sceneIn{from{filter:brightness(0);transform:scale(1.12)}to{filter:none;transform:none}}
+.hud-box.enemy{animation:hudL .7s .5s cubic-bezier(.2,1,.3,1) backwards}.hud-box.player{animation:hudR .7s .7s cubic-bezier(.2,1,.3,1) backwards}
+@keyframes hudL{from{transform:translateX(-140%)}}@keyframes hudR{from{transform:translateX(140%)}}
+.anim-enter-p{animation:enterP .8s .2s cubic-bezier(.2,1.3,.4,1) backwards}
+@keyframes enterP{0%{transform:translateX(-50%) translateX(-200px) scale(.3);opacity:0;filter:brightness(6)}}
+.action-btn{animation:btnIn .3s cubic-bezier(.2,1.4,.4,1) backwards}
+.action-btn:nth-child(2){animation-delay:.05s}.action-btn:nth-child(3){animation-delay:.1s}.action-btn:nth-child(4){animation-delay:.15s}
+@keyframes btnIn{from{opacity:0;transform:translateY(14px) scale(.85)}}
+#combo-badge{animation:popIn .3s cubic-bezier(.2,1.4,.3,1),comboPulse 1s .3s infinite alternate}
+@keyframes comboPulse{to{box-shadow:0 0 28px #f97316;transform:scale(1.07)}}
+.sprite-container{transition:transform .2s,opacity .3s}
+@media(max-width:768px){.arch{width:60px;height:130px}.banner{width:34px;height:110px}}
+
+#select-screen{position:absolute;inset:0;z-index:101;display:none;flex-direction:column;align-items:center;justify-content:center;gap:24px;
+ background:radial-gradient(ellipse at 50% 40%,#2a1650 0%,#120a26 50%,#030308 100%);overflow:auto;padding:16px}
+#select-screen h2{font-family:'Cinzel',serif!important;font-size:2.6rem;color:#f1c40f;text-shadow:0 3px 0 #000,0 0 20px rgba(241,160,15,.5);text-align:center}
+#select-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:16px}
+.card{--c:#a855f7;width:200px;padding:12px;text-align:center;cursor:pointer;color:#f8fafc;border:3px solid var(--c);border-radius:12px;
+ background:linear-gradient(170deg,#1c2338,#0b0f1a);box-shadow:0 0 14px color-mix(in srgb,var(--c) 45%,transparent);transition:transform .15s,box-shadow .15s}
+.card:hover{transform:translateY(-6px);box-shadow:0 0 32px var(--c)}
+.card img{width:144px;height:144px;image-rendering:pixelated;filter:drop-shadow(0 0 12px var(--c))}
+.card b{display:block;font-size:2rem;color:#f1c40f}.card span{display:block;font-size:1.4rem;color:#94a3b8}
+@media(max-width:768px){#select-screen h2{font-size:1.6rem}.card{width:150px;padding:8px}.card img{width:96px;height:96px}}
+
+#start-screen{background:radial-gradient(ellipse at 50% 40%,#2a1650 0%,#120a26 45%,#030308 100%);overflow:hidden}
+#start-screen::before{content:'';position:absolute;inset:0;background:
+ radial-gradient(2px 2px at 20% 30%,#fff9,transparent),radial-gradient(2px 2px at 70% 20%,#fff8,transparent),
+ radial-gradient(1px 1px at 40% 70%,#fff8,transparent),radial-gradient(2px 2px at 85% 65%,#c4b5fd,transparent),
+ radial-gradient(1px 1px at 10% 80%,#fff8,transparent),radial-gradient(1px 1px at 55% 12%,#fff9,transparent);
+ animation:twinkle 3s infinite alternate}
+@keyframes twinkle{to{opacity:.35}}
+#start-screen h1{font-family:'Cinzel',serif!important;font-weight:800;line-height:1.05;
+ background:linear-gradient(180deg,#fff6c8 0%,#f1c40f 45%,#b8731a 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
+ text-shadow:none;filter:drop-shadow(0 4px 0 #000) drop-shadow(0 0 22px rgba(241,160,15,.55));position:relative}
+.hero{position:absolute;bottom:12%;width:192px;image-rendering:pixelated;filter:drop-shadow(0 0 25px #a855f7)}
+.hero.a{left:7%}.hero.b{right:7%}
+.start-btn{position:relative;background:linear-gradient(180deg,#2c3550,#161b2b);letter-spacing:2px}
+@keyframes bob{50%{transform:translateY(-10px)}}
+
+.dungeon-wall{background-color:#121827;box-shadow:inset 0 -50px 70px #05070a,inset 0 0 140px #000}
+.dungeon-floor{overflow:hidden;background:linear-gradient(#1b2437,#080b12)}
+.dungeon-floor::before{content:'';position:absolute;left:-60%;right:-60%;top:0;bottom:-20%;
+ background:repeating-linear-gradient(90deg,rgba(110,140,210,.22) 0 2px,transparent 2px 110px),repeating-linear-gradient(0deg,rgba(110,140,210,.2) 0 2px,transparent 2px 70px);
+ transform:perspective(280px) rotateX(55deg);transform-origin:50% 0;-webkit-mask-image:linear-gradient(#000,transparent 90%);mask-image:linear-gradient(#000,transparent 90%)}
+.pillar{background:repeating-linear-gradient(0deg,transparent 0 58px,#0004 58px 60px),linear-gradient(90deg,#090c13,#2a3552 45%,#0b0f18)}
+.rays{position:absolute;top:0;left:15%;width:70%;height:60%;z-index:1;pointer-events:none;mix-blend-mode:screen;
+ background:conic-gradient(from 160deg at 50% -10%,transparent 0 8deg,rgba(168,130,255,.10) 12deg,transparent 18deg 30deg,rgba(90,150,255,.08) 34deg,transparent 40deg);animation:rays 6s ease-in-out infinite alternate}
+@keyframes rays{to{opacity:.45;transform:skewX(4deg)}}
+.fog{position:absolute;inset:auto 0 0 0;height:45%;z-index:4;pointer-events:none;
+ background:radial-gradient(60% 50% at 30% 100%,rgba(140,110,220,.22),transparent),radial-gradient(50% 45% at 80% 90%,rgba(80,130,220,.16),transparent);animation:fog 9s ease-in-out infinite alternate}
+@keyframes fog{to{transform:translateX(-4%) scale(1.08);opacity:.7}}
+.vignette{position:absolute;inset:0;z-index:6;pointer-events:none;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.75) 100%)}
+#flash{position:absolute;inset:0;z-index:8;pointer-events:none;background:#fff;opacity:0}
+#flash.on{animation:fl .25s ease-out}
+@keyframes fl{0%{opacity:.55}100%{opacity:0}}
+.flame{background:radial-gradient(ellipse at 50% 70%,#fff 10%,#ffd34d 35%,#ff6a00 70%,transparent 100%);width:20px;height:34px}
+
+.platform{overflow:visible}
+.platform.enemy{background:radial-gradient(ellipse,#27456f 0%,#0b1220 75%);box-shadow:0 0 0 9px rgba(59,130,246,.12),0 0 0 10px rgba(59,130,246,.55),0 0 45px rgba(59,130,246,.55),inset 0 0 25px #000}
+.platform.player{background:radial-gradient(ellipse,#5a2a7a 0%,#12071c 75%);box-shadow:0 0 0 9px rgba(168,85,247,.14),0 0 0 10px rgba(168,85,247,.6),0 0 50px rgba(168,85,247,.6),inset 0 0 25px #000}
+.platform::after{content:'';position:absolute;inset:18% 12%;border-radius:50%;border:2px dotted currentColor;opacity:.6;animation:pulse 2.4s ease-in-out infinite alternate}
+.platform.enemy{color:#7db4ff}.platform.player{color:#cfa0ff}
+@keyframes pulse{to{opacity:.15;transform:scale(1.12)}}
+
+.sprite-container img{image-rendering:pixelated;animation:none}
+#enemy-sprite img{filter:drop-shadow(0 0 14px rgba(120,170,255,.45)) drop-shadow(0 10px 8px #000a)}
+#player-sprite img{filter:drop-shadow(0 0 14px rgba(190,120,255,.5)) drop-shadow(0 10px 8px #000a)}
+.sprite-container::after{content:'';position:absolute;bottom:-4%;left:12%;width:76%;height:14%;background:radial-gradient(ellipse,rgba(0,0,0,.7),transparent 70%);z-index:-1}
+#enemy-sprite{width:192px;height:192px;top:12%}
+#player-sprite{width:192px;height:192px;bottom:9%}
+#enemy-sprite.anim-attack{animation:tackleE .3s forwards}
+#player-sprite.anim-attack{animation:tackleP .3s forwards}
+@keyframes tackleE{0%,100%{transform:translateX(50%)}50%{transform:translate(0%,25%)}}
+@keyframes tackleP{0%,100%{transform:translateX(-50%)}50%{transform:translate(-5%,-25%)}}
+.anim-enter{animation:enter .8s cubic-bezier(.2,1.3,.4,1)}
+@keyframes enter{0%{transform:translateX(50%) translateY(-80px) scale(.2);opacity:0;filter:brightness(6)}100%{transform:translateX(50%);opacity:1}}
+
+.hud-box{background:linear-gradient(160deg,#1c2338,#0d111c);border:3px solid #d4af37;outline:2px solid #5b4a1a;outline-offset:2px}
+.hud-header span:first-child{text-shadow:0 2px 0 #000,0 0 10px rgba(241,196,15,.4)}
+.hp-bar-bg{justify-content:flex-start;height:18px;box-shadow:inset 0 2px 4px #000}
+.hp-bar-fill{position:relative;z-index:2;background-image:linear-gradient(180deg,rgba(255,255,255,.45),transparent 55%,rgba(0,0,0,.25))}
+.hp-ghost{position:absolute;left:0;top:0;height:100%;width:100%;background:#fff;opacity:.85;z-index:1;transition:width .6s ease-out}
+#combo-badge{background:linear-gradient(90deg,#e11d48,#f97316);box-shadow:0 0 18px #f97316}
+#dialog-box{background:linear-gradient(180deg,#131c33,#0a0f1d);border:4px double #d4af37;text-shadow:0 2px 0 #000}
+#action-menu{background:linear-gradient(180deg,#131c33,#0a0f1d);border:4px double #d4af37}
+.action-btn{background:linear-gradient(180deg,#2a3652,#18202f)}
+.damage-pop{font-size:3.4rem;-webkit-text-stroke:1px #000}
+@media(max-width:768px){.hero{display:none}#enemy-sprite{width:96px;height:96px;top:15%}#player-sprite{width:96px;height:96px;bottom:9%}}
+
+
+/* ===== v4: ritmo más lento y calmo ===== */
+.flame{animation-duration:1.2s;animation-timing-function:ease-in-out}
+.torch-glow{animation-duration:1.8s;animation-timing-function:ease-in-out}
+.floor-glow{animation-duration:2.2s;animation-timing-function:ease-in-out}
+.wall-flicker{animation-duration:2.4s;animation-timing-function:ease-in-out}
+.rays{animation-duration:14s}
+.fog{animation-duration:20s}
+.banner{animation:sway2 9s ease-in-out infinite alternate}
+.banner.r{animation-delay:-4.5s}
+@keyframes sway2{from{transform:rotate(-1.2deg)}to{transform:rotate(1.2deg)}}
+.arch{animation:storm2 24s ease-in-out infinite}
+@keyframes storm2{0%,90%,100%{filter:none}93%{filter:brightness(1.7) saturate(.8)}96%{filter:brightness(1.15)}}
+.platform::after{animation-duration:4s;animation-timing-function:ease-in-out}
+
+#watermark {
+    position: fixed;
+    bottom: 10px;
+    right: 15px;
+    color: rgba(240, 235, 216, 0.6); /* Mantiene la paleta del juego con opacidad */
+    font-size: 1.8rem;
+    z-index: 9999;
+    pointer-events: none; /* Evita que bloquee los clics en el juego */
+    text-shadow: 2px 2px 0 #000;
+}
+    </style>
+</head>
+<body>
+
+<div id="watermark">Creado por el Prof. Gastón</div>
+    <div id="start-screen">
+        <img class="hero a" src="https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/versions/generation-v/black-white/65.png" alt=""><img class="hero b" src="https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/versions/generation-v/black-white/94.png" alt="">
+        <h1>MAZMORRA<br>GRAMATICAL</h1>
+        <p>⚡ Edición Legendaria ⚡</p>
+        <button class="start-btn" onclick="iniciarJuego(event)">ENTRAR A LA BATALLA</button>
+    </div>
+
+    <div id="select-screen"><h2>ELIGE A TU CAMPEÓN</h2><div id="select-grid"></div></div>
+
+    <div id="battle-scene">
+        <!-- Canvas de Partículas en Vivo -->
+        <canvas id="particle-canvas"></canvas>
+
+        <!-- Paredes y Estructura -->
+        <div class="dungeon-wall"></div>
+        <div class="dungeon-floor"></div>
+        <div class="rays"></div><div class="wall-flicker"></div><div class="floor-glow l"></div><div class="floor-glow r"></div>
+        <div class="arch l"></div><div class="arch r"></div><div class="banner l"></div><div class="banner r"></div>
+
+        <div class="pillar left"></div>
+        <div class="pillar right"></div>
+
+        <!-- Antorchas -->
+        <div class="torch left">
+            <div class="torch-glow"></div>
+            <div class="flame"></div>
+            <div class="torch-holder"></div>
+        </div>
+        <div class="torch right">
+            <div class="torch-glow"></div>
+            <div class="flame"></div>
+            <div class="torch-holder"></div>
+        </div>
+
+        <!-- Plataformas Rúnicas -->
+        <div class="platform enemy"></div>
+        <div class="platform player"></div>
+
+        <!-- Sprites -->
+        <div class="sprite-container" id="enemy-sprite">
+            <img id="enemy-img" src="" alt="Enemigo">
+        </div>
+        <div class="sprite-container" id="player-sprite">
+            <img id="player-img" src="https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/versions/generation-v/black-white/back/65.png" alt="Mago" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/svg/1f9d9.svg'">
+        </div>
+
+        <div class="fog"></div><div class="vignette"></div><div id="flash"></div>
+        <!-- HUD Cajas -->
+        <div class="hud-box enemy">
+            <div class="hud-header">
+                <span id="enemy-name">ENEMIGO</span>
+                <span>Lv5</span>
+            </div>
+            <div class="hp-bar-bg"><div class="hp-bar-fill" id="enemy-hp-fill"></div></div>
+        </div>
+
+        <div class="hud-box player">
+            <div id="combo-badge">¡COMBO x1!</div>
+            <div class="hud-header">
+                <span id="player-name">ALAKAZAM</span>
+                <span>Lv10</span>
+            </div>
+            <div class="hp-bar-bg"><div class="hp-bar-fill" id="player-hp-fill"></div></div>
+            <div class="hp-numbers"><span id="player-hp-num">100</span> / <span id="player-hp-max">100</span></div>
+        </div>
+    </div>
+
+    <div id="ui-panel">
+        <div id="dialog-box">...</div>
+        <div id="action-menu">
+            <button class="action-btn" onclick="ejecutarAccion('S')">Sustantivo</button>
+            <button class="action-btn" onclick="ejecutarAccion('A')">Adjetivo</button>
+            <button class="action-btn" onclick="ejecutarAccion('V')">Verbo</button>
+            <button class="action-btn" onclick="intentarHuir()">Huir</button>
+        </div>
+    </div>
+
+    <script>
+        /* --- SINTETIZADOR DE AUDIO 8-BIT (WEB AUDIO API) --- */
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            
+            if (type === 'click') {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(800, now + 0.08);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.08);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(now); osc.stop(now + 0.08);
+            } 
+            else if (type === 'beep') {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, now);
+                gain.gain.setValueAtTime(0.03, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.04);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(now); osc.stop(now + 0.04);
+            } 
+            else if (type === 'attack') {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.linearRampToValueAtTime(850, now + 0.25);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.25);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(now); osc.stop(now + 0.25);
+            } 
+            else if (type === 'hit') {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(120, now);
+                osc.frequency.exponentialRampToValueAtTime(30, now + 0.2);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.2);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(now); osc.stop(now + 0.2);
+            } 
+            else if (type === 'victory') {
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.12);
+                    gain.gain.setValueAtTime(0.15, now + idx * 0.12);
+                    gain.gain.linearRampToValueAtTime(0, now + idx * 0.12 + 0.25);
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.start(now + idx * 0.12); osc.stop(now + idx * 0.12 + 0.25);
+                });
+            }
+        }
+
+        /* --- MOTOR DE PARTÍCULAS CANVAS --- */
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Particle {
+            constructor(x, y, color, vx, vy, size, life) {
+                this.x = x; this.y = y; this.color = color;
+                this.vx = vx; this.vy = vy; this.size = size;
+                this.life = life; this.maxLife = life;
+            }
+            update() {
+                this.x += this.vx; this.y += this.vy;
+                this.life--;
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.life / this.maxLife);
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function createAmbientParticles() {
+            if (Math.random() < 0.3) {
+                const x = Math.random() * canvas.width;
+                const y = canvas.height + 10;
+                particles.push(new Particle(x, y, '#a855f7', (Math.random() - 0.5) * 0.8, -Math.random() * 1.5 - 0.5, Math.random() * 2 + 1, 180));
+            }
+        }
+
+        function spawnSpellBurst(targetEl, color) {
+            const rect = targetEl.getBoundingClientRect();
+            const canvasRect = canvas.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2 - canvasRect.left;
+            const cy = rect.top + rect.height / 2 - canvasRect.top;
+
+            for (let i = 0; i < 40; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 6 + 2;
+                const vx = Math.cos(angle) * speed;
+                const vy = Math.sin(angle) * speed;
+                particles.push(new Particle(cx, cy, color, vx, vy, Math.random() * 4 + 2, 45));
+            }
+        }
+
+        function loopParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            createAmbientParticles();
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                particles[i].draw();
+                if (particles[i].life <= 0) particles.splice(i, 1);
+            }
+            requestAnimationFrame(loopParticles);
+        }
+        loopParticles();
+
+        /* --- LÓGICA DEL JUEGO --- */
+        const diccionarioMaestro = [
+            { t: "Pocion", tipo: "S" }, { t: "Gimnasio", tipo: "S" }, { t: "Medalla", tipo: "S" }, 
+            { t: "Bosque", tipo: "S" }, { t: "Cueva", tipo: "S" }, { t: "Entrenador", tipo: "S" }, 
+            { t: "Mochila", tipo: "S" }, { t: "Bicicleta", tipo: "S" }, { t: "Ruta", tipo: "S" }, 
+            { t: "Centro", tipo: "S" },
+            { t: "Salvaje", tipo: "A" }, { t: "Eficaz", tipo: "A" }, { t: "Debil", tipo: "A" }, 
+            { t: "Fuerte", tipo: "A" }, { t: "Lento", tipo: "A" }, { t: "Rapido", tipo: "A" }, 
+            { t: "Dormido", tipo: "A" }, { t: "Paralizado", tipo: "A" }, { t: "Quemado", tipo: "A" }, 
+            { t: "Congelado", tipo: "A" },
+            { t: "Atacar", tipo: "V" }, { t: "Defender", tipo: "V" }, { t: "Capturar", tipo: "V" }, 
+            { t: "Huir", tipo: "V" }, { t: "Curar", tipo: "V" }, { t: "Aprender", tipo: "V" }, 
+            { t: "Olvidar", tipo: "V" }, { t: "Evolucionar", tipo: "V" }, { t: "Intercambiar", tipo: "V" }, 
+            { t: "Luchar", tipo: "V" }
+        ];
+
+        const frasesMago = {
+            acierto: [
+                "¡Canalizas la energía arcana de la sintaxis!",
+                "¡Invocas la regla gramatical con precisión!",
+                "¡Tu conjuro lingüístico resuena en la mazmorra!",
+                "¡Dominio impecable del antiguo idioma!",
+                "¡La runa del conocimiento brilla con fuerza!"
+            ],
+            eficaz: [
+                "¡Impacto crítico de ortografía!",
+                "¡El hechizo hace tambalear a la criatura!",
+                "¡Es super eficaz contra la bestia!",
+                "¡La magia anciana atraviesa sus defensas!"
+            ],
+            fallo: [
+                "¡Un error sintáctico disipa tu energía!",
+                "¡Dudaste de la categoría de la palabra!",
+                "¡El hechizo choca inofensivamente contra la pared!",
+                "¡Un lapsus lingüístico debilita tu barrera!"
+            ],
+            contraataque: [
+                "¡La criatura de las sombras arremete!",
+                "¡El enemigo aprovecha tu fallo y ataca!",
+                "¡Recibes una descarga de energía oscura!",
+                "¡El rival contraataca sin piedad!"
+            ]
+        };
+
+        const enemigos = [
+            { nombre: "MUK", hp: 100, twemoji: "1f47e" },
+            { nombre: "GOLBAT", hp: 100, twemoji: "1f987" },
+            { nombre: "ARBOK", hp: 120, twemoji: "1f40d" },
+            { nombre: "GENGAR", hp: 150, twemoji: "1f47b" },
+            { nombre: "DRAGONITE", hp: 220, twemoji: "1f409" }
+        ];
+
+        let baraja = [];
+        let vidaJugador = 100;
+        let vidaMaxJugador = 100;
+        let vidaEnemigo = 100;
+        let vidaMaxEnemigo = 100;
+        let indiceEnemigo = 0;
+        let comboCount = 0;
+        let palabraActual = null;
+        let esperandoClic = false;
+        let resolutorClic = null;
+
+        const elDialogo = document.getElementById('dialog-box');
+        const elMenu = document.getElementById('action-menu');
+        const elVidaJugador = document.getElementById('player-hp-fill');
+        const elTxtVidaJugador = document.getElementById('player-hp-num');
+        const elVidaEnemigo = document.getElementById('enemy-hp-fill');
+        const elSpriteEnemigo = document.getElementById('enemy-sprite');
+        const elSpriteJugador = document.getElementById('player-sprite');
+        const elImgEnemigo = document.getElementById('enemy-img');
+        const elNombreEnemigo = document.getElementById('enemy-name');
+        const elComboBadge = document.getElementById('combo-badge');
+        const elBattleScene = document.getElementById('battle-scene');
+
+        const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        function obtenerFraseRandom(categoria) {
+            const lista = frasesMago[categoria];
+            return lista[Math.floor(Math.random() * lista.length)];
+        }
+
+        function triggerPopText(element, text, isHeal = false) {
+            const rect = element.getBoundingClientRect();
+            const pop = document.createElement('div');
+            pop.className = `damage-pop ${isHeal ? 'heal' : ''}`;
+            pop.innerText = text;
+            pop.style.left = `${rect.left + rect.width / 2 - 30}px`;
+            pop.style.top = `${rect.top + 20}px`;
+            document.body.appendChild(pop);
+            setTimeout(() => pop.remove(), 900);
+        }
+
+        function triggerScreenShake() {
+            elBattleScene.classList.add('screen-shake');
+            setTimeout(() => elBattleScene.classList.remove('screen-shake'), 350);
+        }
+
+        function esperarInteraccion() {
+            return new Promise(resolve => {
+                esperandoClic = true;
+                resolutorClic = resolve;
+            });
+        }
+
+        document.body.addEventListener('click', () => {
+            if (esperandoClic && resolutorClic) {
+                esperandoClic = false;
+                resolutorClic();
+            }
+        });
+
+        async function escribirTexto(texto) {
+            elMenu.style.display = 'none';
+            elDialogo.style.display = 'block';
+            elDialogo.innerHTML = '';
+            
+            const fragmentos = texto.split('<br>');
+            for (let f = 0; f < fragmentos.length; f++) {
+                let txt = fragmentos[f];
+                for (let i = 0; i < txt.length; i++) {
+                    elDialogo.innerHTML += txt.charAt(i);
+                    playSound('beep');
+                    await sleep(18);
+                }
+                if(f < fragmentos.length - 1) elDialogo.innerHTML += '<br>';
+            }
+            
+            elDialogo.innerHTML += '<span class="blink-arrow"> ▼</span>';
+            await esperarInteraccion();
+        }
+
+        function mezclarBaraja(array) {
+            let m = array.length, t, i;
+            while (m) {
+                i = Math.floor(Math.random() * m--);
+                t = array[m]; array[m] = array[i]; array[i] = t;
+            }
+            return array;
+        }
+
+        function actualizarBarras() {
+            let pJugador = Math.max(0, (vidaJugador / vidaMaxJugador) * 100);
+            elVidaJugador.style.width = pJugador + '%';
+            elVidaJugador.style.backgroundColor = pJugador > 50 ? 'var(--hp-green)' : (pJugador > 20 ? 'var(--hp-yellow)' : 'var(--hp-red)');
+            elTxtVidaJugador.innerText = Math.max(0, vidaJugador);
+
+            let pEnemigo = Math.max(0, (vidaEnemigo / vidaMaxEnemigo) * 100);
+            elVidaEnemigo.style.width = pEnemigo + '%';
+            elVidaEnemigo.style.backgroundColor = pEnemigo > 50 ? 'var(--hp-green)' : (pEnemigo > 20 ? 'var(--hp-yellow)' : 'var(--hp-red)');
+
+            if (comboCount > 1) {
+                elComboBadge.style.display = 'block';
+                elComboBadge.innerText = `¡COMBO x${comboCount}!`;
+            } else {
+                elComboBadge.style.display = 'none';
+            }
+        }
+
+        async function iniciarJuego(event) {
+            event.stopPropagation();
+            initAudio();
+            playSound('click');
+            document.getElementById('start-screen').style.display = 'none';
+            baraja = mezclarBaraja([...diccionarioMaestro]);
+            vidaJugador = vidaMaxJugador;
+            comboCount = 0;
+            indiceEnemigo = 0;
+            actualizarBarras();
+            await cargarEnemigo();
+        }
+
+        async function cargarEnemigo() {
+            if (indiceEnemigo >= enemigos.length) {
+                playSound('victory');
+                await escribirTexto("¡Has derrotado a todas las sombras!<br>¡Eres el Gran Archimago Definitivo!");
+                return;
+            }
+
+            let e = enemigos[indiceEnemigo];
+            vidaMaxEnemigo = e.hp;
+            vidaEnemigo = e.hp;
+            elNombreEnemigo.innerText = e.nombre;
+            
+            setEnemySprite(e);
+            
+            elSpriteEnemigo.className = 'sprite-container'; 
+            elSpriteEnemigo.style.opacity = '1';
+            
+            actualizarBarras();
+            await escribirTexto(`¡Un ${e.nombre} emerge de las sombras!`);
+            await siguienteTurno();
+        }
+
+        async function siguienteTurno() {
+            if (baraja.length === 0) {
+                await escribirTexto("Tu grimorio se ha quedado sin pergaminos...");
+                return;
+            }
+
+            palabraActual = baraja.pop();
+            await escribirTexto(`Clasifica el tipo de la runa:<br>> "${palabraActual.t.toUpperCase()}"`);
+            
+            elDialogo.style.display = 'none';
+            elMenu.style.display = 'grid';
+        }
+
+        async function ejecutarAccion(tipo) {
+            if(elMenu.style.display === 'none') return;
+            playSound('click');
+            
+            elMenu.style.display = 'none';
+            elDialogo.style.display = 'block';
+            elDialogo.innerHTML = '...';
+
+            await sleep(250);
+
+            if (tipo === palabraActual.tipo) {
+                comboCount++;
+                let dmg = (30 + Math.floor(Math.random() * 15)) + (comboCount * 5);
+                
+                await escribirTexto(obtenerFraseRandom('acierto'));
+                await escribirTexto(obtenerFraseRandom('eficaz'));
+                
+                playSound('attack');
+                elSpriteJugador.classList.add('anim-attack');
+                spawnSpellBurst(elSpriteEnemigo, '#f1c40f');
+                await sleep(250);
+                elSpriteJugador.classList.remove('anim-attack');
+
+                playSound('hit');
+                triggerScreenShake();
+                triggerPopText(elSpriteEnemigo, `-${dmg}`);
+                elSpriteEnemigo.classList.add('anim-damage');
+                
+                vidaEnemigo -= dmg;
+                actualizarBarras();
+                await sleep(700);
+                elSpriteEnemigo.classList.remove('anim-damage');
+
+                if (vidaEnemigo <= 0) {
+                    playSound('victory');
+                    await escribirTexto(`¡${enemigos[indiceEnemigo].nombre} se ha desvanecido!`);
+                    elSpriteEnemigo.classList.add('anim-faint');
+                    await sleep(1000);
+                    indiceEnemigo++;
+                    await cargarEnemigo();
+                } else {
+                    await siguienteTurno();
+                }
+
+            } else {
+                comboCount = 0;
+                let dmgRecibido = (20 + Math.floor(Math.random() * 15));
+                
+                await escribirTexto(obtenerFraseRandom('fallo'));
+                await escribirTexto(obtenerFraseRandom('contraataque'));
+                
+                playSound('attack');
+                elSpriteEnemigo.classList.add('anim-attack');
+                spawnSpellBurst(elSpriteJugador, '#e74c3c');
+                await sleep(250);
+                elSpriteEnemigo.classList.remove('anim-attack');
+
+                playSound('hit');
+                triggerScreenShake();
+                triggerPopText(elSpriteJugador, `-${dmgRecibido}`);
+                elSpriteJugador.classList.add('anim-damage');
+                
+                vidaJugador -= dmgRecibido;
+                actualizarBarras();
+                await sleep(700);
+                elSpriteJugador.classList.remove('anim-damage');
+
+                if (vidaJugador <= 0) {
+                    await escribirTexto("Tu mana gramatical se ha consumido...");
+                    await escribirTexto("Has sucumbido a las sombras. FIN DEL JUEGO.");
+                    document.getElementById('start-screen').style.display = 'flex';
+                    document.querySelector('#start-screen h1').innerText = "FIN DEL\nJUEGO";
+                } else {
+                    await siguienteTurno();
+                }
+            }
+        }
+
+        async function intentarHuir() {
+            if(elMenu.style.display === 'none') return;
+            playSound('click');
+            elMenu.style.display = 'none';
+            await escribirTexto("¡Las puertas de la mazmorra están selladas con magia!");
+            elMenu.style.display = 'grid';
+            elDialogo.style.display = 'none';
+        }
+    </script>
+
+<script>
+/* ===== MEJORA GRÁFICA: sprites, partículas, efectos ===== */
+const SPR_URL = 'https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/versions/generation-v/black-white';
+const POKE = {"1f47e":89,"1f987":42,"1f40d":24,"1f47b":94,"1f409":149};
+function setEnemySprite(e){
+  const id = POKE[e.twemoji];
+  elImgEnemigo.onerror = () => { elImgEnemigo.onerror = null; elImgEnemigo.style.imageRendering = 'auto';
+    elImgEnemigo.src = `https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/svg/${e.twemoji}.svg`; };
+  elImgEnemigo.style.imageRendering = 'pixelated';
+  elImgEnemigo.src = `${SPR_URL}/${id}.png`;
+  requestAnimationFrame(() => elSpriteEnemigo.classList.add('anim-enter'));
+  setTimeout(() => elSpriteEnemigo.classList.remove('anim-enter'), 850);
+}
+/* Barra fantasma de daño */
+document.querySelectorAll('.hp-bar-bg').forEach(b => { const g = document.createElement('div'); g.className = 'hp-ghost'; b.prepend(g); });
+const _ab = actualizarBarras;
+actualizarBarras = function(){ _ab();
+  const [ge, gp] = [...document.querySelectorAll('.hp-ghost')];
+  setTimeout(() => { ge.style.width = elVidaEnemigo.style.width; gp.style.width = elVidaJugador.style.width; }, 450);
+};
+/* Flash de pantalla */
+const _shake = triggerScreenShake;
+triggerScreenShake = function(){ _shake(); const f = document.getElementById('flash'); f.classList.remove('on'); void f.offsetWidth; f.classList.add('on'); };
+/* Partículas con brillo aditivo */
+Particle.prototype.draw = function(){
+  const a = Math.max(0, this.life / this.maxLife), r = this.size * (this.glow || 3);
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = a;
+  const g = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, r);
+  g.addColorStop(0, '#fff'); g.addColorStop(.25, this.color); g.addColorStop(1, 'transparent');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(this.x, this.y, r, 0, 6.283); ctx.fill(); ctx.restore();
+};
+class Ring extends Particle {
+  constructor(x, y, color){ super(x, y, color, 0, 0, 10, 28); }
+  update(){ this.size += 4.5; this.life--; }
+  draw(){ ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = this.life / this.maxLife;
+    ctx.strokeStyle = this.color; ctx.lineWidth = 5 * this.life / this.maxLife + 1; ctx.shadowColor = this.color; ctx.shadowBlur = 20;
+    ctx.beginPath(); ctx.ellipse(this.x, this.y, this.size, this.size * .55, 0, 0, 6.283); ctx.stroke(); ctx.restore(); }
+}
+function createAmbientParticles(){
+  if (Math.random() < .25) { const p = new Particle(Math.random() * canvas.width, canvas.height + 10, '#a855f7', (Math.random() - .5) * .8, -Math.random() * 1.2 - .4, Math.random() * 2 + 1, 200); particles.push(p); }
+  if (Math.random() < .35) { const t = document.querySelectorAll('.flame')[Math.random() < .5 ? 0 : 1].getBoundingClientRect(), c = canvas.getBoundingClientRect();
+    const p = new Particle(t.left + t.width / 2 - c.left, t.top - c.top, Math.random() < .5 ? '#ff7a1a' : '#ffd34d', (Math.random() - .5) * .7, -Math.random() * 1.6 - .5, Math.random() * 1.6 + .6, 70); p.glow = 4; particles.push(p); }
+}
+function spawnSpellBurst(el, color){
+  const r = el.getBoundingClientRect(), c = canvas.getBoundingClientRect(), cx = r.left + r.width / 2 - c.left, cy = r.top + r.height / 2 - c.top;
+  particles.push(new Ring(cx, cy, color), new Ring(cx, cy, '#fff'));
+  for (let i = 0; i < 60; i++) { const an = Math.random() * 6.283, sp = Math.random() * 7 + 2;
+    const p = new Particle(cx, cy, i % 3 ? color : '#fff', Math.cos(an) * sp, Math.sin(an) * sp, Math.random() * 3 + 1.5, 50); p.glow = 3.5; particles.push(p); }
+}
+</script>
+
+<script>
+/* ===== SELECCIÓN DE PERSONAJE ===== */
+const PERSONAJES=[
+ {n:"ALAKAZAM",id:65,hp:90,c:"#a855f7",d:"Mago psíquico"},
+ {n:"CHARIZARD",id:6,hp:100,c:"#f97316",d:"Señor del fuego"},
+ {n:"BLASTOISE",id:9,hp:120,c:"#3b82f6",d:"Tanque acuático"},
+ {n:"VENUSAUR",id:3,hp:110,c:"#22c55e",d:"Guardián del bosque"},
+ {n:"LUCARIO",id:448,hp:100,c:"#38bdf8",d:"Maestro del aura"}];
+const SPRB='https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/versions/generation-v/black-white';
+const selScr=document.getElementById('select-screen');
+document.getElementById('select-grid').innerHTML=PERSONAJES.map((p,i)=>
+ `<div class="card" style="--c:${p.c}" onclick="elegirPersonaje(${i},event)"><img src="${SPRB}/${p.id}.png" alt="${p.n}"><b>${p.n}</b><span>${p.d}</span><span>PS ${p.hp}</span></div>`).join('');
+const _ini=iniciarJuego;
+iniciarJuego=async function(ev){ev.stopPropagation();initAudio();playSound('click');
+ document.getElementById('start-screen').style.display='none';selScr.style.display='flex';};
+async function elegirPersonaje(i,ev){ev.stopPropagation();const p=PERSONAJES[i];
+ vidaMaxJugador=p.hp;
+ document.getElementById('player-name').innerText=p.n;
+ document.getElementById('player-hp-max').innerText=p.hp;
+ const im=document.getElementById('player-img');
+ im.onerror=()=>{im.onerror=null;im.src=`${SPRB}/${p.id}.png`;};
+ im.src=`${SPRB}/back/${p.id}.png`;
+ selScr.style.display='none';
+ await _ini(ev);}
+</script>
+
+<script>
+/* ===== v2: nombre, transiciones ===== */
+let jugadorActual = PERSONAJES[0];
+const _ab2 = actualizarBarras;
+actualizarBarras = function(){ _ab2();
+  document.getElementById('player-name').innerText = jugadorActual.n;
+  document.getElementById('player-hp-max').innerText = vidaMaxJugador; };
+function mostrar(el, disp){ el.style.display = disp; el.classList.remove('fade-in'); void el.offsetWidth; el.classList.add('fade-in'); }
+const _iniv = iniciarJuego;
+iniciarJuego = async function(ev){ ev.stopPropagation(); initAudio(); playSound('click');
+  document.getElementById('start-screen').style.display = 'none'; mostrar(selScr, 'flex'); };
+async function elegirPersonaje(i, ev){
+  ev.stopPropagation(); const card = ev.currentTarget, p = PERSONAJES[i];
+  playSound('click'); card.classList.add('picked');
+  document.querySelectorAll('.card').forEach(c => { if (c !== card) c.classList.add('dim'); });
+  jugadorActual = p; vidaMaxJugador = p.hp;
+  const im = document.getElementById('player-img');
+  im.onerror = () => { im.onerror = null; im.src = `${SPRB}/${p.id}.png`; };
+  im.src = `${SPRB}/back/${p.id}.png`;
+  await sleep(550);
+  document.querySelectorAll('.card').forEach(c => c.classList.remove('picked', 'dim'));
+  selScr.style.display = 'none';
+  elBattleScene.classList.remove('intro'); void elBattleScene.offsetWidth; elBattleScene.classList.add('intro');
+  elSpriteJugador.classList.remove('anim-enter-p'); void elSpriteJugador.offsetWidth; elSpriteJugador.classList.add('anim-enter-p');
+  setTimeout(() => elSpriteJugador.classList.remove('anim-enter-p'), 1100);
+  await _ini(ev);
+}
+/* Parallax suave con el mouse */
+elBattleScene.addEventListener('mousemove', e => elBattleScene.style.setProperty('--px', (e.clientX / innerWidth - .5).toFixed(3)));
+</script>
+
+<script>
+/* ===== v3: proyectiles, HP bajo, tilt ===== */
+class Proj extends Particle{
+  constructor(x,y,tx,ty,color,cb){ super(x,y,color,0,0,5,99); this.sx=x; this.sy=y; this.tx=tx; this.ty=ty; this.t=0; this.cb=cb; }
+  update(){ this.t++; const k=this.t/16, e=k*k;
+    this.x=this.sx+(this.tx-this.sx)*e; this.y=this.sy+(this.ty-this.sy)*e-Math.sin(k*Math.PI)*40;
+    for(let i=0;i<3;i++){ const p=new Particle(this.x,this.y,this.color,(Math.random()-.5)*1.5,(Math.random()-.5)*1.5,Math.random()*2+1,18); p.glow=3; particles.push(p); }
+    if(this.t>=16){ this.life=0; this.cb(); } }
+  draw(){ Particle.prototype.draw.call({x:this.x,y:this.y,color:this.color,size:9,glow:4,life:1,maxLife:1}); }
+}
+const _burst3 = spawnSpellBurst;
+spawnSpellBurst = function(el,color){
+  const src = el===elSpriteEnemigo ? elSpriteJugador : elSpriteEnemigo, a=src.getBoundingClientRect(), b=el.getBoundingClientRect(), c=canvas.getBoundingClientRect();
+  particles.push(new Proj(a.left+a.width/2-c.left, a.top+a.height/2-c.top, b.left+b.width/2-c.left, b.top+b.height/2-c.top, color, () => _burst3(el,color)));
+};
+const _ab3 = actualizarBarras;
+actualizarBarras = function(){ _ab3();
+  elVidaJugador.classList.toggle('low', vidaJugador/vidaMaxJugador <= .2 && vidaJugador>0);
+  elVidaEnemigo.classList.toggle('low', vidaEnemigo/vidaMaxEnemigo <= .2 && vidaEnemigo>0); };
+const _grid = document.getElementById('select-grid');
+_grid.addEventListener('mousemove', e => { const c=e.target.closest('.card'); if(!c) return; const r=c.getBoundingClientRect();
+  c.style.transform=`perspective(500px) rotateY(${((e.clientX-r.left)/r.width-.5)*18}deg) rotateX(${-((e.clientY-r.top)/r.height-.5)*18}deg) translateY(-6px)`; });
+_grid.addEventListener('mouseout', e => { const c=e.target.closest('.card'); if(c) c.style.transform=''; });
+</script>
+</body>
+</html>

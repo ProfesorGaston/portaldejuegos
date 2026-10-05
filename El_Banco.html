@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>El Banco | Prof. Gastón</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Inter:wght@500;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+<style>
+:root{--gold:#ffcc33;--neon:#5eead4;--pink:#f472b6;--glass:rgba(6,22,18,.66);--line:rgba(232,205,140,.24)}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',system-ui,sans-serif;user-select:none}
+body{min-height:100vh;display:flex;color:#fff;overflow-x:hidden;background:#0e2b25}
+/* Interior del banco */
+#lobby{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0;background:
+ linear-gradient(#0b221d,#133a31 62%,#0b221d 100%)}
+#lobby .wall{position:absolute;inset:0 0 34% 0;background:repeating-linear-gradient(90deg,#0000 0 150px,#0004 150px 153px,#c9a24b22 153px 154px),radial-gradient(ellipse at 50% 30%,#2f6b5a55,transparent 65%)}
+#lobby .wain{position:absolute;left:0;right:0;bottom:34%;height:11%;background:repeating-linear-gradient(90deg,#4a2c17 0 110px,#3a2212 110px 114px);border-top:5px solid #c9a24b;box-shadow:0 -3px 14px #0008,inset 0 12px 20px #0006}
+#lobby .vault{position:absolute;left:50%;top:6%;width:min(46vh,380px);aspect-ratio:1;transform:translateX(-50%);border-radius:50%;opacity:.5;
+ background:radial-gradient(circle,#9ca3af 0 7%,#4b5563 8% 10%,#6b7280 11% 56%,#d1d5db 57% 60%,#4b5563 61% 88%,#9ca3af 89% 92%,#374151 93%);box-shadow:0 0 0 10px #1f2937,0 0 60px #000a}
+#lobby .vault::after{content:'';position:absolute;inset:0;border-radius:50%;background:repeating-conic-gradient(#0000 0 40deg,#e5e7eb88 40deg 46deg,#0000 46deg 90deg)}
+#lobby .col{position:absolute;top:0;bottom:34%;width:92px;background:linear-gradient(90deg,#b9b19d,#f3eee0 35%,#d8d0bb 65%,#8f8774);box-shadow:0 0 30px #0009;display:none}
+#lobby .col::before,#lobby .col::after{content:'';position:absolute;left:-8px;right:-8px;height:26px;background:linear-gradient(#f3eee0,#a79f8a);border-radius:4px}
+#lobby .col::before{top:0}#lobby .col::after{bottom:0}
+#lobby .col.l{left:2%}#lobby .col.r{right:2%}
+#lobby .lamp{position:absolute;top:0;width:2px;height:7vh;background:#c9a24b}
+#lobby .lamp::after{content:'';position:absolute;left:-26px;bottom:-14px;width:54px;height:26px;border-radius:54px 54px 4px 4px;background:linear-gradient(#e8c766,#a8801f);box-shadow:0 22px 60px 26px #ffd98a40}
+#lobby .floor{position:absolute;left:-60%;right:-60%;bottom:0;height:66%;transform-origin:50% 100%;transform:perspective(420px) rotateX(58deg);
+ background:conic-gradient(#e9e2d0 25%,#2c3a36 0 50%,#e9e2d0 0 75%,#2c3a36 0) 0 0/120px 120px}
+#lobby .shade{position:absolute;left:0;right:0;bottom:0;height:34%;background:linear-gradient(#0b221dcc,#0b221d55 40%,#0008)}
+#lobby .counter{position:absolute;left:0;right:0;bottom:0;height:56px;background:repeating-linear-gradient(90deg,#4a2c17 0 90px,#3a2212 90px 94px);border-top:7px solid #c9a24b;box-shadow:0 -8px 24px #000a}
+@media(min-width:1280px){#lobby .col{display:block}}
+#app{position:relative;z-index:2;width:100%;max-width:1060px;margin:0 auto;padding:18px 18px 74px;min-height:100vh;display:flex;flex-direction:column;justify-content:center}
+.e{width:1.15em;height:1.15em;object-fit:contain;vertical-align:-.2em;filter:drop-shadow(0 4px 4px #0006)}
+.glass{background:var(--glass);border:1px solid var(--line);border-radius:26px;backdrop-filter:blur(14px);box-shadow:0 20px 50px #0007,inset 0 1px 0 #fff2}
+.screen{display:none}.screen.on{display:block;animation:in .6s cubic-bezier(.2,1.2,.3,1)}
+@keyframes in{from{opacity:0;transform:translateY(34px) scale(.97)}}
+.hud{display:none;align-items:center;gap:14px;padding:10px 16px;margin-bottom:12px;flex-wrap:wrap}
+body.playing .hud{display:flex}
+.brand{font:800 20px 'Baloo 2';letter-spacing:1px;flex:1}.brand b{color:var(--gold)}
+.pill{background:#0004;border:1px solid var(--line);border-radius:30px;padding:6px 16px;font:800 18px 'Baloo 2';display:flex;align-items:center;gap:8px}
+#hearts span{font-size:26px;display:inline-block;transition:.4s}#hearts .lost{filter:grayscale(1);opacity:.3;transform:scale(.6)}
+.xp{display:none;position:relative;height:22px;border-radius:14px;background:#0005;border:1px solid var(--line);margin-bottom:16px;overflow:hidden}
+body.playing .xp{display:block}
+#bar{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--neon),var(--pink),var(--gold));transition:width .9s cubic-bezier(.2,1,.3,1);box-shadow:0 0 18px var(--neon)}
+#rn{position:absolute;inset:0;display:grid;place-items:center;font:800 13px 'Baloo 2';letter-spacing:1px;text-shadow:0 1px 3px #000}
+#start,#end{text-align:center;padding:36px 22px}
+.hero{display:flex;justify-content:center;align-items:flex-end;gap:10px;font-size:84px;margin-bottom:6px}
+.hero .e:nth-child(1){animation:bob 3s ease-in-out infinite}.hero .e:nth-child(2){font-size:1.5em;animation:bob 3s -1s ease-in-out infinite}.hero .e:nth-child(3){animation:bob 3s -2s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-12px) rotate(3deg)}}
+h1{font:800 clamp(46px,9vw,92px)/1 'Baloo 2';background:linear-gradient(180deg,#fff7cc,var(--gold) 50%,#d98a1a);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 4px 0 #6b3c06) drop-shadow(0 0 26px #ffcc3377)}
+.sub{color:#c7cdf5;font-size:18px;margin:14px auto 22px;max-width:560px;line-height:1.55}
+.how{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:30px}
+.how div{background:#0004;border:1px solid var(--line);border-radius:18px;padding:12px 18px;font-weight:800;font-size:14px;width:150px}.how .e{display:block;margin:0 auto 6px;font-size:38px}
+.btn{background:linear-gradient(#ffe27a,#f5a912);color:#3a2200;border:none;border-radius:20px;padding:14px 34px;font:800 22px 'Baloo 2';cursor:pointer;box-shadow:0 7px 0 #8a5300,0 0 28px #ffcc3355;transition:.12s}
+.btn:hover{transform:translateY(2px);box-shadow:0 5px 0 #8a5300,0 0 40px #ffcc3399}.btn:active{transform:translateY(7px);box-shadow:0 0 0}
+.btn.ghost{background:#ffffff14;color:#fff;box-shadow:0 5px 0 #0005;border:1px solid var(--line);font-size:17px;padding:10px 20px}
+.btn.go{background:linear-gradient(#6ee7a0,#16a34a);color:#04200f;box-shadow:0 7px 0 #0c5f2b,0 0 28px #22c55e55}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+.scene{padding:20px;position:relative}
+.cust{display:flex;align-items:flex-end;gap:14px;position:relative}
+#cimg{font-size:118px;position:relative;animation:bob 3.4s ease-in-out infinite}#cimg .e{filter:drop-shadow(0 12px 10px #0008)}
+#react{position:absolute;top:-10px;left:104px;font-size:46px}#react .e{animation:pop .5s cubic-bezier(.2,1.8,.4,1)}
+#cname{font:800 14px 'Baloo 2';color:var(--gold);letter-spacing:1px;margin-bottom:8px}
+.bubble{background:#fff;color:#1c1b3a;border-radius:20px 20px 20px 4px;padding:14px 16px;margin-top:12px;position:relative;box-shadow:0 8px 0 #0004;animation:pop .5s cubic-bezier(.2,1.5,.4,1)}
+.badge{display:inline-block;background:linear-gradient(90deg,#6d28d9,#db2777);color:#fff;font:800 12px 'Baloo 2';letter-spacing:2px;padding:3px 12px;border-radius:12px;margin-bottom:6px}
+#q{font-size:17px;font-weight:700;line-height:1.5}#q b{color:#6d28d9}
+.shelf{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 8px}
+.it{background:linear-gradient(#ffffff1c,#ffffff08);border:1px solid var(--line);border-radius:16px;padding:8px 12px 6px;text-align:center;min-width:92px;font-size:44px;animation:pop .5s cubic-bezier(.2,1.6,.4,1) backwards}
+.it b{display:block;font:800 17px 'Baloo 2';color:var(--gold);background:#0006;border-radius:8px;margin-top:2px;padding:0 8px}.it i{display:block;font:600 11px Inter;font-style:normal;color:#c7cdf5;margin-top:2px}
+@keyframes pop{from{transform:scale(.3);opacity:0}}
+.work{padding:20px}#inter{min-height:250px}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.opt{position:relative;padding:22px 10px;border-radius:18px;border:2px solid var(--line);background:linear-gradient(#ffffff16,#ffffff06);color:#fff;font:800 22px 'Baloo 2';cursor:pointer;transition:.15s;box-shadow:0 6px 0 #0005;animation:pop .5s cubic-bezier(.2,1.6,.4,1) backwards}
+.opt small{position:absolute;top:6px;left:12px;font-size:12px;opacity:.5}
+.opt:hover:not(.lock){transform:translateY(-4px);border-color:var(--neon);box-shadow:0 10px 0 #0005,0 0 24px #22d3ee66}
+.opt.lock{pointer-events:none;opacity:.5}.opt.ok{opacity:1;background:#16a34a;border-color:#86efac;animation:ok .5s;box-shadow:0 0 34px #22c55e99}.opt.bad{opacity:1;background:#b91c1c;border-color:#fca5a5;animation:shk .4s}
+@keyframes ok{40%{transform:scale(1.1)}}@keyframes shk{25%{transform:translateX(-9px)}75%{transform:translateX(9px)}}
+.bills{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.bill{--c:#555;width:122px;height:64px;border-radius:9px;border:2px solid #fff7;background:linear-gradient(135deg,var(--c),color-mix(in srgb,var(--c) 50%,#000));color:#fff;font:800 20px 'Baloo 2';cursor:pointer;box-shadow:0 6px 0 #0007;position:relative;transition:.12s;text-shadow:0 2px 3px #0008}
+.bill::before{content:'';position:absolute;inset:5px;border:1.5px dashed #fff5;border-radius:5px}
+.bill:hover:not(:disabled){transform:translateY(-5px) rotate(-2deg)}.bill:active:not(:disabled){transform:scale(.93)}.bill:disabled{opacity:.5}
+.till{margin-top:16px;background:#0006;border:2px dashed var(--neon);border-radius:18px;padding:12px;min-height:96px;text-align:center}.till small{font-weight:800;font-size:11px;letter-spacing:1px;color:#c7cdf5}
+#tsum{font:800 34px 'Baloo 2';color:var(--neon);text-shadow:0 0 16px var(--neon)}
+#tstack{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:6px}
+.mb{background:var(--c);border-radius:6px;padding:3px 9px;font:800 13px 'Baloo 2';border:1px solid #fff6;animation:pop .3s cubic-bezier(.2,1.8,.4,1)}
+.cartgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(98px,1fr));gap:10px}
+.cartgrid .it{cursor:pointer;transition:.15s;position:relative}.cartgrid .it:hover{transform:translateY(-4px);border-color:var(--neon)}
+.cartgrid .it.sel{background:linear-gradient(#22d3ee44,#22d3ee11);border-color:var(--neon);box-shadow:0 0 24px #22d3ee88;transform:translateY(-4px) scale(1.05)}
+.cartgrid .it.sel::after{content:'🛒';position:absolute;top:-8px;right:-6px;font-size:20px}
+.meter{height:20px;background:#0006;border-radius:12px;margin-top:14px;overflow:hidden;border:1px solid var(--line)}#mt{display:block;height:100%;width:0;background:linear-gradient(90deg,#22c55e,#facc15);transition:.3s}#mt.over{background:#ef4444}
+#minfo{text-align:center;font:800 17px 'Baloo 2';margin-top:8px}
+#exp{display:none;margin-top:16px;background:#0005;border-left:5px solid var(--gold);border-radius:14px;padding:14px 16px;line-height:1.7;font-weight:600;font-size:15px}#exp.on{display:block;animation:in .4s}
+.btns{display:flex;gap:12px;justify-content:flex-end;margin-top:16px}
+.rank{font:800 38px 'Baloo 2';color:var(--gold);margin:8px 0}
+.stats{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:18px 0 26px}.stats div{background:#0004;border:1px solid var(--line);border-radius:18px;padding:12px 20px;font:800 24px 'Baloo 2'}.stats small{display:block;font:600 12px Inter;color:#c7cdf5}
+#toast{position:fixed;top:-90px;left:50%;transform:translateX(-50%);z-index:60;background:linear-gradient(90deg,#16a34a,#22c55e);padding:12px 28px;border-radius:40px;font:800 22px 'Baloo 2';box-shadow:0 12px 30px #22c55e66;transition:top .5s cubic-bezier(.2,1.5,.4,1)}#toast.on{top:18px}
+@media(max-width:860px){.grid{grid-template-columns:1fr}.opts{grid-template-columns:1fr}#cimg{font-size:90px}#react{left:76px}}
+
+/* Mejora gráfica */
+.glass{border:1px solid #c9a24b66;box-shadow:0 24px 60px #000a,inset 0 0 0 5px #0003,inset 0 0 0 6px #c9a24b30,inset 0 1px 0 #fff2;background:linear-gradient(160deg,#0f332b99,#06161299)}
+#lobby .lamp::before{content:'';position:absolute;left:-150px;top:30px;width:302px;height:62vh;background:linear-gradient(#ffd98a2e,transparent);clip-path:polygon(42% 0,58% 0,100% 100%,0 100%)}
+#lobby .wall::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0,#ffd98a22,transparent 60%),radial-gradient(ellipse at 50% 100%,#0009,transparent 70%)}
+.cn{position:absolute;top:-30px;width:18px;height:18px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3b0,#f5b800 55%,#a87400);box-shadow:inset 0 0 0 2px #ffe27a88;opacity:.75;animation:fall linear infinite}
+@keyframes fall{to{transform:translateY(108vh) rotateY(720deg)}}
+@media(prefers-reduced-motion:reduce){.cn{display:none}}
+#cname{background:linear-gradient(#f6dc8a,#b8892b);color:#3a2200;padding:3px 16px;border-radius:6px;border:1px solid #6b4a0a;box-shadow:0 3px 0 #0006;text-shadow:0 1px 0 #fff7;letter-spacing:1px}
+#cimg::before{content:'';position:absolute;left:50%;bottom:-8px;width:170px;height:30px;transform:translateX(-50%);background:radial-gradient(#ffd98a88,transparent 70%);z-index:-1}
+#bar{background:linear-gradient(90deg,#8a5f12,#f5d56b,#b8892b);box-shadow:0 0 18px #ffd56b99}
+.xp{border-color:#c9a24b77}
+.pill{background:linear-gradient(#0008,#0005);border-color:#c9a24b66}
+.opt{font-size:19px;line-height:1.2;background:linear-gradient(#ffffff20,#ffffff08);border-color:#c9a24b55}
+.opt:hover:not(.lock){border-color:var(--gold);box-shadow:0 10px 0 #0005,0 0 24px #ffcc3366}
+.it{border-color:#c9a24b44;box-shadow:0 6px 14px #0005}
+.bubble{border:2px solid #c9a24b;box-shadow:0 8px 0 #0005}
+#exp{border-left-color:var(--gold);background:linear-gradient(90deg,#0007,#0004)}
+.bill{box-shadow:0 6px 0 #0007,inset 0 0 22px #ffffff22}
+.btn{text-shadow:0 1px 0 #fff6}
+</style>
+</head>
+<body>
+<div id="lobby"><div class="wall"></div><div class="vault"></div><div class="col l"></div><div class="col r"></div><div class="lamp" style="left:20%"></div><div class="lamp" style="left:50%"></div><div class="lamp" style="left:80%"></div><div class="wain"></div><div class="floor"></div><div class="shade"></div><div class="counter"></div></div><div id="toast"></div>
+<div id="app">
+ <div class="hud glass"><div class="brand"><span id="hb"></span> BANCO <b>APRENDIZ</b></div><div class="pill" id="hr"></div><div class="pill"><span id="hc"></span><span id="bal">$0</span></div><div id="hearts"></div></div>
+ <div class="xp"><i id="bar"></i><span id="rn"></span></div>
+
+ <section id="start" class="screen glass on">
+  <div class="hero" id="hero"></div><h1>EL BANCO</h1>
+  <p class="sub">Atendé la caja del banco más moderno de la ciudad. Cada cliente trae un desafío con plata de verdad: vuelto, descuentos, presupuestos y ofertas. ¿Llegás a Gerente?</p>
+  <div class="how"><div id="h1"></div><div id="h2"></div><div id="h3"></div></div>
+  <button class="btn" onclick="start()">▶ ¡ABRIR LA CAJA!</button>
+ </section>
+
+ <section id="game" class="screen"><div class="grid">
+  <div class="scene glass">
+   <div class="cust"><div id="cimg"></div><div id="react"></div><div id="cname"></div></div>
+   <div class="bubble"><span class="badge" id="badge"></span><p id="q"></p></div>
+   <div class="shelf" id="items"></div>
+  </div>
+  <div class="work glass"><div id="inter"></div><div id="exp"></div>
+   <div class="btns"><button class="btn ghost" id="undo" onclick="undo()">↶ Deshacer</button><button class="btn go" id="go" onclick="go()">✔ Entregar</button><button class="btn" id="next" onclick="next()">Siguiente ➜</button></div>
+  </div>
+ </div></section>
+
+ <section id="end" class="screen glass">
+  <div class="hero" id="eh"></div><h1 style="font-size:clamp(36px,7vw,64px)">¡FIN DEL TURNO!</h1>
+  <div class="rank" id="rank"></div><div class="stats" id="stats"></div>
+  <button class="btn" onclick="start()">↻ Jugar otra vez</button>
+ </section>
+</div>
+
+<script>
+const $=id=>document.getElementById(id),R=(a,b)=>Math.floor(Math.random()*(b-a+1))+a,pick=a=>a[R(0,a.length-1)];
+const shuffle=a=>a.map(v=>[Math.random(),v]).sort((x,y)=>x[0]-y[0]).map(x=>x[1]),c=n=>Math.round(n*100)/100;
+const $$=n=>'$'+n.toLocaleString('es-AR',{minimumFractionDigits:Number.isInteger(c(n))?0:2,maximumFractionDigits:2});
+/* Emojis 3D: repo microsoft/fluentui-emoji (MIT) */
+const FB='https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/';
+const em=(n,f,k='e')=>`<img class="${k}" src="${FB}${n.replace(/ /g,'%20')}/3D/${n.toLowerCase().replace(/ /g,'_')}_3d.png" alt="${f}" onerror="this.replaceWith(document.createTextNode(this.alt))">`;
+const IT=[{n:'cuaderno',p:'cuadernos',f:'Notebook',e:'📓',t:0},{n:'libro',p:'libros',f:'Books',e:'📚',t:0},{n:'hamburguesa',p:'hamburguesas',f:'Hamburger',e:'🍔',t:0},{n:'pizza',p:'pizzas',f:'Pizza',e:'🍕',t:0},{n:'helado',p:'helados',f:'Soft ice cream',e:'🍦',t:0},{n:'alfajor',p:'alfajores',f:'Chocolate bar',e:'🍫',t:0},
+ {n:'mochila',p:'mochilas',f:'Backpack',e:'🎒',t:1},{n:'pelota',p:'pelotas',f:'Soccer ball',e:'⚽',t:1},{n:'auricular',p:'auriculares',f:'Headphone',e:'🎧',t:1},{n:'zapatilla',p:'zapatillas',f:'Running shoe',e:'👟',t:2},{n:'videojuego',p:'videojuegos',f:'Video game',e:'🎮',t:2},{n:'celular',p:'celulares',f:'Mobile phone',e:'📱',t:2}];
+const CUST=[['Fox','Don Zorro','🦊'],['Robot','Robo-Pepe','🤖'],['Alien','Zorg','👽'],['Lion','Leo','🦁'],['Unicorn','Estrella','🦄'],['Dragon','Draco','🐲'],['Panda','Pandi','🐼'],['Cat face','Michi','🐱']];
+const price=it=>[R(10,80),R(100,400),R(500,1500)][it.t]*50,plu=(it,q)=>q>1?it.p:it.n,rup=(t,m)=>Math.ceil((t+.01)/m)*m;
+const tag=(it,p,sub)=>`<div class="it">${em(it.f,it.e)}<b>${$$(p)}</b><i>${sub||it.n}</i></div>`;
+const row=(it,q,p)=>Array.from({length:Math.min(q,5)},()=>tag(it,p)).join('');
+function num(ans,w){const st=Math.max(10,Math.round(ans/200)*10),s=new Set([c(ans)]);w.map(c).forEach(v=>{if(v>0)s.add(v)});let k=1;while(s.size<4){const v=c(ans+st*Math.ceil(k/2)*(k%2?1:-1));if(v>0)s.add(v);k++}
+ const a=shuffle([...s].slice(0,4));return{opts:a.map($$),ans:a.indexOf(c(ans))}}
+const DEN=[10000,2000,1000,500,200,100,50],COL={10000:'#7c3aed',2000:'#0891b2',1000:'#b45309',500:'#15803d',200:'#c2410c',100:'#9d174d',50:'#1d4ed8'};
+const G={
+vuelto(d){const it=pick(IT),q=it.t==2?R(1,2):R(1,2+d),p=price(it),t=q*p,pay=rup(t,t<5000?1000:t<30000?5000:10000),a=pay-t;
+ return{k:'tray',text:`Un cliente compra <b>${q} ${plu(it,q)}</b> a ${$$(p)} cada uno y te paga con <b>${$$(pay)}</b>. ¡Armá el vuelto exacto con los billetes!`,items:row(it,q,p),target:a,
+ exp:`${q} × ${$$(p)} = <b>${$$(t)}</b><br>${$$(pay)} − ${$$(t)} = <b>${$$(a)}</b> de vuelto`}},
+descuento(d){const it=pick(IT),p=price(it),pc=pick(d<2?[10,20,25,50]:[15,30,40,60,75]),ds=c(p*pc/100),a=c(p-ds);
+ return{k:'mc',text:`Producto: <b>${it.n}</b>, precio ${$$(p)}, con <b>${pc}% de descuento</b>. ¿Cuánto pagás?`,items:tag(it,p,'−'+pc+'%'),...num(a,[ds,p+ds,p-pc,a+p/10]),
+ exp:`${pc}% de ${$$(p)} = <b>${$$(ds)}</b> (lo que te ahorrás)<br>${$$(p)} − ${$$(ds)} = <b>${$$(a)}</b>`}},
+presupuesto(d){const its=shuffle(IT.filter(x=>x.t<2)).slice(0,5).map(it=>({it,p:price(it)})),so=its.map(x=>x.p).sort((a,b)=>a-b),k=R(2,d>1?4:3);let s=0;const cum=so.map(p=>s+=p);
+ const B=cum[k-1]+R(0,Math.floor((cum[k]-cum[k-1]-1)/50))*50;
+ return{k:'cart',text:`Tenés <b>${$$(B)}</b> de presupuesto. ¡Comprá la <b>mayor cantidad de productos</b> posible sin pasarte!`,items:'',prods:its,budget:B,need:k,
+ exp:`Elegí siempre los más baratos: ${so.slice(0,k).map($$).join(' + ')} = <b>${$$(cum[k-1])}</b> ✅ (${k} productos)<br>Un producto más daría ${$$(cum[k])} ❌ y te pasás de ${$$(B)}`}},
+comparar(d){const it=pick(IT.filter(x=>x.t==0)),q1=R(2,4),q2=q1*R(2,3),u1=R(20,80)*10,u2=Math.random()<.15?u1:u1+pick([-100,-50,50,100,150]),p1=q1*u1,p2=q2*u2,a=u1<u2?0:u2<u1?1:2;
+ return{k:'mc',text:`Dos ofertas de <b>${it.p}</b>. ¿Cuál conviene más (sale más barato cada uno)?`,items:tag(it,p1,'Pack A: '+q1+' unidades')+tag(it,p2,'Pack B: '+q2+' unidades'),opts:['Pack A','Pack B','Salen igual'],ans:a,
+ exp:`Pack A: ${$$(p1)} ÷ ${q1} = <b>${$$(u1)}</b> cada uno<br>Pack B: ${$$(p2)} ÷ ${q2} = <b>${$$(u2)}</b> cada uno<br>${a==2?'¡Salen igual!':'Conviene el <b>Pack '+'AB'[a]+'</b>'}`}},
+combinada(d){const i1=pick(IT),i2=pick(IT.filter(x=>x!=i1)),q1=R(1,3),q2=R(1,2),p1=price(i1),p2=price(i2),t=q1*p1+q2*p2,pc=d>2?pick([10,20]):0,t2=c(t*(1-pc/100)),pay=rup(t2,t2<10000?5000:t2<50000?10000:50000),a=c(pay-t2);
+ return{k:'mc',text:`Compra: <b>${q1} ${plu(i1,q1)}</b> (${$$(p1)} c/u) y <b>${q2} ${plu(i2,q2)}</b> (${$$(p2)} c/u).${pc?` Tiene un <b>cupón de ${pc}% de descuento</b> sobre el total.`:''} Paga con <b>${$$(pay)}</b>. ¿Cuánto vuelto le das?`,items:row(i1,q1,p1)+row(i2,q2,p2),...num(a,[c(pay-t),t2,a+t*pc/100,a+500]),
+ exp:`${q1} × ${$$(p1)} + ${q2} × ${$$(p2)} = <b>${$$(t)}</b><br>${pc?`Con ${pc}% off: ${$$(t)} − ${$$(c(t-t2))} = <b>${$$(t2)}</b><br>`:''}${$$(pay)} − ${$$(t2)} = <b>${$$(a)}</b> de vuelto`}}};
+const TYPES=['vuelto','descuento','presupuesto','comparar','combinada'],LBL={vuelto:'💵 VUELTO',descuento:'🏷️ DESCUENTO',presupuesto:'🛒 PRESUPUESTO',comparar:'⚖️ COMPARAR',combinada:'🧮 CUENTA COMBINADA'};
+
+/* Banco de 50 preguntas: 5 base + 30 numéricas + 15 de cultura financiera */
+const cnt=(a,w,f=$$)=>{a=c(a);const s=new Set([a]);w.forEach(v=>{v=c(v);v>0&&s.add(v)});const st=Math.max(1,Math.round(a/10));let k=1;while(s.size<4){const v=c(a+st*Math.ceil(k/2)*(k%2?1:-1));if(v>0)s.add(v);k++}const o=shuffle([...s].slice(0,4));return{opts:o.map(f),ans:o.indexOf(a)}};
+const M=(text,a,w,exp,items='',f=$$)=>({text,items,...cnt(a,w,f),exp}),add=(n,l,fn)=>G[n]=d=>({k:'mc',lbl:l,items:'',...fn(d)}),pc_=n=>n+'%',mes=n=>n+(n==1?' mes':' meses'),bil=n=>n+' billetes',usd=n=>'US$ '+n;
+add('iva','🧾 IVA',()=>{const it=pick(IT),p=price(it),v=c(p*.21);return M(`El <b>${it.n}</b> cuesta ${$$(p)} sin IVA. ¿Cuánto es el <b>IVA (21%)</b>?`,v,[p+v,p*.12,p*.021],`21% de ${$$(p)} = ${$$(p)} × 0,21 = <b>${$$(v)}</b>`,tag(it,p,'sin IVA'))});
+add('coniva','🧾 IVA',()=>{const it=pick(IT),p=price(it),t=c(p*1.21);return M(`El <b>${it.n}</b> cuesta ${$$(p)} + IVA 21%. ¿Cuál es el <b>precio final</b>?`,t,[p*.21,p*1.12,p+p*.021],`IVA: ${$$(c(p*.21))}<br>${$$(p)} + ${$$(c(p*.21))} = <b>${$$(t)}</b>`,tag(it,p,'+ IVA'))});
+add('propina','🍽️ PROPINA',()=>{const b=R(20,90)*100,t=b/10;return M(`La cuenta del restaurante es ${$$(b)}. Querés dejar <b>10% de propina</b>. ¿Cuánto es?`,t,[b/100,b/5,b+t],`10% de ${$$(b)} = ${$$(b)} ÷ 10 = <b>${$$(t)}</b>`)});
+add('interes','🏦 INTERÉS',()=>{const C=R(2,10)*10000,r=pick([2,5,10]),m=R(2,6),a=C*r*m/100;return M(`Depositás ${$$(C)} a plazo fijo con <b>${r}% de interés simple por mes</b> durante ${m} meses. ¿Cuánto interés ganás?`,a,[C*r/100,C+a,C*r*m/10],`${r}% de ${$$(C)} = ${$$(C*r/100)} por mes<br>${$$(C*r/100)} × ${m} = <b>${$$(a)}</b>`)});
+add('monto','🏦 INTERÉS',()=>{const C=R(2,10)*10000,r=pick([5,10]),m=pick([1,2,3]),i=C*r*m/100;return M(`Invertís ${$$(C)} con <b>${r}% de interés simple por mes</b> durante ${m} ${m>1?'meses':'mes'}. ¿Cuánto tenés al final?`,C+i,[i,C+i*2,C-i],`Interés: ${$$(i)}<br>${$$(C)} + ${$$(i)} = <b>${$$(C+i)}</b>`)});
+add('meses','🐷 AHORRO',()=>{const a=R(2,10)*1000,n=R(3,12);return M(`Querés comprar algo de ${$$(a*n)} y ahorrás ${$$(a)} por mes. ¿En cuántos <b>meses</b> lo juntás?`,n,[n+1,n-1,n*2],`${$$(a*n)} ÷ ${$$(a)} = <b>${n} meses</b>`,'',mes)});
+add('ahorrom','🐷 AHORRO',()=>{const m=R(2,10)*1000,n=R(3,10),T=m*n;return M(`Necesitás juntar ${$$(T)} en ${n} meses. ¿Cuánto ahorrás <b>por mes</b>?`,m,[T/(n+1),m*2,T-n],`${$$(T)} ÷ ${n} = <b>${$$(m)}</b> por mes`)});
+add('dolar','💱 CAMBIO',()=>{const u=R(5,50)*10,t=pick([1000,1100,1200,1250]);return M(`Cambiás <b>US$ ${u}</b> y el dólar vale ${$$(t)}. ¿Cuántos pesos recibís?`,u*t,[u+t,u*t/10,u*t*10],`${u} × ${$$(t)} = <b>${$$(u*t)}</b>`)});
+add('dolari','💱 CAMBIO',()=>{const u=R(5,40)*10,t=pick([1000,1100,1200,1250]);return M(`Tenés ${$$(u*t)} y el dólar vale ${$$(t)}. ¿Cuántos <b>dólares</b> podés comprar?`,u,[u*10,u/2,u+t/100],`${$$(u*t)} ÷ ${$$(t)} = <b>US$ ${u}</b>`,'',usd)});
+add('cuotas','💳 CUOTAS',()=>{const n=pick([3,6,12]),q=R(4,40)*500,p=q*n;return M(`Un producto de ${$$(p)} se paga en <b>${n} cuotas sin interés</b>. ¿Cuánto vale cada cuota?`,q,[p/(n*2),p-n,p*n],`${$$(p)} ÷ ${n} = <b>${$$(q)}</b>`)});
+add('cuotasr','💳 CUOTAS',()=>{const p=R(1,5)*15000,n=pick([3,6]),T=p*1.2;return M(`Un producto de ${$$(p)} se financia en ${n} cuotas con <b>20% de recargo</b> total. ¿Cuánto vale cada cuota?`,T/n,[p/n,T,p*.2/n],`Total: ${$$(p)} × 1,2 = ${$$(T)}<br>${$$(T)} ÷ ${n} = <b>${$$(T/n)}</b>`)});
+add('dosxuno','🎁 OFERTA',()=>{const it=pick(IT.filter(x=>x.t<2)),p=price(it),n=pick([4,6,8]);return M(`Oferta <b>2x1</b> en ${it.p} a ${$$(p)} c/u. Llevás ${n}. ¿Cuánto pagás?`,n/2*p,[n*p,(n-1)*p,n/4*p],`En 2x1 pagás la mitad: ${n/2} × ${$$(p)} = <b>${$$(n/2*p)}</b>`,tag(it,p,'2x1'))});
+add('tresxdos','🎁 OFERTA',()=>{const it=pick(IT.filter(x=>x.t<2)),p=price(it),n=pick([3,6,9]),a=n/3*2*p;return M(`Oferta <b>3x2</b> en ${it.p} a ${$$(p)} c/u. Llevás ${n}. ¿Cuánto pagás?`,a,[n*p,(n-1)*p,n/3*p],`Cada 3 pagás 2: ${n/3*2} × ${$$(p)} = <b>${$$(a)}</b>`,tag(it,p,'3x2'))});
+add('seg50','🎁 OFERTA',()=>{const it=pick(IT),p=price(it);return M(`El <b>segundo al 50%</b>: llevás 2 ${it.p} de ${$$(p)} c/u. ¿Cuánto pagás en total?`,p*1.5,[p*2,p,p*.5],`${$$(p)} + ${$$(p/2)} = <b>${$$(p*1.5)}</b>`,tag(it,p,'2° al 50%'))});
+add('porkg','⚖️ UNIDAD',()=>{const kg=pick([2,4,5]),k=R(4,20)*100;return M(`${kg} kg de queso cuestan ${$$(kg*k)}. ¿Cuánto cuesta <b>1 kg</b>?`,k,[kg*k-kg,k*2,kg*k/(kg*2)],`${$$(kg*k)} ÷ ${kg} = <b>${$$(k)}</b>`)});
+add('kgfrac','⚖️ UNIDAD',()=>{const p=R(10,40)*100,kg=pick([.5,1.5,2.5]);return M(`El kilo de jamón cuesta ${$$(p)}. ¿Cuánto pagás por <b>${String(kg).replace('.',',')} kg</b>?`,p*kg,[p*kg*2,p*(kg+1),p/2*kg*3],`${$$(p)} × ${String(kg).replace('.',',')} = <b>${$$(p*kg)}</b>`)});
+add('billetes','💵 BILLETES',()=>{const b=pick([500,1000,2000]),n=R(3,9);return M(`¿Cuántos billetes de <b>${$$(b)}</b> necesitás para juntar ${$$(b*n)}?`,n,[n+1,n-1,n*2],`${$$(b*n)} ÷ ${$$(b)} = <b>${n} billetes</b>`,'',bil)});
+add('sueldo','💼 SUELDO',()=>{const S=R(2,9)*100000;return M(`Un sueldo de ${$$(S)} tiene <b>17% de descuentos</b> (jubilación y obra social). ¿Cuánto cobrás en mano?`,S*.83,[S*.17,S*1.17,S*.87],`17% de ${$$(S)} = ${$$(S*.17)}<br>${$$(S)} − ${$$(S*.17)} = <b>${$$(S*.83)}</b>`)});
+add('aguinaldo','💼 SUELDO',()=>{const S=R(3,9)*100000;return M(`El aguinaldo es <b>medio sueldo</b>. Si cobrás ${$$(S)} por mes, ¿de cuánto es tu aguinaldo?`,S/2,[S,S/12,S*2],`${$$(S)} ÷ 2 = <b>${$$(S/2)}</b>`)});
+add('aumento','📈 AUMENTO',()=>{const p=R(4,30)*500,r=pick([10,20,25,50]);return M(`Un producto de ${$$(p)} <b>sube ${r}%</b>. ¿Cuál es el precio nuevo?`,p*(1+r/100),[p*r/100,p*(1-r/100),p+r],`${r}% de ${$$(p)} = ${$$(p*r/100)}<br>${$$(p)} + ${$$(p*r/100)} = <b>${$$(p*(1+r/100))}</b>`)});
+add('quepct','📈 PORCENTAJE',()=>{const b=pick([200,400,500,1000]),r=pick([10,20,25,50]);return M(`De ${$$(b)} gastaste ${$$(b*r/100)}. ¿Qué <b>porcentaje</b> gastaste?`,r,[r*2,r+10,r+5],`${$$(b*r/100)} ÷ ${$$(b)} = ${r/100} → <b>${r}%</b>`,'',pc_)});
+add('gastos','🧮 PRESUPUESTO',()=>{const I=R(5,9)*100000,a=R(2,3)*100000,co=R(1,2)*100000,t=R(1,5)*10000;return M(`Ganás ${$$(I)}. Pagás alquiler ${$$(a)}, comida ${$$(co)} y transporte ${$$(t)}. ¿Cuánto te <b>sobra</b>?`,I-a-co-t,[a+co+t,I-a-co,I-a-t],`${$$(a)} + ${$$(co)} + ${$$(t)} = ${$$(a+co+t)}<br>${$$(I)} − ${$$(a+co+t)} = <b>${$$(I-a-co-t)}</b>`)});
+add('difpre','⚖️ COMPARAR',()=>{const it=pick(IT),p=price(it),d=R(1,8)*100;return M(`El <b>${it.n}</b> cuesta ${$$(p)} en la tienda A y ${$$(p+d)} en la B. ¿Cuánto ahorrás en la <b>más barata</b>?`,d,[p,p+d,d*2],`${$$(p+d)} − ${$$(p)} = <b>${$$(d)}</b>`,tag(it,p,'Tienda A')+tag(it,p+d,'Tienda B'))});
+add('promedio','📊 PROMEDIO',()=>{const m=R(5,30)*100,k=R(1,3)*100;return M(`Gastaste ${$$(m-k)}, ${$$(m)} y ${$$(m+k)} en tres días. ¿Cuál fue el <b>gasto promedio</b> diario?`,m,[m*3,m+k,m-k],`Suma: ${$$(m*3)}<br>${$$(m*3)} ÷ 3 = <b>${$$(m)}</b>`)});
+add('suma3','🛒 COMPRA',()=>{const x=shuffle(IT).slice(0,3),p=x.map(price),t=p[0]+p[1]+p[2];return M(`Comprás un <b>${x[0].n}</b>, un <b>${x[1].n}</b> y un <b>${x[2].n}</b>. ¿Cuánto es el total?`,t,[t-p[0],t+p[1],t-p[2]],`${p.map($$).join(' + ')} = <b>${$$(t)}</b>`,x.map((o,i)=>tag(o,p[i])).join(''))});
+add('doble','🏷️ DESCUENTO',()=>{const p=R(2,10)*1000;return M(`Un producto de ${$$(p)} tiene <b>10% off</b> y después <b>otro 10% off</b> sobre el nuevo precio. ¿Cuánto pagás?`,p*.81,[p*.8,p*.9,p*.19],`Primer 10%: ${$$(p*.9)}<br>Segundo 10%: ${$$(p*.9)} × 0,9 = <b>${$$(p*.81)}</b> (no es 20%)`)});
+add('ganancia','🏪 NEGOCIO',()=>{const q=R(3,8),co=R(2,10)*100,g=R(1,5)*100;return M(`Comprás ${q} alfajores a ${$$(co)} y los vendés a ${$$(co+g)} c/u. ¿Cuál es tu <b>ganancia total</b>?`,q*g,[q*(co+g),g,q*co],`Ganancia por unidad: ${$$(g)}<br>${q} × ${$$(g)} = <b>${$$(q*g)}</b>`)});
+add('gananpct','🏪 NEGOCIO',()=>{const co=R(2,9)*100,r=pick([10,20,25,50]);return M(`Comprás a ${$$(co)} y vendés a ${$$(co*(1+r/100))}. ¿Qué <b>porcentaje de ganancia</b> tenés?`,r,[r*2,r+10,r+5],`Ganancia: ${$$(co*r/100)}<br>${$$(co*r/100)} ÷ ${$$(co)} = <b>${r}%</b>`,'',pc_)});
+add('gift','🎁 SALDO',()=>{const a=R(1,4)*10000,b=R(1,4)*10000,G0=R(9,12)*10000;return M(`Tenés una tarjeta de regalo de ${$$(G0)}. Gastás ${$$(a)} y después ${$$(b)}. ¿Cuánto <b>saldo</b> queda?`,G0-a-b,[a+b,G0-a,G0+a+b],`${$$(a)} + ${$$(b)} = ${$$(a+b)}<br>${$$(G0)} − ${$$(a+b)} = <b>${$$(G0-a-b)}</b>`)});
+add('prestamo','🏦 PRÉSTAMO',()=>{const P=R(2,8)*10000,r=pick([10,20]);return M(`Pedís prestados ${$$(P)} y devolvés <b>${r}% más</b>. ¿Cuánto devolvés en total?`,P*(1+r/100),[P*r/100,P+r,P*(1-r/100)],`${r}% de ${$$(P)} = ${$$(P*r/100)}<br>${$$(P)} + ${$$(P*r/100)} = <b>${$$(P*(1+r/100))}</b>`)});
+const CON=[
+'¿Qué es la <b>inflación</b>?|La suba general de los precios|La baja de los precios|Un aumento de sueldo|Un impuesto nuevo|Cuando los precios suben, con la misma plata comprás menos.',
+'¿Qué es el <b>interés</b>?|El costo de usar plata prestada|Un descuento de tienda|Un tipo de billete|Una propina obligatoria|Si te prestan plata devolvés un extra; si depositás, el banco te paga un extra.',
+'¿Cuál es una buena forma de <b>ahorrar</b>?|Guardar una parte apenas cobrás|Gastar todo y ahorrar lo que sobre|Pedir prestado para ahorrar|Esconder plata sin plan|Primero ahorrás, después gastás: así el ahorro se cumple.',
+'¿Para qué sirve un <b>presupuesto</b>?|Para planificar ingresos y gastos|Para gastar más rápido|Para pagar menos impuestos|Para subir los precios|Anotar lo que entra y sale evita quedarse sin plata a fin de mes.',
+'Pagás solo el <b>mínimo</b> de la tarjeta de crédito. ¿Qué pasa con el resto?|Genera intereses y la deuda crece|Se perdona|Se paga solo|Desaparece el mes siguiente|El saldo no pagado acumula intereses: conviene pagar el total.',
+'¿Qué es una <b>deuda</b>?|Plata que debés devolver|Plata que ahorraste|Un regalo del banco|Un premio por comprar|Quien presta espera que le devuelvas lo prestado, a veces con interés.',
+'¿Qué es el <b>IVA</b>?|Un impuesto sobre lo que consumís|Un descuento del comercio|Un tipo de tarjeta|El sueldo mínimo|Es un impuesto al consumo y ya viene incluido en el precio final.',
+'¿Qué es el <b>aguinaldo</b>?|Un sueldo extra que se cobra dos veces al año|Un impuesto|Una cuota de tarjeta|Un préstamo|Equivale a medio sueldo y se cobra en junio y diciembre.',
+'¿Qué es un <b>plazo fijo</b>?|Dejar plata en el banco un tiempo y ganar intereses|Un tipo de préstamo|Un descuento del súper|Una tarjeta de débito|Tu plata queda quieta durante un plazo y el banco te paga interés.',
+'Algo se vende en <b>6 cuotas sin interés</b>. ¿Cuánto pagás en total?|Lo mismo que de contado|El doble|El precio más 50%|Menos que de contado|Sin interés significa que las cuotas suman el precio de lista.',
+'¿Qué es la <b>ganancia</b> de un negocio?|Ventas menos costos|Todo lo que se vende|Lo que se gasta en el local|El precio de los productos|Ganancia = ventas − costos.',
+'¿Cómo reconocés un billete <b>auténtico</b>?|Mirándolo a trasluz: tiene marca de agua|Solo por el color de la tinta|Porque está planchado|Porque brilla mucho|Los billetes reales tienen marca de agua e hilo de seguridad.',
+'¿Para qué sirve una <b>caja de ahorro</b>?|Guardar tu plata de forma segura|Pagar impuestos|Pedir préstamos|Comprar monedas|Es una cuenta donde depositás y retirás tu plata cuando la necesitás.',
+'¿Qué es un <b>fondo de emergencia</b>?|Plata guardada para imprevistos|Un préstamo urgente|Un descuento por apuro|Una cuenta de tarjeta|Cubre gastos inesperados sin endeudarte.',
+'Ves un cartel <b>70% OFF</b>, pero el precio original estaba inflado. ¿Qué conviene?|Comparar precios en otras tiendas|Comprar enseguida|Pedir un préstamo|Ignorar el precio|Un descuento solo sirve si el precio original era real.'].map(x=>x.split('|'));
+CON.forEach(([t,a,...r],i)=>{const e=r.pop();G['c'+i]=()=>{const o=shuffle([a,...r]);return{k:'mc',lbl:'💡 FINANZAS',text:t,items:'',opts:o,ans:o.indexOf(a),exp:`<b>${a}</b><br>${e}`}}});
+const RANKS=['Pasante','Cajero','Analista','Gerente'];
+let S,Q,lock=true,tray=[],cart=new Set(),AC;
+function tone(f,d=.15,t='sine',v=.12,dl=0){try{AC=AC||new(window.AudioContext||webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain(),T=AC.currentTime+dl;o.type=t;o.frequency.value=f;g.gain.setValueAtTime(v,T);g.gain.exponentialRampToValueAtTime(.001,T+d);o.connect(g);g.connect(AC.destination);o.start(T);o.stop(T+d)}catch(e){}}
+const kaching=()=>{tone(880,.1,'square',.06);tone(1320,.3,'triangle',.12,.08);tone(1760,.35,'sine',.1,.18)},buzz=()=>{tone(200,.35,'sawtooth',.07);tone(140,.4,'sawtooth',.07,.12)};
+function burst(n=80){if(typeof confetti!=='function')return;const sh=confetti.shapeFromText?[confetti.shapeFromText({text:'🪙',scalar:2}),confetti.shapeFromText({text:'💵',scalar:2})]:undefined;confetti({particleCount:n,spread:85,startVelocity:48,origin:{y:.65},shapes:sh,scalar:2,colors:['#ffcc33','#22d3ee','#f472b6']})}
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));document.body.classList.toggle('playing',id==='game')}
+function hearts(){$('hearts').innerHTML=[0,1,2].map(i=>`<span class="${i<S.lives?'':'lost'}">${em('Red heart','❤️')}</span>`).join('')}
+function start(){const deck=shuffle(Object.keys(G)).slice(0,15);S={deck,r:0,lives:3,bal:0,shown:0,streak:0,best:0,ok:0};hearts();$('bal').textContent='$0';show('game');round()}
+function round(){const d=S.r<5?1:S.r<10?2:3,t=S.deck[S.r];Q=G[t](d);Q.d=d;lock=false;tray=[];cart=new Set();
+ const cu=pick(CUST);$('cimg').innerHTML=em(cu[0],cu[2]);$('cname').textContent=cu[1];$('react').innerHTML='';
+ $('rn').textContent=`MISIÓN ${S.r+1} / 15`;$('bar').style.width=(S.r/15*100)+'%';$('hr').innerHTML=em('Crown','👑')+' '+RANKS[Math.min(3,Math.floor(S.r/4))];
+ $('badge').textContent=Q.lbl||LBL[t];$('q').innerHTML=Q.text;$('items').innerHTML=Q.items;$('exp').className='';
+ $('next').style.display='none';$('go').style.display=Q.k=='mc'?'none':'inline-block';$('undo').style.display=Q.k=='tray'?'inline-block':'none';
+ if(Q.k=='mc')$('inter').innerHTML='<div class="opts">'+Q.opts.map((o,i)=>`<button class="opt" style="animation-delay:${i*.08}s" onclick="ans(${i})"><small>${i+1}</small>${o}</button>`).join('')+'</div>';
+ else if(Q.k=='tray'){$('inter').innerHTML='<div class="bills">'+DEN.map(v=>`<button class="bill" style="--c:${COL[v]}" onclick="addBill(${v})">${$$(v)}</button>`).join('')+'</div><div class="till"><small>VUELTO QUE ESTÁS ENTREGANDO</small><div id="tsum">$0</div><div id="tstack"></div></div>'}
+ else{$('inter').innerHTML='<div class="cartgrid">'+Q.prods.map((o,i)=>`<div class="it" id="p${i}" onclick="tog(${i})">${em(o.it.f,o.it.e)}<b>${$$(o.p)}</b><i>${o.it.n}</i></div>`).join('')+'</div><div class="meter"><i id="mt"></i></div><div id="minfo"></div>';drawCart()}
+}
+function addBill(v){if(lock)return;tray.push(v);tone(520+v/40,.08,'triangle',.1);drawTray()}
+function undo(){if(lock||!tray.length)return;tray.pop();drawTray()}
+function drawTray(){$('tsum').textContent=$$(tray.reduce((a,b)=>a+b,0));$('tstack').innerHTML=tray.map(v=>`<span class="mb" style="--c:${COL[v]}">${$$(v)}</span>`).join('')}
+function tog(i){if(lock)return;cart.has(i)?cart.delete(i):cart.add(i);tone(cart.has(i)?700:450,.08,'triangle');$('p'+i).classList.toggle('sel');drawCart()}
+function drawCart(){const s=[...cart].reduce((a,i)=>a+Q.prods[i].p,0);$('mt').style.width=Math.min(100,s/Q.budget*100)+'%';$('mt').classList.toggle('over',s>Q.budget);$('minfo').innerHTML=`Carrito: ${$$(s)} · ${s>Q.budget?'<span style="color:#f87171">¡Te pasaste!</span>':'Te quedan '+$$(Q.budget-s)}`}
+function ans(i){if(lock)return;const b=[...document.querySelectorAll('.opt')];b.forEach(x=>x.classList.add('lock'));b[Q.ans].classList.add('ok');if(i!==Q.ans)b[i].classList.add('bad');finish(i===Q.ans)}
+function go(){if(lock)return;let ok;if(Q.k=='tray')ok=tray.reduce((a,b)=>a+b,0)===Q.target;else{const s=[...cart].reduce((a,i)=>a+Q.prods[i].p,0);ok=s<=Q.budget&&cart.size===Q.need}finish(ok)}
+function finish(ok){lock=true; document.querySelectorAll('.bill').forEach(b=>b.disabled=true);
+ $('react').innerHTML=em(ok?'Partying face':'Face with symbols on mouth',ok?'🥳':'🤬');
+ if(ok){S.ok++;S.streak++;S.best=Math.max(S.best,S.streak);const g=100*Q.d+Math.min(S.streak,5)*50;S.bal+=g;burst();kaching();toast(`+${$$(g)}${S.streak>2?' 🔥 x'+S.streak:''}`)}
+ else{S.lives--;S.streak=0;hearts();buzz();const w=$('inter');w.style.animation='none';void w.offsetWidth;w.style.animation='shk .4s'}
+ $('exp').innerHTML=(ok?'✅ <b>¡Excelente!</b>':'💡 <b>Así se resuelve:</b>')+'<br>'+Q.exp;$('exp').className='on';
+ const from=S.shown,t0=performance.now();(function tw(t){const k=Math.min(1,(t-t0)/900);S.shown=from+(S.bal-from)*(1-Math.pow(1-k,3));$('bal').textContent=$$(Math.round(S.shown));if(k<1)requestAnimationFrame(tw)})(t0);
+ $('go').style.display='none';$('undo').style.display='none';$('next').style.display='inline-block';$('next').textContent=(S.lives<=0||S.r>=14)?'Ver resultado ➜':'Siguiente ➜'}
+function next(){S.r++;if(S.lives<=0||S.r>=15)return end();round()}
+function end(){const k=S.ok,rk=k>=13?['Gerente General','Crown','👑']:k>=9?['Cajero Experto','Briefcase','💼']:k>=5?['Ahorrista','Pig face','🐷']:['Aprendiz','Seedling','🌱'];
+ $('eh').innerHTML=em('Trophy','🏆');$('rank').innerHTML=em(rk[1],rk[2])+' '+rk[0];
+ $('stats').innerHTML=`<div>${k}/15<small>Aciertos</small></div><div>${$$(S.bal)}<small>Saldo final</small></div><div>🔥 ${S.best}<small>Mejor racha</small></div>`;
+ $('bar').style.width='100%';show('end');if(k>=5){burst(160);setTimeout(()=>burst(120),500);[523,659,784,1046].forEach((f,i)=>tone(f,.25,'triangle',.12,i*.12))}}
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),1600)}
+document.addEventListener('keydown',e=>{if(!$('game').classList.contains('on'))return;if(/^[1-4]$/.test(e.key)&&Q.k=='mc')ans(e.key-1);else if(e.key==='Enter'){if($('next').style.display==='inline-block')next();else if(Q.k!='mc')go()}});
+$('lobby').insertAdjacentHTML('beforeend',Array.from({length:12},()=>`<i class="cn" style="left:${R(2,98)}%;animation-duration:${R(10,20)}s;animation-delay:-${R(0,20)}s;scale:${R(6,12)/10}"></i>`).join(''));
+$('hb').innerHTML=em('Bank','🏦');$('hc').innerHTML=em('Coin','🪙');
+$('hero').innerHTML=em('Robot','🤖')+em('Bank','🏦')+em('Unicorn','🦄');$('h1').innerHTML=em('Dollar banknote','💵')+'Vuelto con billetes';$('h2').innerHTML=em('Shopping cart','🛒')+'Presupuestos y ofertas';$('h3').innerHTML=em('Fire','🔥')+'¡Rachas = bonus!';
+</script>
+</body>
+</html>
