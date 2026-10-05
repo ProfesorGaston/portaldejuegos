@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>El Juego de la Oca</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Baloo+2:wght@600;800&display=swap">
+<style>
+:root{--sky1:#7dd3fc;--sky2:#34d399;--ink:#3b2a14;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--sky1:#1e3a8a;--sky2:#14532d}}
+:root[data-theme="dark"]{--sky1:#1e3a8a;--sky2:#14532d}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;font-weight:600;color:var(--ink);background:#7dd3fc;background:linear-gradient(var(--sky1),var(--sky2))}
+#app{max-width:1700px;margin:0 auto;padding:10px;display:grid;grid-template-columns:auto minmax(300px,1fr);gap:16px;align-items:start}
+#bw{container-type:inline-size;width:min(calc(100vw - 440px),calc((100dvh - 24px)*1.25))}
+#side{position:sticky;top:10px}
+@media(max-width:980px){#app{grid-template-columns:1fr}#bw{width:min(100%,calc((100dvh - 24px)*1.25))}#side{position:static}}
+#board{position:relative;aspect-ratio:5/4;border:1.3cqw solid #0d47a1;border-radius:3cqw;background:radial-gradient(circle at 30% 20%,#2196f3,#1565c0);box-shadow:0 1.2cqw 0 #08306b,0 2.4cqw 4cqw #0006}
+#grid,#tk{position:absolute;inset:0}
+#grid{display:grid;grid-template:repeat(8,1fr)/repeat(10,1fr)}
+.sq{padding:.45cqw}
+.sq>div{position:relative;height:100%;border-radius:1.2cqw;background:var(--c);border:.25cqw solid #0007;display:flex;align-items:center;justify-content:center;font-size:4.2cqw;box-shadow:inset 0 -.6cqw 0 #0003}
+.sq b{position:absolute;top:.15cqw;left:.15cqw;min-width:2.5cqw;height:2.5cqw;border-radius:50%;background:#fff;color:#111;font:800 1.6cqw/2.5cqw 'Baloo 2',sans-serif;text-align:center;box-shadow:0 0 0 .15cqw #0005}
+.sq.oca>div{background:#fffde7}
+.sq.plain b{position:static;background:none;box-shadow:none;color:#fff;font-size:3.2cqw;line-height:1;min-width:0;height:auto;text-shadow:0 .25cqw 0 #0006}
+.sq.meta>div{background:radial-gradient(#fff59d,#ffb300);font-size:5.6cqw}
+#ttl{grid-column:3/8;grid-row:4/7;margin:.6cqw;border-radius:2.5cqw;border:.4cqw solid #fff;background:radial-gradient(circle at 50% 30%,#4fc3f7,#0288d1);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden}
+#ttl small{font:italic 800 2.4cqw 'Baloo 2',serif;color:#ffe082}
+#ttl h1{margin:-.8cqw 0 0;font:11cqw/1 'Lilita One','Baloo 2',cursive;color:#fff;text-shadow:0 .5cqw 0 #0d47a1,0 0 2cqw #0006}
+#ttl div{font-size:4cqw;letter-spacing:1cqw}
+#ttl i{position:absolute;right:2cqw;bottom:2cqw;font-style:normal;font-size:7cqw;transform:rotate(14deg)}
+#deco{opacity:.7;grid-column:8;grid-row:5/7;margin:.6cqw;border-radius:2cqw;background:#4fc3f7;border:.3cqw solid #fff;display:flex;align-items:center;justify-content:center;font-size:6cqw}
+.tok{position:absolute;width:5.2cqw;height:5.2cqw;border-radius:50%;background:#fff;border:.6cqw solid var(--p);display:flex;align-items:center;justify-content:center;font-size:3.4cqw;transition:left .3s,top .3s;z-index:5;box-shadow:0 .6cqw .6cqw #0008}
+.tok.on{z-index:6;animation:bob .6s infinite alternate}
+@keyframes bob{to{margin-top:-1cqw}}
+.card{background:#fffffff2;color:#3b2a14;border:4px solid #fff;border-radius:22px;padding:14px;box-shadow:0 10px 24px #0003}
+#side{display:flex;flex-direction:column;gap:12px}
+#pl{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.chip{padding:6px 10px;border-radius:14px;background:#f1f5f9;color:#3b2a14;border:3px solid transparent;font-weight:800;display:flex;align-items:center;gap:8px;line-height:1.1}
+.chip.on{background:#fef3c7;border-color:#f59e0b}
+.chip em{font-style:normal;font-size:1.7rem}.chip small{display:block;font-weight:600;opacity:.75}
+#msg{min-height:54px;font-size:1.15rem;font-weight:800;text-align:center;display:flex;align-items:center;justify-content:center}
+#qbox{background:#fff1c2;border:4px dashed #f59e0b;border-radius:18px;padding:12px;text-align:center}
+#qtext{font:2.3rem 'Lilita One','Baloo 2',cursive;color:#c2410c;margin:4px 0 12px}
+#opts{display:flex;gap:12px;justify-content:center}
+.opt{width:80px;height:80px;border-radius:50%;border:0;font:1.9rem 'Lilita One','Baloo 2',cursive;color:#fff;background:#fb923c;box-shadow:0 6px 0 #c2410c;cursor:pointer}
+.opt:hover{transform:translateY(-3px)}.opt:focus-visible,.go:focus-visible,.sel button:focus-visible,#say:focus-visible{outline:4px solid #1d4ed8;outline-offset:2px}
+.opt.ok{background:#22c55e;box-shadow:0 6px 0 #15803d;animation:pop .4s}
+.opt.bad{background:#94a3b8;box-shadow:0 6px 0 #64748b;animation:shake .35s;pointer-events:none}
+@keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}@keyframes pop{50%{transform:scale(1.25)}}
+#say{border:0;background:#fff;border-radius:50%;width:40px;height:40px;font-size:1.2rem;cursor:pointer;box-shadow:0 3px 0 #0003;float:right}
+#dicebox{display:none;text-align:center}
+#dice{display:inline-block;width:120px;height:120px;line-height:120px;font-size:5.6rem;background:#fff;border-radius:22px;box-shadow:0 6px 0 #cbd5e1,0 0 0 4px #e11d48 inset;color:#e11d48}
+#dice.roll{animation:spin .25s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#rules{grid-column:1/-1;margin-top:6px;background:#43a047;border:4px solid #fff;border-radius:22px;padding:14px 18px;color:#fff;box-shadow:0 10px 24px #0003}
+#rules h2{margin:0 0 8px;font:1.5rem 'Lilita One','Baloo 2',cursive;letter-spacing:.04em}
+#rules div{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px 18px;font-size:.95rem;line-height:1.25}
+#rules b{background:#fff;color:#2e7d32;border-radius:8px;padding:0 6px;margin-right:4px}
+.ov{position:fixed;inset:0;background:#0007;display:flex;align-items:center;justify-content:center;z-index:40;padding:14px}
+.ov .card{max-width:480px;text-align:center}
+.ov h2{font:2.1rem 'Lilita One','Baloo 2',cursive;margin:0 0 6px;color:#ea580c}
+.sel{display:flex;gap:8px;justify-content:center;margin:8px 0 14px;flex-wrap:wrap}
+.sel button,.go{font:1.05rem 'Lilita One','Baloo 2',cursive;color:#3b2a14;border:3px solid #fdba74;background:#fff;border-radius:14px;padding:8px 14px;cursor:pointer}
+.sel button.on{background:#fb923c;color:#fff;border-color:#c2410c}
+.go{background:#22c55e;color:#fff;border-color:#15803d;font-size:1.5rem;padding:10px 30px;box-shadow:0 5px 0 #15803d}
+.cf{position:fixed;top:-40px;z-index:50;pointer-events:none;animation:cf linear forwards}
+@keyframes cf{to{transform:translateY(112vh) rotate(540deg)}}
+@media(prefers-reduced-motion:reduce){.tok.on,.cf{animation:none}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="bw"><div id="board"><div id="grid"></div><div id="tk"></div></div></div>
+  <div id="side">
+    <div id="pl"></div>
+    <div class="card">
+      <div id="msg"></div>
+      <div id="qbox"><button id="say" title="Escuchar" aria-label="Escuchar la pregunta">🔊</button><div style="font-weight:800">Resolvé para tirar el dado</div><div id="qtext"></div><div id="opts"></div></div>
+      <div id="dicebox"><span id="dice">⚀</span></div>
+    </div>
+  </div>
+  <section id="rules"><h2>CASILLAS ESPECIALES</h2><div>
+    <span><b>🦆 9 · 27 · 45</b>Oca: saltás a la siguiente oca y tirás de nuevo.</span>
+    <span><b>🌉 6</b>Puente: cruzás hasta la casilla 12 y tirás de nuevo.</span>
+    <span><b>🎲 35</b>Dado mágico: tirás de nuevo.</span>
+    <span><b>🏠 19</b>Posada: descansás un turno.</span>
+    <span><b>🕳️ 31</b>Pozo: resolvé una suma para salir.</span>
+    <span><b>🌀 42</b>Laberinto: retrocedés a la casilla 30.</span>
+    <span><b>🔒 56</b>Cárcel: descansás dos turnos.</span>
+    <span><b>💀 58</b>Calavera: volvés a la casilla 1.</span>
+    <span><b>🏰 63</b>Meta: llegá justo; si te pasás, retrocedés lo que sobra.</span>
+  </div></section>
+</div>
+
+<div class="ov" id="start"><div class="card">
+  <h2>🦆 El Juego de la Oca</h2>
+  <p>Resolvé cada desafío para tirar el dado y llegar al jardín de la oca 🏰</p>
+  <b>¿Cuántos años tenés?</b>
+  <div class="sel" id="selL"><button data-v="0" class="on">6 años 🌱</button><button data-v="1">7 años 🌟</button><button data-v="2">8 años 🚀</button></div>
+  <b>¿Cuántos jugadores?</b>
+  <div class="sel" id="selP"><button data-v="1" class="on">1</button><button data-v="2">2</button><button data-v="3">3</button><button data-v="4">4</button></div>
+  <button class="go" id="go">¡Jugar!</button>
+</div></div>
+<div class="ov" id="end" style="display:none"><div class="card"><h2 id="eh"></h2><p id="et" style="font-size:1.2rem"></p><button class="go" onclick="location.reload()">Jugar otra vez</button></div></div>
+
+<script>
+const $=id=>document.getElementById(id),r=(a,b)=>Math.floor(Math.random()*(b-a+1))+a,sleep=ms=>new Promise(f=>setTimeout(f,ms));
+const C=10,R=8,END=63,FACE='⚀⚁⚂⚃⚄⚅',PATH=[];
+(()=>{let x=0,y=0,dx=1,dy=0;const s=new Set;for(let i=0;i<END;i++){PATH.push([x,y]);s.add(x+','+y);let nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=C||ny>=R||s.has(nx+','+ny)){[dx,dy]=[-dy,dx];nx=x+dx;ny=y+dy}x=nx;y=ny}})();
+const OCA=[9,27,45],SP={};OCA.forEach(n=>SP[n]='oca');
+Object.assign(SP,{6:'puente',35:'dado',19:'posada',31:'pozo',42:'laberinto',56:'carcel',58:'calavera',63:'meta'});
+const ICON={oca:'🦆',puente:'🌉',dado:'🎲',posada:'🏠',pozo:'🕳️',laberinto:'🌀',carcel:'🔒',calavera:'💀',meta:'🏰',start:'🚩'};
+const ANI=['🐱','🦋','🌸','🐸','🦁','🦉','🐢','🦊','🐝','🐶','🐌','🐞','🐠','🦄'];
+const COL=['#e53935','#fb8c00','#fdd835','#43a047','#1e88e5','#8e24aa','#ec407a'];
+const AV=['🦆','🐱','🐶','🐸'],PC=['#e53935','#43a047','#8e24aa','#fb8c00'],OFF=[[-1,-1],[1,-1],[-1,1],[1,1]];
+let AC,lvl=0,P=[],T=0,busy=true,tries=0,Q;
+const beep=(f,d=.12,t='sine')=>{try{AC=AC||new AudioContext();const o=AC.createOscillator(),g=AC.createGain();o.type=t;o.frequency.value=f;g.gain.value=.07;o.connect(g);g.connect(AC.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);o.stop(AC.currentTime+d)}catch(e){}};
+const say=t=>$('msg').textContent=t;
+function conf(n=30){for(let i=0;i<n;i++){const s=document.createElement('i');s.className='cf';s.textContent=['⭐','🎉','🪙','✨'][r(0,3)];s.style.cssText=`left:${r(0,96)}vw;animation-duration:${r(20,40)/10}s;font-size:${r(18,34)}px`;document.body.appendChild(s);setTimeout(()=>s.remove(),4200)}}
+function build(){$('grid').innerHTML=PATH.map(([x,y],i)=>{const n=i+1,t=SP[n]||'',ic=ICON[t]||'';return`<div class="sq ${t||'plain'}" style="grid-column:${x+1};grid-row:${y+1};--c:${COL[i%7]}"><div><b>${n}</b>${ic}</div></div>`}).join('')+'<div id="ttl"><small>El juego de la</small><h1>La Oca</h1><div>🦆🦆🦆</div><i>🎲</i></div><div id="deco"></div>'}
+function draw(){$('tk').innerHTML=P.map((p,i)=>{const[x,y]=PATH[p.pos-1],[ox,oy]=OFF[i];return`<div class="tok ${i==T?'on':''}" style="--p:${PC[i]};left:${x*10+5}%;top:${y*12.5+6.25}%;transform:translate(calc(-50% + ${ox*1.4}cqw),calc(-50% + ${oy*1.4}cqw))">${p.e}</div>`}).join('');
+ $('pl').innerHTML=P.map((p,i)=>`<div class="chip ${i==T?'on':''}" style="${i==T?'':'border-color:'+PC[i]+'55'}"><em>${p.e}</em><div>${p.n}<small>⭐ ${p.st} · casilla ${p.pos}</small></div></div>`).join('')}
+function mkQ(poz){const M=[10,20,50][lvl],k=poz?0:r(0,lvl==2?4:3);let q,a,h;
+ if(k==0){const x=r(1,M/2),y=r(1,M/2);a=x+y;q=`${x} + ${y} = ❓`;h=lvl?`Empezá en ${x} y contá ${y} más.`:`Contá todo: ${'🍎'.repeat(x)} y ${'🍏'.repeat(y)}`}
+ else if(k==1){const st=[[1,2,5,10],[2,3,5,10],[3,4,6,7,9]][lvl],s=st[r(0,st.length-1)],b=r(1,5)*(lvl==2?2:1),sq=[0,1,2,3].map(i=>b+i*s),h2=r(1,3);a=sq[h2];sq[h2]='❓';q=sq.join(' – ');h=`Mirá cuánto sube cada vez: de ${s} en ${s}.`}
+ else if(k==2){const x=r(3,M),y=r(1,x-1);a=x-y;q=`${x} − ${y} = ❓`;h=`Empezá en ${x} y retrocedé ${y}.`}
+ else if(k==3){const t=r(4,M),x=r(1,t-1);a=t-x;q=`${x} + ❓ = ${t}`;h=`¿Cuánto le falta a ${x} para llegar a ${t}?`}
+ else{const x=[2,3,4,5,10][r(0,4)],y=r(2,6);a=x*y;q=`${x} × ${y} = ❓`;h=`Sumá ${y} veces ${x}: ${Array(y).fill(x).join(' + ')}`}
+ const o=new Set([a]);while(o.size<3){const v=a+r(1,3)*(r(0,1)?1:-1);if(v>0)o.add(v)}
+ return{q,a,h,o:[...o].sort(()=>Math.random()-.5)}}
+async function turn(){const p=P[T];draw();
+ if(p.skip>0){p.skip--;say(`${p.e} ${p.n} descansa este turno 💤`);await sleep(1600);return next()}
+ Q=mkQ(p.pozo);tries=0;busy=false;$('qbox').style.display='';$('dicebox').style.display='none';
+ say(p.pozo?`🕳️ ${p.n}: estás en el pozo. Resolvé la suma para salir`:`${p.e} Turno de ${p.n}`);
+ $('qtext').textContent=Q.q;$('opts').innerHTML=Q.o.map(v=>`<button class="opt" data-v="${v}">${v}</button>`).join('')}
+$('opts').onclick=async e=>{const b=e.target.closest('.opt');if(!b||busy)return;const p=P[T];
+ if(+b.dataset.v==Q.a){busy=true;b.classList.add('ok');beep(660,.15);beep(880,.25);if(!tries){p.st++;conf(14)}say('¡Muy bien! 🎉');await sleep(900);if(p.pozo){p.pozo=false;say('¡Saliste del pozo! 🎊');await sleep(900)}draw();roll()}
+ else{tries++;b.classList.add('bad');beep(180,.25,'triangle');say(tries==1?'💡 Pista: '+Q.h:'¡Casi! Probá con el otro 🙂')}};
+async function roll(){$('qbox').style.display='none';$('dicebox').style.display='block';const d=$('dice');d.classList.add('roll');let n;for(let i=0;i<10;i++){n=r(1,6);d.textContent=FACE[n-1];beep(300+i*40,.05);await sleep(90)}d.classList.remove('roll');say(`¡Sacaste ${n}! 🎲`);await sleep(700);
+ const p=P[T];let dir=1;for(let i=0;i<n;i++){p.pos+=dir;if(p.pos==END&&i<n-1){dir=-1;say('🏰 ¡Te pasaste! Retrocedés lo que sobra')}draw();beep(440+i*50,.08);await sleep(330)}await land()}
+async function land(){const p=P[T],t=SP[p.pos];let again=false;
+ if(p.pos==END)return win();
+ if(t=='oca'){const nx=OCA.find(o=>o>p.pos);say('🦆 ¡De oca en oca y tiro porque me toca!');beep(700,.3);await sleep(1500);if(nx){p.pos=nx;draw();await sleep(900)}again=true}
+ else if(t=='puente'){say('🌉 ¡Cruzás el puente hasta la casilla 12 y tirás otra vez!');await sleep(1400);p.pos=12;draw();await sleep(800);again=true}
+ else if(t=='dado'){say('🎲 ¡Dado mágico! Tirás otra vez');beep(800,.3);await sleep(1400);again=true}
+ else if(t=='posada'){say('🏠 ¡Posada! Descansás el próximo turno');p.skip=1;await sleep(1700)}
+ else if(t=='pozo'){say('🕳️ ¡Pozo! Resolvé una suma para salir');p.pozo=true;await sleep(1800)}
+ else if(t=='laberinto'){say('🌀 ¡Laberinto! Volvés a la casilla 30');beep(150,.4,'sawtooth');await sleep(1500);p.pos=30;draw();await sleep(800)}
+ else if(t=='carcel'){say('🔒 ¡Cárcel! Descansás dos turnos');p.skip=2;beep(150,.4,'sawtooth');await sleep(1700)}
+ else if(t=='calavera'){say('💀 ¡Calavera! Volvés a la casilla 1');beep(120,.5,'sawtooth');await sleep(1500);p.pos=1;draw();await sleep(800)}
+ else await sleep(400);
+ if(again){say('🎲 ¡Tirás otra vez!');await sleep(600);return roll()}next()}
+function next(){T=(T+1)%P.length;turn()}
+function win(){const p=P[T];draw();beep(523,.2);setTimeout(()=>beep(659,.2),200);setTimeout(()=>beep(784,.4),400);conf(80);$('eh').textContent=`🏆 ¡Ganó ${p.n}! 🏰`;$('et').innerHTML=P.map(q=>`${q.e} ${q.n}: ⭐ ${q.st}`).join('<br>');$('end').style.display='flex'}
+$('say').onclick=()=>{const t=Q.q.replace(/\+/g,' más ').replace(/−/g,' menos ').replace(/×/g,' por ').replace(/=/g,' es igual a ').replace(/❓/g,' qué número ').replace(/–/g,', ');try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='es-AR';u.rate=.85;speechSynthesis.speak(u)}catch(e){}};
+['selL','selP'].forEach(id=>$(id).onclick=e=>{const b=e.target.closest('button');if(!b)return;[...$(id).children].forEach(c=>c.classList.remove('on'));b.classList.add('on')});
+$('go').onclick=()=>{lvl=+$('selL').querySelector('.on').dataset.v;const np=+$('selP').querySelector('.on').dataset.v;P=Array.from({length:np},(_,i)=>({e:AV[i],n:np>1?'Jugador '+(i+1):'Jugador',pos:1,st:0,skip:0,pozo:false}));$('start').style.display='none';beep(520,.2);turn()};
+build();
+</script>
+</body>
+</html>
