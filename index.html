@@ -170,9 +170,28 @@ html.fx-shine .profile-pic::after{
 .xp-bar{width:100%;height:3px;border-radius:2px;background:rgba(128,128,128,.25);overflow:hidden;margin-top:1px}
 .xp-fill{height:100%;background:var(--accent);border-radius:2px;width:0%;transition:width .8s var(--ease-out);box-shadow:0 0 8px var(--accent-glow)}
 
-.header-center{display:flex;flex:1;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;padding:4px 2px}
+.tabs-wrap{position:relative;flex:1;display:flex;min-width:0;align-items:center}
+.header-center{display:flex;flex:1;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;padding:4px 2px;scroll-behavior:smooth}
 .header-center::-webkit-scrollbar{display:none}
 .tabs-inner{display:flex;gap:8px;margin:0 auto}   /* centra si entra, y no recorta si desborda */
+
+/* Modo compacto: si las materias no entran, primero se achican y recién después se desplazan */
+.header-center.compact .nav-tab{padding:8px 12px;font-size:12px;letter-spacing:.3px}
+.header-center.compact .tab-count{display:none}
+.header-center.tiny .nav-tab{padding:7px 9px;font-size:11px}
+
+/* Flechas de desplazamiento: solo aparecen si de verdad hace falta */
+.tabs-arrow{
+  position:absolute;top:50%;transform:translateY(-50%);z-index:4;width:28px;height:28px;border-radius:50%;
+  display:none;place-items:center;cursor:pointer;border:1px solid var(--border);background:var(--panel-solid);
+  color:var(--text);box-shadow:0 3px 10px var(--shadow);transition:background var(--t-fast),color var(--t-fast)
+}
+.tabs-arrow:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tabs-arrow.l{left:-6px} .tabs-arrow.r{right:-6px}
+.tabs-wrap.can-l .tabs-arrow.l{display:grid} .tabs-wrap.can-r .tabs-arrow.r{display:grid}
+.tabs-wrap.can-l .header-center{mask-image:linear-gradient(90deg,transparent,#000 26px)}
+.tabs-wrap.can-r .header-center{mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent)}
+.tabs-wrap.can-l.can-r .header-center{mask-image:linear-gradient(90deg,transparent,#000 26px,#000 calc(100% - 26px),transparent)}
 .nav-tab{
   cursor:pointer;font-size:13px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;
   padding:9px 17px;border-radius:30px;white-space:nowrap;border:1px solid transparent;background:transparent;
@@ -225,7 +244,7 @@ html.fx-shine .profile-pic::after{
 }
 .main-content::-webkit-scrollbar{width:0;height:0}
 .dashboard-grid{
-  display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--tile-w),1fr));
+  display:grid;grid-template-columns:repeat(var(--cols,5),minmax(0,1fr));
   grid-auto-rows:var(--tile-h);gap:var(--gap);width:100%;
 }
 
@@ -262,7 +281,7 @@ html.tilt-live .tile.hot .tile-3d{transition:transform 60ms linear}
 .tile.hot .tile-glare{opacity:1}
 
 .tile-icon{
-  font-size:52px;line-height:1.05;margin-bottom:16px;font-family:var(--emoji-font);
+  font-size:calc(var(--tile-h) * .40);line-height:1.05;margin-bottom:calc(var(--tile-h) * .11);font-family:var(--emoji-font);
   filter:drop-shadow(0 8px 8px rgba(0,0,0,.32));
   transform:translateZ(38px);
   transition:transform var(--t-med) var(--ease-back);
@@ -276,9 +295,10 @@ html.fx-glitch .tile.hot .tile-icon{animation:rgbGlitch .42s ease-out}
   75%{filter:drop-shadow(-2px 3px 0 rgba(255,0,0,.85)) drop-shadow(2px -3px 0 rgba(0,255,255,.85))}
   100%{filter:drop-shadow(0 8px 8px rgba(0,0,0,.32))}
 }
-.tile-icon img.emoji{width:52px;height:52px;pointer-events:none;display:block}
+.tile-icon img.emoji{width:calc(var(--tile-h) * .40);height:calc(var(--tile-h) * .40);pointer-events:none;display:block}
 .tile-label{
-  position:absolute;bottom:0;left:0;width:100%;padding:11px 10px;font-size:12.5px;font-weight:700;color:#fff;
+  position:absolute;bottom:0;left:0;width:100%;padding:calc(var(--tile-h) * .075) 8px;font-weight:700;color:#fff;
+  font-size:clamp(9.5px, calc(var(--tile-w) * .062), 13px);
   background:linear-gradient(0deg,rgba(0,0,0,.95) 10%,rgba(0,0,0,.55) 65%,transparent 100%);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;transform:translateZ(22px);
   border-bottom:4px solid var(--cat,#888);transition:padding var(--t-fast) ease;
@@ -286,13 +306,13 @@ html.fx-glitch .tile.hot .tile-icon{animation:rgbGlitch .42s ease-out}
 .tile.hot .tile-label{padding-bottom:16px}
 
 .tile-badge{
-  position:absolute;top:8px;left:8px;z-index:4;font-size:9px;font-weight:900;letter-spacing:.8px;text-transform:uppercase;
+  position:absolute;top:6px;left:6px;z-index:4;font-size:clamp(7.5px,calc(var(--tile-w) * .044),9px);font-weight:900;letter-spacing:.8px;text-transform:uppercase;
   padding:3px 7px;border-radius:6px;background:rgba(0,0,0,.55);color:#fff;backdrop-filter:none;transform:translateZ(30px)
 }
 .tile-badge.new{background:var(--accent);box-shadow:0 0 12px var(--accent-glow)}
 .tile-badge.hide{display:none}
 .tile-g{
-  position:absolute;top:8px;right:8px;z-index:4;font-size:9.5px;font-weight:900;color:#fff;
+  position:absolute;top:6px;right:6px;z-index:4;font-size:clamp(8px,calc(var(--tile-w) * .046),9.5px);font-weight:900;color:#fff;
   padding:3px 7px;border-radius:6px;background:rgba(0,0,0,.5);display:flex;align-items:center;gap:3px;transform:translateZ(30px);
   opacity:0;transition:opacity var(--t-fast)
 }
@@ -309,9 +329,9 @@ html.fx-glitch .tile.hot .tile-icon{animation:rgbGlitch .42s ease-out}
 .tile-bar{position:absolute;bottom:0;left:0;height:4px;width:0%;background:var(--accent);z-index:5;transition:width .5s var(--ease-out);opacity:.9}
 
 .hero-tile{grid-column:span 2;grid-row:span 2}
-.hero-tile .tile-icon{font-size:88px;margin-bottom:22px}
-.hero-tile .tile-icon img.emoji{width:88px;height:88px}
-.hero-tile .tile-label{font-size:17px;padding:18px}
+.hero-tile .tile-icon{font-size:calc(var(--tile-h) * .66);margin-bottom:calc(var(--tile-h) * .16)}
+.hero-tile .tile-icon img.emoji{width:calc(var(--tile-h) * .66);height:calc(var(--tile-h) * .66)}
+.hero-tile .tile-label{font-size:clamp(12px, calc(var(--tile-w) * .085), 18px);padding:calc(var(--tile-h) * .11)}
 
 /* Animación de entrada (CSS puro, escalonada con --i) */
 html.fx-entry .tile.enter{animation:tileIn calc(var(--anim) * 460ms) var(--ease-back) backwards;animation-delay:calc(var(--i,0) * var(--anim) * 26ms)}
@@ -527,12 +547,37 @@ html.glass-on .launch-overlay{backdrop-filter:blur(12px);-webkit-backdrop-filter
 #confetti-canvas.on{opacity:1}
 
 /* ---------- RESPONSIVE ---------- */
-@media (max-width:1100px){
-  .header{padding:18px 26px 12px}
-  .toolbar,.main-content,.controls-bar{padding-left:26px;padding-right:26px}
-  .kbd-hints{display:none}
-  .search-box{width:100%}
+@media (max-width:1400px){
+  .header{padding:22px 30px 12px}
+  .toolbar,.main-content,.controls-bar{padding-left:30px;padding-right:30px}
+}
+@media (max-width:1250px){
   .quest-chip{display:none}
+  .kbd-hints span:nth-child(n+5){display:none}
+}
+@media (max-width:1100px){
+  .header{padding:16px 20px 10px;gap:12px}
+  .toolbar,.main-content,.controls-bar{padding-left:20px;padding-right:20px}
+  .controls-bar{padding-top:8px;padding-bottom:12px}
+  .kbd-hints{display:none}
+  .search-box{width:min(340px,42vw)}
+  #clock{font-size:15px}
+  .profile-btn{padding:5px 14px 5px 5px;gap:10px}
+  .avatar-ring{width:44px;height:44px}
+  .gamertag{font-size:14px}
+}
+@media (max-width:1100px){
+  /* En pantallas chicas el aviso centrado tapaba las materias: pasa a la esquina */
+  .toast-stack{top:auto;bottom:70px;left:auto;right:14px;transform:none;align-items:flex-end;max-width:72vw}
+  .toast{transform:translate3d(130%,0,0);padding:10px 18px 10px 10px}
+  .toast.show{transform:translate3d(0,0,0)}
+  .toast-ic{width:32px;height:32px;font-size:16px}
+  .toast-t2{font-size:14px}
+}
+@media (max-width:980px){
+  #clock{display:none}
+  .toolbar{padding-bottom:6px}
+  .rank-chip{display:none}
 }
 @media (max-width:720px){
   :root{--tile-w:140px;--tile-h:112px;--gap:11px}
@@ -775,7 +820,11 @@ html.glass-on .launch-overlay{backdrop-filter:blur(12px);-webkit-backdrop-filter
     </div>
   </div>
 
-  <div class="header-center" id="tabs-scroll"><div class="tabs-inner" id="tabs-container"></div></div>
+  <div class="tabs-wrap" id="tabs-wrap">
+    <button class="tabs-arrow l" id="tab-prev" title="Materias anteriores"><svg class="ic sm" style="transform:rotate(180deg)"><use href="#i-chevron-right"/></svg></button>
+    <div class="header-center" id="tabs-scroll"><div class="tabs-inner" id="tabs-container"></div></div>
+    <button class="tabs-arrow r" id="tab-next" title="Más materias"><svg class="ic sm"><use href="#i-chevron-right"/></svg></button>
+  </div>
 
   <div class="header-right">
     <div class="quest-chip glass" id="quest-chip" title="Desafío del día">
@@ -1462,7 +1511,34 @@ const Perf = (function(){
 /* ============================================================
    11. ESTADO DE LA INTERFAZ
    ============================================================ */
-const state = { tab:0, tile:0, list:[], search:'', filter:'all', sort:'default', busy:false, booted:false, hotEl:null };
+const state = { tab:0, tile:0, list:[], search:'', filter:'all', sort:'default', busy:false, booted:false, hotEl:null,
+                tileW:210, gap:15, hero:true, cols:1 };
+
+/* En pantallas chicas las tarjetas se achican solas para que entren más por fila
+   y la búsqueda visual sea más rápida. Referencia: 210 px a 1600×900. */
+function adaptiveTile(){
+  const fw = clamp(innerWidth  / 1600, .58, 1);
+  const fh = clamp(innerHeight /  900, .70, 1);
+  return Math.round(clamp(prefs.tile * Math.min(fw, fh), 118, prefs.tile));
+}
+function adaptiveGap(){ return innerWidth < 1100 ? Math.max(8, prefs.gap - 5) : prefs.gap; }
+
+/* La grilla reparte el espacio sobrante entre las columnas, así que el ancho real
+   de una tarjeta es mayor que el mínimo pedido. Medimos ese ancho y derivamos la
+   altura para conservar siempre la proporción 210×135. */
+function syncTileHeight(){
+  const grid = document.getElementById('games-grid');
+  const gw = grid ? grid.clientWidth : 0;
+  if(!gw){ html.style.setProperty('--tile-h', Math.round(state.tileW*0.643)+'px'); return; }
+  /* Redondeamos en vez de truncar: así no queda una franja de ancho desperdiciada
+     y las tarjetas se reparten parejo (puede quedar levemente bajo el mínimo). */
+  let cols = Math.max(1, Math.round((gw + state.gap) / (state.tileW + state.gap)));
+  let colW = (gw - state.gap*(cols-1)) / cols;
+  while(cols > 1 && colW < 112){ cols--; colW = (gw - state.gap*(cols-1)) / cols; }
+  state.cols = cols;
+  html.style.setProperty('--cols', cols);
+  html.style.setProperty('--tile-h', Math.round(colW*0.643)+'px');
+}
 const SORTS = [
   ['default','por defecto'], ['az','A → Z'], ['za','Z → A'],
   ['played','más jugados'], ['recent','recientes'], ['new','sin jugar primero']
@@ -1507,9 +1583,13 @@ const UI = {
     r.setProperty('--accent', accent);
     r.setProperty('--accent-glow', rgba(accent,.45));
     r.setProperty('--accent-soft', rgba(accent,.15));
-    r.setProperty('--tile-w', prefs.tile+'px');
-    r.setProperty('--tile-h', Math.round(prefs.tile*0.643)+'px');
-    r.setProperty('--gap', prefs.gap+'px');
+    state.tileW = adaptiveTile();
+    state.gap = adaptiveGap();
+    /* La portada grande (2×2) solo tiene sentido si sobra espacio */
+    state.hero = innerWidth >= 1150 && innerHeight >= 700;
+    r.setProperty('--tile-w', state.tileW+'px');
+    r.setProperty('--gap', state.gap+'px');
+    syncTileHeight();
     r.setProperty('--radius', prefs.radius+'px');
     r.setProperty('--glass', prefs.glass+'px');
     r.setProperty('--anim', (prefs.anim/100).toFixed(2));
@@ -1557,6 +1637,7 @@ const UI = {
       frag.appendChild(b);
     });
     c.appendChild(frag);
+    UI.fitTabs();
     const a = c.querySelector('.active'), sc = $('#tabs-scroll');
     if(a && sc){
       const ar = a.offsetLeft, aw = a.offsetWidth;
@@ -1564,6 +1645,27 @@ const UI = {
         sc.scrollTo({ left: Math.max(0, ar - (sc.clientWidth - aw)/2), behavior: prefs.anim>0?'smooth':'auto' });
       }
     }
+    setTimeout(UI.tabsEdges, 420);
+  },
+
+  /* ---------- la barra de materias siempre alcanzable ---------- */
+  fitTabs:function(){
+    const sc = $('#tabs-scroll'), wrap = $('#tabs-wrap');
+    if(!sc || !wrap) return;
+    /* 1º intento: tamaño normal. Si no entra, compacto. Si tampoco, mínimo. */
+    sc.classList.remove('compact','tiny');
+    if(sc.scrollWidth > sc.clientWidth + 1){
+      sc.classList.add('compact');
+      if(sc.scrollWidth > sc.clientWidth + 1) sc.classList.add('tiny');
+    }
+    UI.tabsEdges();
+  },
+  tabsEdges:function(){
+    const sc = $('#tabs-scroll'), wrap = $('#tabs-wrap');
+    if(!sc || !wrap) return;
+    const over = sc.scrollWidth > sc.clientWidth + 1;
+    wrap.classList.toggle('can-l', over && sc.scrollLeft > 2);
+    wrap.classList.toggle('can-r', over && sc.scrollLeft + sc.clientWidth < sc.scrollWidth - 2);
   },
 
   /* ---------- lista visible según búsqueda / filtros / orden ---------- */
@@ -1598,7 +1700,7 @@ const UI = {
   renderGrid:function(animate){
     const grid = $('#games-grid');
     const list = this.buildList();
-    const heroOn = !state.search && state.filter === 'all' && state.sort === 'default';
+    const heroOn = !state.search && state.filter === 'all' && state.sort === 'default' && state.hero;
     $('#result-count').textContent = list.length ? (list.length + (list.length===1?' juego':' juegos')) : '';
 
     let empty = grid.querySelector('.empty-state');
@@ -2110,6 +2212,18 @@ function wire(){
     UI.renderTabs(); UI.renderGrid(); UI.applyAll(); Snd.move();
   });
 
+  /* --- barra de materias: flechas, rueda del mouse y desplazamiento --- */
+  const tscroll = $('#tabs-scroll');
+  const nudge = function(dir){ tscroll.scrollBy({ left: dir * Math.max(160, tscroll.clientWidth * 0.6), behavior:'smooth' }); Snd.move(); };
+  $('#tab-prev').addEventListener('click', function(){ nudge(-1); });
+  $('#tab-next').addEventListener('click', function(){ nudge(1); });
+  tscroll.addEventListener('scroll', function(){ UI.tabsEdges(); }, {passive:true});
+  tscroll.addEventListener('wheel', function(e){
+    if(Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+    if(tscroll.scrollWidth <= tscroll.clientWidth) return;
+    e.preventDefault(); tscroll.scrollLeft += e.deltaY;
+  }, {passive:false});
+
   /* --- grilla (delegación de eventos) --- */
   const grid = $('#games-grid');
   grid.addEventListener('pointerover', function(e){
@@ -2165,7 +2279,7 @@ function wire(){
     if(inInput) return;
     if(state.busy) return;
     const grid = $('#games-grid');
-    const cols = Math.max(1, Math.round(grid.clientWidth / (prefs.tile + prefs.gap)));
+    const cols = state.cols || Math.max(1, Math.round(grid.clientWidth / (state.tileW + state.gap)));
     const n = state.list.length;
     let k = e.key, handled = true;
     if(k === 'ArrowRight') UI.focusTile(state.tile+1, true);
@@ -2192,7 +2306,13 @@ function wire(){
   let rt = 0;
   window.addEventListener('resize', function(){
     clearTimeout(rt);
-    rt = setTimeout(function(){ BG.resize(); FX.resize(); Tilt.invalidate(); }, 160);
+    rt = setTimeout(function(){
+      const w0 = state.tileW, h0 = state.hero;
+      UI.applyAll();                                   // recalcula tamaño de tarjeta y portada
+      if(state.tileW !== w0 || state.hero !== h0) UI.renderGrid(false);
+      UI.fitTabs();
+      BG.resize(); FX.resize(); Tilt.clear();
+    }, 160);
   }, {passive:true});
 
   document.addEventListener('visibilitychange', function(){
@@ -2289,5 +2409,5 @@ function startClock(){
   setTimeout(function(){ const b = $('#boot-screen'); if(b && !state.booted){ b.style.display='none'; } }, 2500);
 })();
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a461f5feaf83fa2b',t:'MTc5MTI2MTM0Mg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a4705d9f997c98d3',t:'MTc5MTQxMjM4Nw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
