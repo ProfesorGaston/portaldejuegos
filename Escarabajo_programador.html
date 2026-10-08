@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>El Escarabajo Programador | Prof. Gastón</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Inter:wght@500;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+<style>
+:root{--c:64px;--g1:#86d673;--g2:#74c75f}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',system-ui,sans-serif;user-select:none}
+body{height:100vh;height:100dvh;color:#1f3a1d;overflow:hidden;background:linear-gradient(#6ec6ff 0%,#bfe8ff 34%,#9fdc86 34.1%,#4fae43 100%) fixed}
+svg{width:1em;height:1em;fill:currentColor;flex:none}
+.sun{position:fixed;top:4%;right:3%;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,#fffbd0,#ffd93d 62%);box-shadow:0 0 100px 36px #fff1a077;pointer-events:none;animation:glow 7s ease-in-out infinite alternate}
+@keyframes glow{to{box-shadow:0 0 130px 52px #fff1a099}}
+.cl{position:fixed;font-size:90px;opacity:.9;pointer-events:none;animation:cloud linear infinite;z-index:0}
+@keyframes cloud{from{transform:translateX(-25vw)}to{transform:translateX(125vw)}}
+.hill{position:fixed;bottom:0;left:-10%;width:70%;height:34%;border-radius:50% 50% 0 0;background:#4aa23c;pointer-events:none}.hill.b{left:auto;right:-12%;width:65%;height:27%;background:#3f9435}
+.tree{position:fixed;bottom:-14px;font-size:190px;pointer-events:none;z-index:1;filter:drop-shadow(0 10px 8px #0003)}.tree.l{left:-20px}.tree.r{right:-20px}
+.fly{position:fixed;z-index:1;font-size:34px;pointer-events:none;animation:fly 42s linear infinite}
+@keyframes fly{from{transform:translate(-80px,0)}25%{transform:translate(30vw,-40px)}50%{transform:translate(60vw,20px)}75%{transform:translate(85vw,-30px)}to{transform:translate(110vw,0)}}
+#app{position:relative;z-index:2;width:100%;height:100vh;height:100dvh;padding:12px 20px 18px;display:flex;flex-direction:column;gap:10px}
+.e{width:1.1em;height:1.1em;object-fit:contain;vertical-align:-.2em;filter:drop-shadow(0 3px 3px #0004)}
+header{flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{display:flex;align-items:center;gap:10px;font:800 clamp(26px,4vw,42px) 'Baloo 2';color:#fff;-webkit-text-stroke:1px #2f7d2a;text-shadow:0 4px 0 #2f7d2a,0 0 24px #0003}
+#lv{display:flex;gap:9px;flex-wrap:wrap}
+.chip{min-width:50px;height:54px;border-radius:15px;border:3px solid #fff;background:#ffffffd9;font:800 20px 'Baloo 2';color:#2f7d2a;cursor:pointer;box-shadow:0 5px 0 #0003;position:relative;transition:.15s;display:grid;place-items:center;padding-bottom:10px}
+.chip .st{position:absolute;bottom:2px;display:flex;font-size:12px}
+.chip.cur{background:#ffd93d;transform:translateY(-4px) scale(1.1)}.chip.lock{opacity:.5;pointer-events:none;filter:grayscale(.6)}
+#main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr);gap:16px;align-items:stretch}
+.card{background:linear-gradient(#fffdf2,#fff6d6);border:5px solid #8b5a2b;border-radius:24px;box-shadow:0 9px 0 #5a3a1a,0 24px 44px #0004,inset 0 0 0 3px #f1d9a5;padding:16px;position:relative;display:flex;flex-direction:column;min-height:0}
+.story{flex:none;display:flex;align-items:center;gap:12px;background:#e6f6d6;border:3px solid #9bd37f;border-radius:18px;padding:8px 14px;margin-bottom:10px;font-weight:800;font-size:15px;line-height:1.35}
+.story .e{font-size:44px;flex:none;animation:bobb 2.6s ease-in-out infinite}@keyframes bobb{50%{transform:translateY(-4px) rotate(4deg)}}
+.info{flex:none;display:flex;gap:8px;flex-wrap:wrap;font:800 15px 'Baloo 2';margin-bottom:10px}
+.info span{background:#fff;border:2px solid #e3d3a6;border-radius:20px;padding:2px 12px;display:flex;align-items:center;gap:6px}
+.info #lname{background:#8b5a2b;border-color:#5a3a1a;color:#fff}
+#wrap{flex:1;min-height:0;display:flex;justify-content:center;align-items:center}
+#board{flex:none;position:relative;border:7px solid #6b4423;border-radius:16px;box-shadow:inset 0 0 0 3px #3e8a30,inset 0 0 40px #0003,0 8px 0 #4a2f15,0 18px 30px #0004;overflow:hidden;background:var(--g1)}
+.t{position:absolute;width:var(--c);height:var(--c)}
+.t.a{background:var(--g1)}
+.t.b{background:var(--g2)}
+.o{position:absolute;width:var(--c);height:var(--c);display:grid;place-items:center;font-size:calc(var(--c)*.78)}
+
+.o.rk .e{filter:drop-shadow(0 6px 4px #0006)}
+.lf::before{content:'';position:absolute;inset:6%;border-radius:50%;background:radial-gradient(#fffd,#ffe86655 55%,transparent 72%);animation:halo 2s ease-in-out infinite alternate}
+@keyframes halo{to{transform:scale(1.18);opacity:.6}}
+.lf .e{position:relative;animation:sway 3s ease-in-out infinite alternate}@keyframes sway{to{transform:rotate(10deg) scale(1.08)}}
+.lf.got .e{animation:got .55s forwards}.lf.got::before{display:none}@keyframes got{to{transform:translateY(-34px) scale(1.7);opacity:0}}
+.sp{position:absolute;width:8px;height:8px;border-radius:50%;background:#ffe14d;box-shadow:0 0 10px #fff;animation:sp .7s ease-out forwards;z-index:7}
+@keyframes sp{to{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}}
+#bt{position:absolute;width:var(--c);height:var(--c);display:grid;place-items:center;font-size:calc(var(--c)*.86);transition:left var(--d,.4s) ease-in-out,top var(--d,.4s) ease-in-out;z-index:5}
+#bt::before{content:'';position:absolute;bottom:10%;left:16%;width:68%;height:18%;background:radial-gradient(#0006,transparent 70%)}
+#bt .rot{transition:transform var(--d,.4s) ease-in-out;display:grid;position:relative}
+#bt.walk .rot .e{animation:wig .2s ease-in-out infinite alternate}@keyframes wig{from{transform:rotate(-5deg)}to{transform:rotate(5deg)}}
+#bt.bump{animation:bump .4s}@keyframes bump{25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+.dot{position:absolute;width:calc(var(--c)*.2);height:calc(var(--c)*.2);border-radius:50%;background:#2f7d2a44;transform:translate(-50%,-50%)}
+#msg{flex:none;min-height:34px;text-align:center;font:800 18px 'Baloo 2';margin-top:12px;display:flex;justify-content:center;align-items:center;gap:8px}
+.pal{flex:none;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.pb{border:none;border-radius:16px;padding:12px;color:#fff;font:800 17px 'Baloo 2';cursor:pointer;box-shadow:0 6px 0 #0003,inset 0 3px 0 #fff4;transition:.1s;display:flex;align-items:center;gap:10px;justify-content:center}
+.pb svg{font-size:24px}.pb:hover{transform:translateY(-3px)}.pb:active{transform:translateY(5px);box-shadow:none}
+.F{background:linear-gradient(#5b9bff,#2f6fe4)}.L,.R{background:linear-gradient(#ffb73d,#f08a00)}.REP{background:linear-gradient(#a37bff,#7c3aed)}
+.mir svg{transform:scaleX(-1)}
+#where{flex:none;font:800 13px 'Baloo 2';color:#6b4423;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:6px;min-height:26px}
+#where button{font:800 12px 'Baloo 2';border:none;background:#ffd93d;border-radius:10px;padding:3px 12px;cursor:pointer;box-shadow:0 3px 0 #0003}
+#code{background:repeating-linear-gradient(#f3e5c0 0 31px,#ebd9ae 31px 32px);border:3px dashed #b8905a;border-radius:16px;padding:10px;flex:1;min-height:90px;overflow:auto;display:flex;flex-direction:column;gap:7px}
+#code:empty::after{content:'Tocá los bloques de arriba para armar el programa de Beto';color:#a07a45;font-weight:800;text-align:center;padding:40px 14px}
+.blk{border-radius:13px;padding:8px 10px;color:#fff;font:800 16px 'Baloo 2';box-shadow:0 5px 0 #0003,inset 0 3px 0 #fff4;display:flex;align-items:center;gap:8px;animation:pop .28s cubic-bezier(.2,1.6,.4,1);transition:.15s}
+.blk.F{background:linear-gradient(#5b9bff,#2f6fe4)}.blk.L,.blk.R{background:linear-gradient(#ffb73d,#f08a00)}.blk svg{font-size:22px}
+@keyframes pop{from{transform:scale(.6);opacity:0}}
+.mv{margin-left:auto;display:flex;gap:3px}.mv button,.x{border:none;background:#0003;color:#fff;border-radius:7px;width:24px;height:24px;cursor:pointer;font:800 16px 'Baloo 2';display:grid;place-items:center}.mv button:hover,.x:hover{background:#0006}
+.blk:not(.rep)>.x{margin-left:4px}
+.blk.rep{background:linear-gradient(#a37bff,#7c3aed);display:block;padding:7px}.blk.rep.tgt{box-shadow:0 0 0 4px #ffd93d,0 5px 0 #0003}
+.hd{display:flex;align-items:center;gap:8px;cursor:pointer;padding:2px 4px}
+.cnt{display:flex;align-items:center;gap:5px;background:#0003;border-radius:10px;padding:1px 8px}.cnt button{border:none;background:#fff;color:#7c3aed;border-radius:6px;width:22px;height:22px;font-weight:800;cursor:pointer}
+.bd{background:#0000002a;border-radius:11px;margin-top:7px;padding:7px;display:flex;flex-direction:column;gap:7px;min-height:38px;border-left:7px solid #c4b5fd}
+.bd em{color:#e4dcff;font-size:12px;font-style:normal;font-family:Inter}
+.blk.run{outline:4px solid #fff;box-shadow:0 0 24px 8px #ffd93d;transform:scale(1.04);z-index:3}
+.ctrl{flex:none;display:flex;gap:9px;margin-top:14px}
+.btn{border:none;border-radius:15px;padding:10px 14px;font:800 17px 'Baloo 2';cursor:pointer;box-shadow:0 6px 0 #0003,inset 0 3px 0 #fff6;background:#eceff3;color:#444;transition:.1s;display:flex;align-items:center;justify-content:center;gap:8px;min-width:50px}.btn svg{font-size:22px}.btn:active{transform:translateY(5px);box-shadow:none}
+.btn.go{background:linear-gradient(#6ee7a0,#16a34a);color:#fff;flex:1;font-size:22px}.btn.on{background:#ffd93d}.btn:disabled{opacity:.6}
+#modal{position:fixed;inset:0;background:#0008;display:none;place-items:center;z-index:50;padding:16px}#modal.on{display:grid}
+#mc{background:linear-gradient(#fffdf2,#fff3c9);border:6px solid #8b5a2b;border-radius:28px;padding:26px 34px;text-align:center;max-width:440px;box-shadow:0 10px 0 #5a3a1a,0 30px 60px #0008;animation:pop .5s cubic-bezier(.2,1.5,.4,1)}
+#mc h2{font:800 38px 'Baloo 2';color:#2f7d2a}#stars{font-size:64px;margin:6px 0;display:flex;justify-content:center;gap:6px}#stars .off{filter:grayscale(1) opacity(.3)}#stars span{animation:pop .5s cubic-bezier(.2,1.8,.4,1) backwards}
+#mc p{font-weight:700;margin:8px 0 18px;line-height:1.5}#mc .ctrl{justify-content:center;flex-wrap:wrap}
+@media(max-width:900px){#app{padding:8px 10px 12px;gap:6px}#main{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1.1fr) minmax(0,1fr);gap:10px}.card{padding:10px}.story{display:none}.ctrl{margin-top:8px}.pb{padding:8px}.tree{display:none}.sun{width:70px;height:70px}}
+@media(max-height:760px){h1{font-size:26px}.chip{height:44px;min-width:42px;font-size:17px}.story{padding:4px 10px;font-size:13px;margin-bottom:6px}.story .e{font-size:30px}.info{margin-bottom:6px}.pal{margin-bottom:8px;gap:8px}.pb{padding:8px}#msg{margin-top:6px}.ctrl{margin-top:8px}}
+</style>
+</head>
+<body>
+<div class="sun"></div><div class="cl" id="c1" style="top:6%;animation-duration:110s"></div><div class="cl" id="c2" style="top:16%;font-size:60px;animation-duration:150s;animation-delay:-60s"></div>
+<div class="hill"></div><div class="hill b"></div><div class="tree l" id="tl"></div><div class="tree r" id="tr"></div>
+<div class="fly" id="f1" style="top:22%"></div><div class="fly" id="f2" style="top:48%;animation-delay:-21s"></div>
+<div id="app">
+ <header><h1><span id="logo"></span> El Escarabajo Programador</h1><div id="lv"></div></header>
+ <div id="main">
+  <section class="card">
+   <div class="story"><span id="beto"></span><span id="story"></span></div>
+   <div class="info"><span id="lname"></span><span id="i1"></span><span id="i2"></span><span id="i3"></span></div>
+   <div id="wrap"><div id="board"></div></div><div id="msg"></div>
+  </section>
+  <section class="card">
+   <div class="pal">
+    <button class="pb F" onclick="add('F')"><span id="p1"></span>Avanzar</button>
+    <button class="pb REP" onclick="add('REP')"><span id="p2"></span>Repetir</button>
+    <button class="pb L" onclick="add('L')"><span id="p3"></span>Girar izquierda</button>
+    <button class="pb R" onclick="add('R')"><span id="p4"></span>Girar derecha</button>
+   </div>
+   <div id="where"></div><div id="code" onclick="if(event.target.id=='code'){target=[];draw()}"></div>
+   <div class="ctrl"><button class="btn go" id="run" onclick="run()"><span id="b1"></span>Ejecutar</button><button class="btn" title="Reiniciar" onclick="if(!busy){resetB();say('')}"><span id="b2"></span></button><button class="btn" title="Borrar todo" onclick="clr()"><span id="b3"></span></button><button class="btn" title="Pista" onclick="hint()"><span id="b4"></span></button><button class="btn" id="spd" title="Velocidad" onclick="speed()">1x</button></div>
+  </section>
+ </div>
+</div>
+<div id="modal"><div id="mc"><h2 id="mt"></h2><div id="stars"></div><p id="mp"></p><div class="ctrl"><button class="btn go" id="mb1" onclick="nextL()">Siguiente nivel</button><button class="btn" onclick="$('modal').classList.remove('on')">Mejorar solución</button></div></div></div>
+<script>
+const $=id=>document.getElementById(id);
+/* Íconos 3D del repo microsoft/fluentui-emoji (MIT). Si falla jsDelivr se usa raw.githubusercontent. */
+const FB='https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/';
+const em=n=>`<img class="e" src="${FB}${n.replace(/ /g,'%20')}/3D/${n.toLowerCase().replace(/ /g,'_')}_3d.png" alt="" onerror="if(this.dataset.r)this.style.opacity=0;else{this.dataset.r=1;this.src=this.src.replace('https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/','https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/')}">`;
+const P={F:'M12 3l8 9h-5v9H9v-9H4z',R:'M4 21V7h10V3l7 6-7 6v-4H8v10z',L:'M4 21V7h10V3l7 6-7 6v-4H8v10z',REP:'M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z',play:'M7 4v16l13-8z',reset:'M12 5V1L7 6l5 5V7a6 6 0 11-6 6H4a8 8 0 108-8z',trash:'M6 19a2 2 0 002 2h8a2 2 0 002-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z',up:'M7 14l5-5 5 5z',dn:'M7 10l5 5 5-5z'};
+const ic=k=>`<svg viewBox="0 0 24 24"><path d="${P[k]}"/></svg>`,icm=k=>`<span class="mir">${ic(k)}</span>`;
+const N=x=>typeof x=='string'?{t:x}:x,rep=(n,...b)=>({t:'REP',n,b:b.map(N)});
+const LV=[
+{name:'Primeros pasos',w:6,h:3,s:[0,1,'E'],leaves:[[2,1],[5,1]],rocks:[],sol:[rep(5,'F')],tip:'Avanzar 5 veces seguidas... ¡un solo bloque Repetir lo hace por vos!'},
+{name:'Rodea la roca',w:6,h:3,s:[0,1,'E'],leaves:[[5,1]],rocks:[[2,1],[3,1]],sol:['L','F','R',rep(5,'F'),'R','F'],tip:'Las rocas tapan el camino. Subí (o bajá) una fila, avanzá y volvé a la fila de la hoja.'},
+{name:'¡A la esquina!',w:5,h:5,s:[0,0,'E'],leaves:[[4,0],[4,4]],rocks:[[4,2],[4,3]],sol:[rep(4,'F'),'R','F','R','F','L',rep(3,'F'),'L','F'],tip:'La columna de la derecha está bloqueada. Bajá un poco, pasá a la columna de al lado y entrá a la hoja desde la izquierda.'},
+{name:'La escalera',w:5,h:5,s:[0,0,'E'],leaves:[[1,1],[2,2],[3,3],[4,4]],rocks:[[1,0],[2,1],[3,2],[4,3]],sol:[rep(4,'R','F','L','F')],tip:'La escalera de arriba está bloqueada. ¡Usá la de abajo! Hay un patrón de 4 bloques que se repite.'},
+{name:'El cuadrado',w:5,h:5,s:[0,0,'E'],leaves:[[3,0],[3,3],[0,3]],rocks:[],sol:[rep(4,rep(3,'F'),'R')],tip:'Cuatro lados iguales. ¡Podés poner un Repetir adentro de otro Repetir!'},
+{name:'Zigzag',w:7,h:4,s:[0,0,'E'],leaves:[[2,1],[4,2],[6,3]],rocks:[[1,1],[3,2],[5,3]],sol:[rep(3,'F','F','R','F','L')],tip:'Cuidado con las rocas. El patrón son 5 bloques que se repiten 3 veces.'},
+{name:'Camino de rocas',w:6,h:5,s:[0,0,'E'],leaves:[[5,0],[5,4],[0,4],[0,2]],rocks:[[1,1],[2,1],[3,1],[4,1],[1,2],[2,2],[3,2],[4,2],[1,3],[2,3],[3,3],[4,3]],sol:[rep(2,rep(5,'F'),'R',rep(4,'F'),'R')],tip:'Rodeá el bosque de rocas: arriba 5, derecha 4, abajo 5, izquierda 4... ¿se repite?'},
+{name:'La podadora',w:3,h:5,s:[0,0,'E'],leaves:[[2,0],[0,1],[2,2],[0,3],[0,4]],rocks:[],sol:[rep(2,rep(2,'F'),'R','F','R',rep(2,'F'),'L','F','L')],tip:'Ir y volver como una podadora. El "ir y volver" se repite 2 veces.'},
+{name:'El portón',w:7,h:5,s:[0,4,'E'],leaves:[[3,0],[6,4]],rocks:[[3,1],[3,2],[3,3],[3,4]],sol:['L',rep(4,'F'),'R',rep(6,'F'),'R',rep(4,'F')],tip:'Hay una muralla de rocas con una sola salida: ¡arriba de todo! Subí, cruzá y volvé a bajar.'},
+{name:'El laberinto',w:5,h:5,s:[0,0,'E'],leaves:[[4,0],[0,2],[4,4]],rocks:[[0,1],[1,1],[2,1],[3,1],[1,3],[2,3],[3,3],[4,3]],sol:[rep(4,'F'),'R',rep(2,'F'),'R',rep(4,'F'),'L',rep(2,'F'),'L',rep(4,'F')],tip:'Es un camino en zigzag: buscá el hueco de cada muro. Los tramos largos se pueden repetir.'}];
+LV.forEach(L=>L.sol=L.sol.map(N));
+const DIR={N:[0,-1],E:[1,0],S:[0,1],W:[-1,0]},ORD=['N','E','S','W'];
+const cnt=l=>l.reduce((a,n)=>a+1+(n.t=='REP'?cnt(n.b):0),0);
+function flat(l,pa,out){l.forEach((n,i)=>{const p=[...pa,i];if(n.t=='REP'){for(let k=0;k<n.n&&out.length<600;k++)flat(n.b,p,out)}else out.push({t:n.t,p})});return out}
+function sim(L,prog){let[x,y,d]=L.s,di=ORD.indexOf(d),got=new Set(),key=(a,b)=>a+','+b,lv=new Set(L.leaves.map(l=>key(...l))),rk=new Set(L.rocks.map(l=>key(...l)));
+ if(lv.has(key(x,y)))got.add(key(x,y));
+ for(const a of flat(prog,[],[])){if(a.t=='L')di=(di+3)%4;else if(a.t=='R')di=(di+1)%4;else{const nx=x+DIR[ORD[di]][0],ny=y+DIR[ORD[di]][1];if(nx<0||ny<0||nx>=L.w||ny>=L.h||rk.has(key(nx,ny)))return{ok:false,crash:true,got:got.size};x=nx;y=ny;if(lv.has(key(x,y)))got.add(key(x,y))}}
+ return{ok:got.size==L.leaves.length,got:got.size}}
+let cur=0,prog=[],target=[],cell=64,ang,busy=false,spd=1,stars=[];
+try{stars=JSON.parse(localStorage.getItem('escarabajo')||'[]')}catch(e){}
+let AC;function tone(f,d=.1,t='sine',v=.1,dl=0){try{AC=AC||new(window.AudioContext||webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain(),T=AC.currentTime+dl;o.type=t;o.frequency.value=f;g.gain.setValueAtTime(v,T);g.gain.exponentialRampToValueAtTime(.001,T+d);o.connect(g);g.connect(AC.destination);o.start(T);o.stop(T+d)}catch(e){}}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms/spd)),say=(m,col,icon)=>{$('msg').innerHTML=(icon?em(icon):'')+'<span></span>';$('msg').lastChild.textContent=m;$('msg').style.color=col||'#1f3a1d'};
+const at=p=>p.reduce((l,i)=>l[i].b,prog),eq=(a,b)=>a.length==b.length&&a.every((v,i)=>v==b[i]);
+const NM={F:'Avanzar',L:'Girar izquierda',R:'Girar derecha'},ico=t=>t=='L'?icm('L'):ic(t);
+const mvb=s=>`<span class="mv"><button onclick="event.stopPropagation();mv('${s}',-1)">${ic('up')}</button><button onclick="event.stopPropagation();mv('${s}',1)">${ic('dn')}</button></span>`;
+function rb(l,pa){return l.map((n,i)=>{const p=[...pa,i],s=p.join('.');
+ if(n.t=='REP')return`<div class="blk rep ${eq(p,target)?'tgt':''}" data-p="${s}"><div class="hd" onclick="event.stopPropagation();sel('${s}')">${ic('REP')}<span>Repetir</span><span class="cnt"><button onclick="event.stopPropagation();chg('${s}',-1)">−</button><b>${n.n}</b><button onclick="event.stopPropagation();chg('${s}',1)">+</button></span><span>veces</span>${mvb(s)}<button class="x" onclick="event.stopPropagation();del('${s}')">×</button></div><div class="bd">${rb(n.b,p)}${n.b.length?'':'<em>Tocá un bloque de arriba para ponerlo acá adentro</em>'}</div></div>`;
+ return`<div class="blk ${n.t}" data-p="${s}">${ico(n.t)}<span>${NM[n.t]}</span>${mvb(s)}<button class="x" onclick="del('${s}')">×</button></div>`}).join('')}
+function draw(){$('code').innerHTML=rb(prog,[]);$('i2').innerHTML=em('Puzzle piece')+' Bloques: <b>'+cnt(prog)+'</b>';
+ $('where').innerHTML=target.length?'<span>Agregando <b>dentro</b> del Repetir</span><button onclick="target=target.slice(0,-1);draw()">Salir del bucle</button>':'<span>Agregando al programa principal</span>'}
+function edited(){if(!busy){resetB();say('')}draw()}
+function add(t){if(busy)return;const l=at(target);l.push(t=='REP'?{t,n:3,b:[]}:{t});if(t=='REP')target=[...target,l.length-1];tone(500+(t=='REP')*200,.08,'triangle');edited()}
+function sel(s){if(busy)return;target=s.split('.').map(Number);draw()}
+function mv(s,d){if(busy)return;const p=s.split('.').map(Number),l=at(p.slice(0,-1)),i=p[p.length-1],j=i+d;if(j<0||j>=l.length)return;[l[i],l[j]]=[l[j],l[i]];target=[];tone(450,.05);edited()}
+function del(s){if(busy)return;const p=s.split('.').map(Number);at(p.slice(0,-1)).splice(p[p.length-1],1);target=[];tone(300,.08);edited()}
+function chg(s,d){if(busy)return;const p=s.split('.').map(Number),n=at(p.slice(0,-1))[p[p.length-1]];n.n=Math.max(2,Math.min(9,n.n+d));tone(600,.05);edited()}
+function clr(){if(busy)return;prog=[];target=[];edited()}
+function speed(){spd=spd==1?2:spd==2?3:1;$('spd').textContent=spd+'x';$('spd').classList.toggle('on',spd>1);$('bt').style.setProperty('--d',.4/spd+'s')}
+function hint(){say(LV[cur].tip,'#7a4a00','Light bulb')}
+function build(){const L=LV[cur];prog=[];target=[];
+ $('lname').textContent=`Nivel ${cur+1}: ${L.name}`;$('i1').innerHTML=em('Leaf fluttering in wind')+' Hojas: <b id="lc">0</b>/'+L.leaves.length;$('i3').innerHTML=em('Star')+' Meta: <b>'+cnt(L.sol)+'</b> bloques';
+ const nl=L.leaves.length;$('story').textContent=`¡Hola! Soy Beto. Ayudame a juntar ${nl} hoja${nl>1?'s':''}.${L.rocks.length?' ¡Las rocas bloquean el paso: buscá otro camino!':''} Con ${cnt(L.sol)} bloques conseguís las 3 estrellas.`;
+ const W=$('wrap'),aw=W.clientWidth-14,ah=W.clientHeight-14;cell=Math.max(20,Math.floor(Math.min(150,aw/L.w,ah/L.h)));document.documentElement.style.setProperty('--c',cell+'px');
+ const B=$('board');B.style.width=cell*L.w+14+'px';B.style.height=cell*L.h+14+'px';
+ let h='';for(let y=0;y<L.h;y++)for(let x=0;x<L.w;x++){h+=`<i class="t ${(x+y)%2?'a':'b'}" style="left:${x*cell}px;top:${y*cell}px"></i>`}
+ L.rocks.forEach(([x,y])=>h+=`<div class="o rk" style="left:${x*cell}px;top:${y*cell}px">${em('Rock')}</div>`);
+ L.leaves.forEach(([x,y])=>h+=`<div class="o lf" id="lf${x}_${y}" style="left:${x*cell}px;top:${y*cell}px">${em('Leaf fluttering in wind')}</div>`);
+ B.innerHTML=h+`<div id="bt"><div class="rot">${em('Beetle')}</div></div>`;$('bt').style.setProperty('--d',.4/spd+'s');
+ resetB();say('');draw();chips()}
+function resetB(){const L=LV[cur],bt=$('bt'),r=bt.querySelector('.rot');bt.style.transition='none';r.style.transition='none';ang=ORD.indexOf(L.s[2])*90;r.style.transform=`rotate(${ang}deg)`;bt.style.left=L.s[0]*cell+'px';bt.style.top=L.s[1]*cell+'px';void bt.offsetWidth;bt.style.transition='';r.style.transition='';bt.classList.remove('walk','bump');
+ document.querySelectorAll('.lf').forEach(e=>e.classList.remove('got'));document.querySelectorAll('.dot,.sp').forEach(e=>e.remove());$('lc').textContent=0;document.querySelectorAll('.run').forEach(e=>e.classList.remove('run'))}
+function spark(x,y){for(let i=0;i<9;i++){const s=document.createElement('b');s.className='sp';s.style.left=(x+.5)*cell+'px';s.style.top=(y+.5)*cell+'px';const a=i/9*6.28;s.style.setProperty('--dx',Math.cos(a)*cell*.6+'px');s.style.setProperty('--dy',Math.sin(a)*cell*.6+'px');$('board').appendChild(s);setTimeout(()=>s.remove(),750)}}
+async function run(){if(busy)return;if(!prog.length){say('¡Primero armá un programa!','#b45309');return}
+ resetB();await sleep(80);busy=true;$('run').disabled=true;say('');const L=LV[cur],acts=flat(prog,[],[]),bt=$('bt'),rot=bt.querySelector('.rot');let di=ORD.indexOf(L.s[2]),got=new Set(),[x,y]=L.s,res='';
+ const lv=k=>L.leaves.some(l=>l[0]+','+l[1]==k),rk=(a,b)=>L.rocks.some(r=>r[0]==a&&r[1]==b);
+ const collect=()=>{const k=x+','+y;if(lv(k)&&!got.has(k)){got.add(k);$('lf'+x+'_'+y).classList.add('got');spark(x,y);$('lc').textContent=got.size;tone(900,.12,'triangle');tone(1350,.18,'triangle',.1,.08)}};
+ collect();
+ for(const a of acts){const el=document.querySelector(`[data-p="${a.p.join('.')}"]`);document.querySelectorAll('.run').forEach(e=>e.classList.remove('run'));el&&el.classList.add('run');
+  if(a.t=='L'||a.t=='R'){di=(di+(a.t=='R'?1:3))%4;ang+=a.t=='R'?90:-90;rot.style.transform=`rotate(${ang}deg)`;tone(420,.08,'square',.05);await sleep(420)}
+  else{const nx=x+DIR[ORD[di]][0],ny=y+DIR[ORD[di]][1];
+   if(nx<0||ny<0||nx>=L.w||ny>=L.h||rk(nx,ny)){bt.classList.add('bump');tone(160,.3,'sawtooth',.08);await sleep(450);bt.classList.remove('bump');res='crash';break}
+   const d=document.createElement('i');d.className='dot';d.style.left=(x+.5)*cell+'px';d.style.top=(y+.5)*cell+'px';$('board').insertBefore(d,bt);
+   x=nx;y=ny;bt.classList.add('walk');bt.style.left=x*cell+'px';bt.style.top=y*cell+'px';tone(300+Math.random()*40,.06,'triangle',.07);await sleep(420);bt.classList.remove('walk');collect()}}
+ document.querySelectorAll('.run').forEach(e=>e.classList.remove('run'));busy=false;$('run').disabled=false;
+ if(res=='crash'){say('¡Ups! Beto chocó. Revisá tu programa.','#b91c1c','Collision');return}
+ if(got.size==L.leaves.length)win();else say(`Faltaron ${L.leaves.length-got.size} hoja(s). ¡Probá de nuevo!`,'#b45309','Leaf fluttering in wind')}
+function win(){const n=cnt(prog),p=cnt(LV[cur].sol),s=n<=p?3:n<=p+2?2:1;stars[cur]=Math.max(stars[cur]||0,s);try{localStorage.setItem('escarabajo',JSON.stringify(stars))}catch(e){}
+ $('stars').innerHTML=[1,2,3].map(i=>`<span class="${i>s?'off':''}" style="animation-delay:${i*.15}s">${em('Star')}</span>`).join('');
+ $('mt').textContent=s==3?'¡PERFECTO!':s==2?'¡Muy bien!':'¡Lo lograste!';
+ $('mp').textContent=s==3?`Usaste ${n} bloques: ¡la mejor solución posible! Sos un/a gran programador/a.`:`Usaste ${n} bloques y la meta era ${p}. ¿Podés lograrlo con menos? Pensá en qué se repite.`;
+ $('mb1').style.display=cur<LV.length-1?'':'none';[523,659,784,1046].forEach((f,i)=>tone(f,.25,'triangle',.12,i*.12));
+ if(typeof confetti=='function')confetti({particleCount:s*50,spread:80,origin:{y:.6}});setTimeout(()=>{$('modal').classList.add('on');chips()},700)}
+function nextL(){$('modal').classList.remove('on');cur++;build()}
+function chips(){$('lv').innerHTML=LV.map((l,i)=>`<button class="chip ${i==cur?'cur':''} ${i>0&&!stars[i-1]?'lock':''}" onclick="if(!busy){cur=${i};build()}">${i+1}<span class="st">${Array.from({length:stars[i]||0},()=>em('Star')).join('')}</span></button>`).join('')}
+$('logo').innerHTML=em('Beetle');$('beto').innerHTML=em('Beetle');$('c1').innerHTML=em('Cloud');$('c2').innerHTML=em('Cloud');$('tl').innerHTML=em('Deciduous tree');$('tr').innerHTML=em('Evergreen tree');$('f1').innerHTML=em('Butterfly');$('f2').innerHTML=em('Honeybee');
+$('p1').innerHTML=ic('F');$('p2').innerHTML=ic('REP');$('p3').innerHTML=icm('L');$('p4').innerHTML=ic('R');$('b1').innerHTML=ic('play');$('b2').innerHTML=ic('reset');$('b3').innerHTML=ic('trash');$('b4').innerHTML=em('Light bulb');
+addEventListener('resize',()=>{if(!busy)build()});build();if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{if(!busy&&!prog.length)build()});
+</script>
+</body>
+</html>
