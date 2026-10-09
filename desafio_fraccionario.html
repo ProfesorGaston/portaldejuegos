@@ -30,32 +30,208 @@
 <div class="lab-bg"><i class="blob b1"></i><i class="blob b2"></i></div>
 <div class="app"><header class="topbar"><div class="brand-icon">⚗️</div><div class="brand">LABORATORIO FRACCIÓN<small>OPERACIONES EN ACCIÓN</small></div><div class="hud"><div class="hud-item">⭐ <div><small>PUNTOS</small><b id="score">0</b></div></div><div class="hud-item">🔥 <div><small>RACHA</small><b id="streak">x1</b></div></div></div><button class="sound" id="sound" aria-label="Activar o desactivar sonido">🔊</button></header>
 <main class="shell">
-<section class="screen home active" id="home"><div class="home-copy"><div class="eyebrow">Experimento matemático</div><h1>Laboratorio <span>Fracción</span></h1><p class="lead">Combiná numeradores y denominadores, superá 25 niveles y llená el reactor con energía matemática.</p><div class="formula-row"><div class="mini-formula"><span class="frac"><span class="num">1</span><span class="den">2</span></span> + <span class="frac"><span class="num">1</span><span class="den">4</span></span></div><div class="mini-formula"><span class="frac"><span class="num">2</span><span class="den">3</span></span> × <span class="frac"><span class="num">3</span><span class="den">5</span></span></div></div></div><div class="home-select"><h2>Elegí una estación de trabajo</h2><div class="mode-grid"><button class="mode-card selected" data-mode="sr"><div class="mode-icon">＋ −</div><b>Suma y resta</b><p>Buscá denominadores comunes y simplificá.</p></button><button class="mode-card" data-mode="md"><div class="mode-icon">× ÷</div><b>Multiplicación y división</b><p>Multiplicá o invertí la segunda fracción.</p></button></div><button class="launch" id="start">Activar laboratorio ▶</button><div class="record" id="record">Mejor resultado: 0 puntos</div><div class="bank-note">50 operaciones disponibles · 25 por recorrido</div></div></section>
-<section class="screen game" id="game"><div class="progress-head"><div class="progress-track"><div class="progress-fill" id="progressFill"></div></div><div class="round" id="round">Experimento 1 / 25</div></div><div class="game-grid"><aside class="reactor"><div class="flask"><div class="flask-neck"></div><div class="flask-body"><div class="liquid" id="liquid"><div class="bubbles"><i></i><i></i><i></i></div></div></div></div><h3>Nivel de energía</h3><p>Sube con cada experimento resuelto.</p><div class="lab-note" id="labNote">🧪 Simplificá siempre el resultado.</div></aside><div class="challenge"><article class="challenge-card"><span class="challenge-label" id="challengeLabel">SUMA DE FRACCIONES</span><div class="operation" id="operation"></div><div class="instruction">Elegí el resultado simplificado.</div></article><div class="answers" id="answers"></div><div class="feedback" id="feedback"><button class="next" id="next">Siguiente →</button></div></div></div></section>
+<section class="screen home active" id="home"><div class="home-copy"><div class="eyebrow">Experimento matemático</div><h1>Laboratorio <span>Fracción</span></h1><p class="lead">Combiná numeradores y denominadores, superá 15 experimentos y llená el reactor con energía matemática.</p><div class="formula-row"><div class="mini-formula"><span class="frac"><span class="num">1</span><span class="den">2</span></span> + <span class="frac"><span class="num">1</span><span class="den">4</span></span></div><div class="mini-formula"><span class="frac"><span class="num">2</span><span class="den">3</span></span> × <span class="frac"><span class="num">3</span><span class="den">5</span></span></div></div></div><div class="home-select"><h2>Elegí una estación de trabajo</h2><div class="mode-grid"><button class="mode-card selected" data-mode="sr"><div class="mode-icon">＋ −</div><b>Suma y resta</b><p>Buscá denominadores comunes y simplificá.</p></button><button class="mode-card" data-mode="md"><div class="mode-icon">× ÷</div><b>Multiplicación y división</b><p>Multiplicá o invertí la segunda fracción.</p></button></div><button class="launch" id="start">Activar laboratorio ▶</button><div class="record" id="record">Mejor resultado: 0 puntos</div><div class="bank-note">15 operaciones en 3 niveles · versión fácil</div></div></section>
+<section class="screen game" id="game"><div class="progress-head"><div class="progress-track"><div class="progress-fill" id="progressFill"></div></div><div class="round" id="round">Experimento 1 / 15</div></div><div class="game-grid"><aside class="reactor"><div class="flask"><div class="flask-neck"></div><div class="flask-body"><div class="liquid" id="liquid"><div class="bubbles"><i></i><i></i><i></i></div></div></div></div><h3>Nivel de energía</h3><p>Sube con cada experimento resuelto.</p><div class="lab-note" id="labNote">🧪 Simplificá siempre el resultado.</div></aside><div class="challenge"><article class="challenge-card"><span class="challenge-label" id="challengeLabel">SUMA DE FRACCIONES</span><div class="operation" id="operation"></div><div class="instruction">Elegí el resultado simplificado.</div></article><div class="answers" id="answers"></div><div class="feedback" id="feedback"><button class="next" id="next">Siguiente →</button></div></div></div></section>
 <section class="screen end" id="end"><div class="result-card"><div class="result-orbit">🧪</div><h2>¡Experimento completado!</h2><div class="result-mode" id="resultMode"></div><div class="final-score" id="finalScore"></div><div class="stars" id="stars">★★★</div><button class="launch" id="again">Volver al laboratorio</button></div></section>
 </main></div><div class="watermark">Creado por el Prof. Gastón</div>
 <script>
-const $=id=>document.getElementById(id);let mode='sr',round=0,score=0,streak=1,current=null,locked=false,muted=false,audio=null,used=new Set(),bank=[],deck=[];const TOTAL=25,BANK_SIZE=50;
-function gcd(a,b){a=Math.abs(a);b=Math.abs(b);while(b)[a,b]=[b,a%b];return a||1}function norm(n,d){if(d<0){n=-n;d=-d}let g=gcd(n,d);return{n:n/g,d:d/g}}function lcm(a,b){return Math.abs(a*b)/gcd(a,b)}function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a}function key(f){return f.n+'/'+f.d}function fhtml(f){return `<span class="frac"><span class="num">${f.n}</span><span class="den">${f.d}</span></span>`}function shuffle(a){for(let i=a.length-1;i>0;i--){let j=rnd(0,i);[a[i],a[j]]=[a[j],a[i]]}return a}
-function generate(){let a,b,op,res,rawN,rawD,common,an,bn,level=round<5?1:round<10?2:3;if(mode==='sr'){op=Math.random()<.5?'+':'−';if(level===1){let d=rnd(3,12);a=norm(rnd(1,d-1),d);b=norm(rnd(1,d-1),d)}else{a=norm(rnd(1,level===2?8:12),rnd(2,level===2?10:15));b=norm(rnd(1,level===2?8:12),rnd(2,level===2?10:15))}common=lcm(a.d,b.d);an=a.n*(common/a.d);bn=b.n*(common/b.d);if(op==='−'&&an<=bn){[a,b]=[b,a];common=lcm(a.d,b.d);an=a.n*(common/a.d);bn=b.n*(common/b.d);if(an===bn)return generate()}rawN=op==='+'?an+bn:an-bn;rawD=common;res=norm(rawN,rawD)}else{op=Math.random()<.5?'×':'÷';a=norm(rnd(1,level===1?6:10),rnd(2,level===1?8:12));b=norm(rnd(1,level===1?6:10),rnd(2,level===1?8:12));if(op==='×'){rawN=a.n*b.n;rawD=a.d*b.d}else{rawN=a.n*b.d;rawD=a.d*b.n}res=norm(rawN,rawD)}let signature=key(a)+op+key(b);if(used.has(signature))return generate();used.add(signature);return{a,b,op,res,rawN,rawD,common,an,bn}}
-function distractors(q){let list=[q.res],tries=0;function add(n,d){if(d===0)return;let f=norm(Math.max(0,n),Math.abs(d));if(!list.some(x=>key(x)===key(f)))list.push(f)}if(q.op==='+'||q.op==='−'){add(Math.abs(q.a.n+(q.op==='+'?q.b.n:-q.b.n)),q.a.d+q.b.d);add(q.res.n+1,q.res.d);add(Math.max(1,q.res.n-1),q.res.d)}else{add(q.a.n*q.b.n,q.a.d*q.b.d);add(q.a.n*q.b.d,q.a.d*q.b.n);add(q.res.n+1,q.res.d)}while(list.length<4&&tries++<50)add(Math.max(1,q.res.n+rnd(-3,3)),Math.max(1,q.res.d+rnd(-2,3)));return shuffle(list.slice(0,4))}
-function explanation(q){if(q.op==='+'||q.op==='−'){let mid=`m.c.m. = ${q.common}: ${q.an}/${q.common} ${q.op} ${q.bn}/${q.common} = ${q.rawN}/${q.rawD}`;return mid+(gcd(q.rawN,q.rawD)>1?` → ${q.res.n}/${q.res.d}`:'')}if(q.op==='×')return `${q.a.n} × ${q.b.n} / ${q.a.d} × ${q.b.d} = ${q.rawN}/${q.rawD}`+(gcd(q.rawN,q.rawD)>1?` → ${q.res.n}/${q.res.d}`:'');return `Invertimos la segunda: ${q.a.n}/${q.a.d} × ${q.b.d}/${q.b.n} = ${q.rawN}/${q.rawD}`+(gcd(q.rawN,q.rawD)>1?` → ${q.res.n}/${q.res.d}`:'')}
-function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===id))}function saveKey(){return'fracLab_'+mode}function best(){try{return +(localStorage.getItem(saveKey())||0)}catch(e){return 0}}function record(){$('record').textContent='🏆 Mejor resultado: '+best()+' puntos'}function hud(){$('score').textContent=score;$('streak').textContent='x'+streak}
-function tone(type){if(muted)return;try{if(!audio)audio=new(window.AudioContext||window.webkitAudioContext)();let o=audio.createOscillator(),g=audio.createGain(),n=audio.currentTime;o.connect(g);g.connect(audio.destination);o.type=type==='bad'?'sawtooth':'triangle';o.frequency.setValueAtTime(type==='good'?560:type==='bad'?160:360,n);o.frequency.exponentialRampToValueAtTime(type==='good'?850:type==='bad'?90:470,n+.17);g.gain.setValueAtTime(.045,n);g.gain.exponentialRampToValueAtTime(.001,n+.21);o.start();o.stop(n+.22)}catch(e){}}
-function buildRepository(){
- let savedRound=round;used.clear();bank=[];
- for(let i=0;i<BANK_SIZE;i++){round=Math.floor(i/2);bank.push(generate())}
- round=savedRound;
- let easy=shuffle(bank.slice(0,10)).slice(0,8);
- let medium=shuffle(bank.slice(10,20)).slice(0,8);
- let hard=shuffle(bank.slice(20)).slice(0,9);
- return easy.concat(medium,hard)
+const $=id=>document.getElementById(id);
+let mode='sr',round=0,score=0,streak=1,current=null,locked=false,muted=false,audio=null,used=new Set(),deck=[];
+/* Versión fácil: 15 experimentos en 3 niveles de 5 (fácil, medio, difícil) */
+const TOTAL=15, LEVEL_SIZE=5;
+const DEN_EASY=[2,3,4,5,6,8];
+const DEN_MED=[2,3,4,5,6,8,10,12];
+const DEN_HARD=[2,3,4,5,6,7,8,9,10,12];
+const LEVEL_NAMES=['Nivel fácil','Nivel medio','Nivel difícil'];
+
+function gcd(a,b){a=Math.abs(a);b=Math.abs(b);while(b)[a,b]=[b,a%b];return a||1}
+function norm(n,d){if(d<0){n=-n;d=-d}let g=gcd(n,d);return{n:n/g,d:d/g}}
+function lcm(a,b){return Math.abs(a*b)/gcd(a,b)}
+function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function pick(list){return list[rnd(0,list.length-1)]}
+function key(f){return f.n+'/'+f.d}
+function fhtml(f){
+  if(f.d===1)return `<span class="whole" style="font-weight:1000">${f.n}</span>`;
+  return `<span class="frac"><span class="num">${f.n}</span><span class="den">${f.d}</span></span>`;
 }
-function start(){round=0;score=0;streak=1;deck=buildRepository();round=0;hud();show('game');load()}function load(){if(round>=TOTAL)return finish();locked=false;current=deck[round];$('round').textContent='Experimento '+(round+1)+' / '+TOTAL;$('progressFill').style.width=(round/TOTAL*100)+'%';$('liquid').style.height=(20+round/TOTAL*72)+'%';let names={'+':'SUMA DE FRACCIONES','−':'RESTA DE FRACCIONES','×':'MULTIPLICACIÓN DE FRACCIONES','÷':'DIVISIÓN DE FRACCIONES'};$('challengeLabel').textContent=names[current.op];$('operation').innerHTML=fhtml(current.a)+`<span class="operator">${current.op}</span>`+fhtml(current.b)+`<span>= ?</span>`;$('answers').innerHTML='';$('feedback').className='feedback';$('feedback').innerHTML='<button class="next" id="next">Siguiente →</button>';let opts=distractors(current);opts.forEach((f,i)=>{let b=document.createElement('button');b.className='answer';b.dataset.key=key(f);b.innerHTML=`<span class="key">${i+1}</span>${fhtml(f)}`;b.onclick=()=>answer(f,b);$('answers').appendChild(b)})}
-function answer(f,btn){if(locked)return;locked=true;let ok=key(f)===key(current.res);document.querySelectorAll('.answer').forEach(b=>{b.disabled=true;if(b.dataset.key===key(current.res))b.classList.add('correct')});let box=$('feedback');if(ok){let pts=100*streak;score+=pts;streak++;tone('good');box.className='feedback show ok';box.innerHTML=`<strong>¡Fórmula estable! +${pts} puntos</strong><div class="step">${explanation(current)}</div><button class="next show" id="next">Siguiente →</button>`;confetti(9)}else{btn.classList.add('wrong');streak=1;tone('bad');box.className='feedback show bad';box.innerHTML=`<strong>Revisemos el procedimiento.</strong><div class="step">${explanation(current)} = ${current.res.n}/${current.res.d}</div><button class="next show" id="next">Siguiente →</button>`}hud();$('next').onclick=()=>{round++;load()}}
-function finish(){try{if(score>best())localStorage.setItem(saveKey(),score)}catch(e){}$('progressFill').style.width='100%';$('resultMode').textContent=mode==='sr'?'Estación de suma y resta':'Estación de multiplicación y división';$('finalScore').textContent=score+' puntos';let max=100*TOTAL*(TOTAL+1)/2,ratio=score/max;$('stars').textContent=ratio>.7?'★★★':ratio>.4?'★★☆':'★☆☆';show('end');confetti(55)}
+function shuffle(a){for(let i=a.length-1;i>0;i--){let j=rnd(0,i);[a[i],a[j]]=[a[j],a[i]]}return a}
+
+/* Suma y resta: el resultado siempre queda entre 0 y 1 */
+function makeSR(lvl){
+  const op=Math.random()<.5?'+':'−';
+  let a,b;
+  if(lvl===1){
+    const d=pick(DEN_EASY);               /* mismo denominador */
+    a={n:rnd(1,d-1),d};b={n:rnd(1,d-1),d};
+  }else{
+    const pool=lvl===2?DEN_MED:DEN_HARD;
+    const d1=pick(pool),d2=pick(pool);
+    a={n:rnd(1,d1-1),d:d1};b={n:rnd(1,d2-1),d:d2};
+  }
+  const common=lcm(a.d,b.d);
+  if(common>(lvl===1?12:(lvl===2?12:20)))return null;
+  let an=a.n*(common/a.d),bn=b.n*(common/b.d);
+  if(op==='−'&&an<bn){[a,b]=[b,a];[an,bn]=[bn,an]}
+  if(an===bn)return null;
+  const rawN=op==='+'?an+bn:an-bn;
+  if(rawN>=common*(op==='+'?1:2))return null;
+  if(op==='+'&&rawN===common)return null;
+  if(norm(rawN,common).d===1)return null;
+  return{a,b,op,res:norm(rawN,common),rawN,rawD:common,common,an,bn};
+}
+
+/* Multiplicación y división: fracciones propias; la división por entero es el primer paso */
+function makeMR(lvl){
+  const op=Math.random()<.5?'×':'÷';
+  let a,b;
+  if(lvl===1){
+    if(op==='×'){
+      const d1=pick([2,3,4,5]),d2=pick([2,3,4,5]);
+      a={n:rnd(1,d1-1),d:d1};b={n:rnd(1,d2-1),d:d2};
+    }else{
+      const d=pick([2,3,4,6,8]);
+      a={n:rnd(1,d-1),d};b={n:pick([2,3]),d:1};   /* dividir por un entero */
+    }
+  }else{
+    const pool=lvl===2?DEN_MED:DEN_HARD;
+    const d1=pick(pool),d2=pick(pool);
+    a={n:rnd(1,d1-1),d:d1};b={n:rnd(1,d2-1),d:d2};
+  }
+  let rawN,rawD;
+  if(op==='×'){rawN=a.n*b.n;rawD=a.d*b.d}
+  else{rawN=a.n*b.d;rawD=a.d*b.n}
+  if(rawN>rawD)return null;
+  const res=norm(rawN,rawD);
+  if(res.d===1)return null;                     /* evitamos resultados enteros */
+  return{a,b,op,res,rawN,rawD,common:null,an:null,bn:null};
+}
+
+function generateOne(lvl){
+  for(let t=0;t<5000;t++){
+    const q=mode==='sr'?makeSR(lvl):makeMR(lvl);
+    if(!q)continue;
+    const sig=key(norm(q.a.n,q.a.d))+q.op+key(norm(q.b.n,q.b.d));
+    if(used.has(sig))continue;
+    used.add(sig);
+    return q;
+  }
+  throw new Error('No se pudo generar la operación');
+}
+
+function distractors(q){
+  let list=[q.res],tries=0;
+  function add(n,d){if(d===0||n<=0)return;let f=norm(n,Math.abs(d));if(!list.some(x=>key(x)===key(f)))list.push(f)}
+  if(q.op==='+'||q.op==='−'){
+    add(Math.abs(q.a.n+(q.op==='+'?q.b.n:-q.b.n)),q.a.d+q.b.d);   /* error típico: sumar denominadores */
+    add(q.res.n+1,q.res.d);
+    add(Math.max(1,q.res.n-1),q.res.d);
+  }else{
+    add(q.a.n*q.b.n,q.a.d*q.b.d);
+    add(q.a.n*q.b.d,q.a.d*q.b.n);
+    add(q.res.n+1,q.res.d);
+  }
+  while(list.length<4&&tries++<50)add(Math.max(1,q.res.n+rnd(-2,2)),Math.max(1,q.res.d+rnd(-2,2)));
+  return shuffle(list.slice(0,4));
+}
+
+function explanation(q){
+  if(q.op==='+'||q.op==='−'){
+    let mid=`m.c.m. = ${q.common}: ${q.an}/${q.common} ${q.op} ${q.bn}/${q.common} = ${q.rawN}/${q.rawD}`;
+    return mid+(gcd(q.rawN,q.rawD)>1?` → ${q.res.n}/${q.res.d}`:'');
+  }
+  if(q.op==='×')return `${q.a.n} × ${q.b.n} / ${q.a.d} × ${q.b.d} = ${q.rawN}/${q.rawD}`+(gcd(q.rawN,q.rawD)>1?` → ${q.res.n}/${q.res.d}`:'');
+  return `Invertimos la segunda: ${q.a.n}/${q.a.d} × ${q.b.d}/${q.b.n} = ${q.rawN}/${q.rawD}`+(gcd(q.rawN,q.rawD)>1?` → ${q.res.n}/${q.res.d}`:'');
+}
+
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===id))}
+function saveKey(){return'fracLabFacil_'+mode}
+function best(){try{return +(localStorage.getItem(saveKey())||0)}catch(e){return 0}}
+function record(){$('record').textContent='🏆 Mejor resultado: '+best()+' puntos'}
+function hud(){$('score').textContent=score;$('streak').textContent='x'+streak}
+
+function tone(type){if(muted)return;try{if(!audio)audio=new(window.AudioContext||window.webkitAudioContext)();let o=audio.createOscillator(),g=audio.createGain(),n=audio.currentTime;o.connect(g);g.connect(audio.destination);o.type=type==='bad'?'sawtooth':'triangle';o.frequency.setValueAtTime(type==='good'?560:type==='bad'?160:360,n);o.frequency.exponentialRampToValueAtTime(type==='good'?850:type==='bad'?90:470,n+.17);g.gain.setValueAtTime(.045,n);g.gain.exponentialRampToValueAtTime(.001,n+.21);o.start();o.stop(n+.22)}catch(e){}}
+
+function buildRepository(){
+  used.clear();
+  let out=[];
+  for(let lvl=1;lvl<=3;lvl++){
+    let block=[];
+    for(let i=0;i<LEVEL_SIZE;i++)block.push(generateOne(lvl));
+    out=out.concat(shuffle(block));
+  }
+  return out;
+}
+
+function start(){round=0;score=0;streak=1;deck=buildRepository();hud();show('game');load()}
+
+function load(){
+  if(round>=TOTAL)return finish();
+  locked=false;
+  current=deck[round];
+  const lvl=Math.floor(round/LEVEL_SIZE);
+  $('round').textContent='Experimento '+(round+1)+' / '+TOTAL+' · '+LEVEL_NAMES[lvl];
+  $('progressFill').style.width=(round/TOTAL*100)+'%';
+  $('liquid').style.height=(20+round/TOTAL*72)+'%';
+  let names={'+':'SUMA DE FRACCIONES','−':'RESTA DE FRACCIONES','×':'MULTIPLICACIÓN DE FRACCIONES','÷':'DIVISIÓN DE FRACCIONES'};
+  $('challengeLabel').textContent=names[current.op];
+  $('operation').innerHTML=fhtml(current.a)+`<span class="operator">${current.op}</span>`+fhtml(current.b)+`<span>= ?</span>`;
+  $('answers').innerHTML='';
+  $('feedback').className='feedback';
+  $('feedback').innerHTML='<button class="next" id="next">Siguiente →</button>';
+  let opts=distractors(current);
+  opts.forEach((f,i)=>{
+    let b=document.createElement('button');
+    b.className='answer';
+    b.dataset.key=key(f);
+    b.innerHTML=`<span class="key">${i+1}</span>${fhtml(f)}`;
+    b.onclick=()=>answer(f,b);
+    $('answers').appendChild(b);
+  });
+}
+
+function answer(f,btn){
+  if(locked)return;
+  locked=true;
+  let ok=key(f)===key(current.res);
+  document.querySelectorAll('.answer').forEach(b=>{
+    b.disabled=true;
+    if(b.dataset.key===key(current.res))b.classList.add('correct');
+  });
+  let box=$('feedback');
+  if(ok){
+    let pts=100*streak;score+=pts;streak++;
+    tone('good');
+    box.className='feedback show ok';
+    box.innerHTML=`<strong>¡Fórmula estable! +${pts} puntos</strong><div class="step">${explanation(current)}</div><button class="next show" id="next">Siguiente →</button>`;
+    confetti(9);
+  }else{
+    btn.classList.add('wrong');streak=1;tone('bad');
+    box.className='feedback show bad';
+    box.innerHTML=`<strong>Revisemos el procedimiento.</strong><div class="step">${explanation(current)} = ${current.res.n}/${current.res.d}</div><button class="next show" id="next">Siguiente →</button>`;
+  }
+  hud();
+  $('next').onclick=()=>{round++;load()};
+}
+
+function finish(){
+  try{if(score>best())localStorage.setItem(saveKey(),score)}catch(e){}
+  $('progressFill').style.width='100%';
+  $('resultMode').textContent=mode==='sr'?'Estación de suma y resta':'Estación de multiplicación y división';
+  $('finalScore').textContent=score+' puntos';
+  let max=100*TOTAL*(TOTAL+1)/2,ratio=score/max;
+  $('stars').textContent=ratio>.7?'★★★':ratio>.4?'★★☆':'★☆☆';
+  show('end');
+  confetti(55);
+}
+
 function confetti(n){let colors=['#2878ff','#18c6d9','#7759e8','#f05d9d','#ffd153','#3ecb83'];for(let i=0;i<n;i++){let c=document.createElement('i');c.className='confetti';c.style.left=Math.random()*100+'vw';c.style.background=colors[i%colors.length];c.style.animationDelay=Math.random()*.4+'s';document.body.appendChild(c);setTimeout(()=>c.remove(),2600)}}
-document.querySelectorAll('.mode-card').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;document.querySelectorAll('.mode-card').forEach(x=>x.classList.toggle('selected',x===b));record();tone('click')});$('start').onclick=start;$('again').onclick=()=>{show('home');record()};$('sound').onclick=()=>{muted=!muted;$('sound').textContent=muted?'🔇':'🔊'};document.addEventListener('keydown',e=>{if($('game').classList.contains('active')&&!locked&&['1','2','3','4'].includes(e.key)){let b=document.querySelectorAll('.answer')[+e.key-1];if(b)b.click()}});record();hud();
+
+document.querySelectorAll('.mode-card').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;document.querySelectorAll('.mode-card').forEach(x=>x.classList.toggle('selected',x===b));record();tone('click')});
+$('start').onclick=start;
+$('again').onclick=()=>{show('home');record()};
+$('sound').onclick=()=>{muted=!muted;$('sound').textContent=muted?'🔇':'🔊'};
+document.addEventListener('keydown',e=>{if($('game').classList.contains('active')&&!locked&&['1','2','3','4'].includes(e.key)){let b=document.querySelectorAll('.answer')[+e.key-1];if(b)b.click()}});
+record();hud();
 </script>
 
 <script>
