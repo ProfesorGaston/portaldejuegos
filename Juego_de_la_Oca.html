@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>El Juego de la Oca</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Baloo+2:wght@600;800&display=swap">
+<!-- Librería de Twemoji -->
+<script src="https://unpkg.com/twemoji@latest/dist/twemoji.min.js" crossorigin="anonymous"></script>
 <style>
 :root{--sky1:#7dd3fc;--sky2:#34d399;--ink:#3b2a14;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--sky1:#1e3a8a;--sky2:#14532d}}
@@ -68,6 +70,15 @@ body{margin:0;min-height:100vh;font-family:'Baloo 2','Trebuchet MS',system-ui,sa
 .cf{position:fixed;top:-40px;z-index:50;pointer-events:none;animation:cf linear forwards}
 @keyframes cf{to{transform:translateY(112vh) rotate(540deg)}}
 @media(prefers-reduced-motion:reduce){.tok.on,.cf{animation:none}}
+
+/* Estilos de Twemoji */
+img.emoji {
+  height: 1em;
+  width: 1em;
+  margin: 0 .05em 0 .1em;
+  vertical-align: -0.1em;
+  pointer-events: none;
+}
 </style>
 </head>
 <body>
@@ -122,14 +133,47 @@ function conf(n=30){for(let i=0;i<n;i++){const s=document.createElement('i');s.c
 function build(){$('grid').innerHTML=PATH.map(([x,y],i)=>{const n=i+1,t=SP[n]||'',ic=ICON[t]||'';return`<div class="sq ${t||'plain'}" style="grid-column:${x+1};grid-row:${y+1};--c:${COL[i%7]}"><div><b>${n}</b>${ic}</div></div>`}).join('')+'<div id="ttl"><small>El juego de la</small><h1>La Oca</h1><div>🦆🦆🦆</div><i>🎲</i></div><div id="deco"></div>'}
 function draw(){$('tk').innerHTML=P.map((p,i)=>{const[x,y]=PATH[p.pos-1],[ox,oy]=OFF[i];return`<div class="tok ${i==T?'on':''}" style="--p:${PC[i]};left:${x*10+5}%;top:${y*12.5+6.25}%;transform:translate(calc(-50% + ${ox*1.4}cqw),calc(-50% + ${oy*1.4}cqw))">${p.e}</div>`}).join('');
  $('pl').innerHTML=P.map((p,i)=>`<div class="chip ${i==T?'on':''}" style="${i==T?'':'border-color:'+PC[i]+'55'}"><em>${p.e}</em><div>${p.n}<small>⭐ ${p.st} · casilla ${p.pos}</small></div></div>`).join('')}
-function mkQ(poz){const M=[10,20,50][lvl],k=poz?0:r(0,lvl==2?4:3);let q,a,h;
- if(k==0){const x=r(1,M/2),y=r(1,M/2);a=x+y;q=`${x} + ${y} = ❓`;h=lvl?`Empezá en ${x} y contá ${y} más.`:`Contá todo: ${'🍎'.repeat(x)} y ${'🍏'.repeat(y)}`}
- else if(k==1){const st=[[1,2,5,10],[2,3,5,10],[3,4,6,7,9]][lvl],s=st[r(0,st.length-1)],b=r(1,5)*(lvl==2?2:1),sq=[0,1,2,3].map(i=>b+i*s),h2=r(1,3);a=sq[h2];sq[h2]='❓';q=sq.join(' – ');h=`Mirá cuánto sube cada vez: de ${s} en ${s}.`}
- else if(k==2){const x=r(3,M),y=r(1,x-1);a=x-y;q=`${x} − ${y} = ❓`;h=`Empezá en ${x} y retrocedé ${y}.`}
- else if(k==3){const t=r(4,M),x=r(1,t-1);a=t-x;q=`${x} + ❓ = ${t}`;h=`¿Cuánto le falta a ${x} para llegar a ${t}?`}
- else{const x=[2,3,4,5,10][r(0,4)],y=r(2,6);a=x*y;q=`${x} × ${y} = ❓`;h=`Sumá ${y} veces ${x}: ${Array(y).fill(x).join(' + ')}`}
- const o=new Set([a]);while(o.size<3){const v=a+r(1,3)*(r(0,1)?1:-1);if(v>0)o.add(v)}
- return{q,a,h,o:[...o].sort(()=>Math.random()-.5)}}
+
+function mkQ(poz){
+  const M=[10,100,100][lvl];
+  const k=poz?0:r(0,lvl>=1?4:3);
+  let q,a,h;
+  if(k==0){
+    const x=r(1,M/2),y=r(1,M/2);
+    a=x+y;q=`${x} + ${y} = ❓`;
+    h=lvl?`Empezá en ${x} y contá ${y} más.`:`Contá todo: ${'🍎'.repeat(Math.min(x,10))} y ${'🍏'.repeat(Math.min(y,10))}`
+  } else if(k==1){
+    const st=[[1,2,5],[2,3,4,5,10],[6,7,8,9,10]][lvl];
+    const s=st[r(0,st.length-1)];
+    const b=r(1,lvl==2?15:5)*(lvl==2?2:1);
+    const sq=[0,1,2,3].map(i=>b+i*s);
+    const h2=r(1,3);
+    a=sq[h2];sq[h2]='❓';
+    q=sq.join(' – ');
+    h=`Mirá cuánto sube cada vez: de ${s} en ${s}.`
+  } else if(k==2){
+    const x=r(3,M),y=r(1,x-1);
+    a=x-y;q=`${x} − ${y} = ❓`;
+    h=`Empezá en ${x} y retrocedé ${y}.`
+  } else if(k==3){
+    const t=r(4,M),x=r(1,t-1);
+    a=t-x;q=`${x} + ❓ = ${t}`;
+    h=`¿Cuánto le falta a ${x} para llegar a ${t}?`
+  } else {
+    const x=lvl==1?r(2,3):r(2,5); 
+    const y=lvl==1?r(2,5):r(2,10);
+    a=x*y;
+    q=`${x} × ${y} = ❓`;
+    h=lvl==2?`Multiplicá: ${y} veces el número ${x}.`:`Sumá ${y} veces ${x}: ${Array(y).fill(x).join(' + ')}`;
+  }
+  const o=new Set([a]);
+  while(o.size<3){
+    const v=a+r(1,lvl==2?8:3)*(r(0,1)?1:-1);
+    if(v>0)o.add(v)
+  }
+  return{q,a,h,o:[...o].sort(()=>Math.random()-.5)}
+}
+
 async function turn(){const p=P[T];draw();
  if(p.skip>0){p.skip--;say(`${p.e} ${p.n} descansa este turno 💤`);await sleep(1600);return next()}
  Q=mkQ(p.pozo);tries=0;busy=false;$('qbox').style.display='';$('dicebox').style.display='none';
@@ -153,11 +197,24 @@ async function land(){const p=P[T],t=SP[p.pos];let again=false;
  else await sleep(400);
  if(again){say('🎲 ¡Tirás otra vez!');await sleep(600);return roll()}next()}
 function next(){T=(T+1)%P.length;turn()}
-function win(){const p=P[T];draw();beep(523,.2);setTimeout(()=>beep(659,.2),200);setTimeout(()=>beep(784,.4),400);conf(80);$('eh').textContent=`🏆 ¡Ganó ${p.n}! 🏰`;$('et').innerHTML=P.map(q=>`${q.e} ${q.n}: ⭐ ${q.st}`).join('<br>');$('end').style.display='flex'}
-$('say').onclick=()=>{const t=Q.q.replace(/\+/g,' más ').replace(/−/g,' menos ').replace(/×/g,' por ').replace(/=/g,' es igual a ').replace(/❓/g,' qué número ').replace(/–/g,', ');try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='es-AR';u.rate=.85;speechSynthesis.speak(u)}catch(e){}};
+function win(){const p=P[T];draw();beep(523,.2);setTimeout(()=>beep(659,.2),200);setTimeout(()=>beep(784,.4),400);conf(80);$('eh').textContent=`🏆 ¡Ganó ${p.n}! 🏰`;$('et').innerHTML=P.map(q=>`${q.e} ${q.n}: ⭐ ${q.st}`).join('<br>');$('end').style.display='flex'}$('say').onclick=()=>{const t=Q.q.replace(/\+/g,' más ').replace(/−/g,' menos ').replace(/×/g,' por ').replace(/=/g,' es igual a ').replace(/❓/g,' qué número ').replace(/–/g,', ');try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='es-AR';u.rate=.85;speechSynthesis.speak(u)}catch(e){}};
 ['selL','selP'].forEach(id=>$(id).onclick=e=>{const b=e.target.closest('button');if(!b)return;[...$(id).children].forEach(c=>c.classList.remove('on'));b.classList.add('on')});
 $('go').onclick=()=>{lvl=+$('selL').querySelector('.on').dataset.v;const np=+$('selP').querySelector('.on').dataset.v;P=Array.from({length:np},(_,i)=>({e:AV[i],n:np>1?'Jugador '+(i+1):'Jugador',pos:1,st:0,skip:0,pozo:false}));$('start').style.display='none';beep(520,.2);turn()};
 build();
+
+// Inicializar Twemoji en la carga inicial
+twemoji.parse(document.body);
+
+// Observar cambios dinámicos en el DOM para actualizar los emojis automáticamente
+const observer = new MutationObserver((mutations) => {
+  mutations.forEach((mutation) => {
+    if (mutation.addedNodes.length > 0) {
+      twemoji.parse(mutation.target);
+    }
+  });
+});
+
+observer.observe(document.body, { childList: true, subtree: true });
 </script>
 </body>
 </html>
