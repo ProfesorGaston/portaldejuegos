@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Constructor de Palabras</title>
+    <script src="https://cdn.jsdelivr.net/npm/@twemoji/api@15.1.0/dist/twemoji.min.js" crossorigin="anonymous"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap');
         
@@ -66,6 +67,17 @@
             50% { transform: scale(1.1); }
             100% { transform: scale(1); }
         }
+
+        /* Twemoji: las imágenes escalan con el tamaño de fuente del contenedor */
+        img.emoji {
+            height: 1em; width: 1em;
+            margin: 0 .05em 0 .1em;
+            vertical-align: -0.1em;
+            display: inline-block;
+            pointer-events: none;
+            -webkit-user-drag: none;
+        }
+        #image-display img.emoji { margin: 0; vertical-align: middle; }
 
         #image-display {
             font-size: 120px; 
@@ -198,7 +210,7 @@
                 PALABRA <span id="round-num">1</span>/8
             </div>
             <div class="stat-group">
-                <span id="timer">⏱️ 60</span>
+                <span id="timer"><span>⏱️</span> <span id="timer-val">60</span></span>
                 <span>⭐ <span id="score">0</span></span>
             </div>
         </div>
@@ -285,6 +297,15 @@
     const overlay = document.getElementById('overlay');
     const timerDisplay = document.getElementById('timer');
 
+    // Twemoji: convierte los emojis de un elemento en imágenes SVG
+    function renderEmoji(el) {
+        if (window.twemoji) {
+            twemoji.parse(el, { folder: 'svg', ext: '.svg' });
+        }
+    }
+    renderEmoji(document.getElementById('header'));
+    renderEmoji(imageDisplay);
+
     // Audio
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playSound(type) {
@@ -351,6 +372,7 @@
         document.getElementById('round-num').innerText = currentRound;
         document.getElementById('score').innerText = score;
         imageDisplay.innerText = currentWordObj.icon;
+        renderEmoji(imageDisplay);
         
         imageDisplay.style.animation = 'none';
         imageDisplay.offsetHeight; 
@@ -378,7 +400,7 @@
     }
 
     function updateTimerUI() {
-        timerDisplay.innerText = "⏱️ " + timeLeft;
+        document.getElementById('timer-val').innerText = timeLeft;
         if (timeLeft <= 10) {
             timerDisplay.classList.add('urgent');
         } else {
