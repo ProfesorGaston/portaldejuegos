@@ -257,7 +257,6 @@ tr.w td{background:var(--signal)}
 
 body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(180deg,rgba(8,14,40,.45),rgba(8,14,40,.18) 50%,rgba(8,14,40,.5)),radial-gradient(ellipse at center,rgba(0,0,0,0) 35%,rgba(4,6,20,.55) 100%)}
 </style>
-<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mqtt@5.3.4/dist/mqtt.min.js" onerror="this.onerror=null;var q=document.createElement('script');q.src='https://unpkg.com/mqtt@5.3.4/dist/mqtt.min.js';document.head.appendChild(q)"></script>
 </head>
 <body>
@@ -339,74 +338,66 @@ const sel={n:1,cpu:0,dif:1,len:1,map:0},B=5;
 let S=(navigator.hardwareConcurrency||4)<=2?1:1.5,LOW=S<=1,CURMAP=0;const ctx=$("#c").getContext("2d"),W=960;function setRes(){$("#c").width=W*S;$("#c").height=600*S}setRes();
 let G=null,raf=0,last=0,NET=null;
 
-/* ---------- Lobby y online (PeerJS) ---------- */
-const CH="ABCDEFGHJKLMNPQRSTUVWXYZ23456789",PFX="mototipeo-";
+/* ---------- Lobby y online (solo MQTT, sin WebRTC) ----------
+   Todo viaja por brokers MQTT públicos por WebSocket (puerto 443/8884/8084/8081), en paralelo.
+   No hay conexiones directas entre PCs: no dependen de NAT, STUN ni TURN, así que funciona
+   aunque todas las compus estén en la misma red del colegio. Los mensajes se duplican por cada
+   broker y se descartan los repetidos con un número de secuencia. */
+const CH="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const clean=s=>String(s==null?"":s).replace(/[\u0000-\u001f<>]/g,"").trim().slice(0,14);
 const nameVal=()=>clean($("#pname").value)||"Jugador";
 const LENS=[600,900,1500];
-const PCFG={config:{iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"},{urls:["turn:openrelay.metered.ca:80","turn:openrelay.metered.ca:443","turn:openrelay.metered.ca:443?transport=tcp"],username:"openrelayproject",credential:"openrelayproject"}]}};
-const san=r=>({pid:String(r&&r.pid||"").replace(/[^A-Za-z0-9_-]/g,"").slice(0,24),id:String(r&&r.id).toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,5),name:clean(r&&r.name)||"Jugador",map:TH[r&&r.map|0]?r.map|0:0,len:LENS.includes(+(r&&r.len))?+r.len:900,n:r&&r.n>1?2:1,q:r&&r.q?1:0,ts:+(r&&r.ts)||0});
-let QS=false,SOLO=false,LB={ms:[],rooms:{},mine:null,code:""};
+const idc=s=>String(s||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,5);
+const san=(r,id)=>({id:idc(id),k:r&&r.k==="q"?"q":"r",name:clean(r&&r.name)||"Jugador",map:TH[r&&r.map|0]?r.map|0:0,len:LENS.includes(+(r&&r.len))?+r.len:900,n:r&&r.n>1?2:1,lk:idc(r&&r.lk)});
+let QS=false,SOLO=false,LB={ms:[],rooms:{},mine:null,code:""},SEQ=Date.now(),LASTSEQ={};
 function rcode(){let s="";for(let i=0;i<5;i++)s+=CH[Math.random()*CH.length|0];return s}
-function quick(){if(!hasPeer())return;QS=true;mkRoom(0,true)}
-function qRetry(){if(QS)setTimeout(()=>{if(QS&&!NET)quick()},1500)}
-function qFind(){
-  const now=Date.now(),cs=Object.values(LB.rooms).filter(r=>r.id!==LB.code&&r.n===1&&(r.q?(r.ts<NET.ts||(r.ts===NET.ts&&r.id<LB.code)):now-r.seen>=15000));
-  if(!cs.length)return;
-  cs.sort((a,b)=>a.ts-b.ts||(a.id<b.id?-1:1));
-  const c=cs[0];netClose();joinRoom(c,true);
-}
-setInterval(()=>{if(QS&&NET&&NET.host&&NET.q&&!NET.conn&&lbOk())qFind()},1000);
-function view(){
-  const r=!!NET;$("#lbm").classList.toggle("hide",r);$("#rv").classList.toggle("hide",!r);
-  if(r&&NET.room)$("#rinfo").textContent=(NET.q?"Partida rápida · ":"")+TH[NET.room.map].n+" · "+NET.room.len/LAP+" vueltas";
-  $("#oleave").textContent=NET&&(NET.q||NET.qm)?"Cancelar búsqueda":"Salir de la sala";
-  lbDraw();
-}
-function ost(t){$("#ost").textContent=NET?t:"";$("#lmsg").textContent=NET?"":t;view()}
-function lockUI(){$("#qm").disabled=true;$("#mk").disabled=true;$("#solo").disabled=true;$("#oleave").classList.remove("hide")}
-function netClose(){
-  const n=NET;NET=null;
-  if(n){if(n.host)lbSet(null);try{n.conn&&n.conn.close()}catch(e){}try{n.peer&&n.peer.destroy()}catch(e){}}
-  $("#ostart").classList.add("hide");$("#mk").disabled=false;$("#qm").disabled=false;$("#solo").disabled=false;view();
-}
-function hasPeer(){
-  if(typeof Peer==="undefined"){ost("No se pudo cargar la librería online (PeerJS). Revisá tu conexión a internet.");return false}
-  return true;
-}
-function saveName(){try{localStorage.setItem("mototipeo-name",nameVal())}catch(e){}}
 
-/* Lobby: las salas se anuncian por brokers MQTT públicos (WebSocket, sin conexiones directas).
-   Se usan varios a la vez; el "testamento" borra la sala automáticamente si el anfitrión se desconecta. */
-const BRK=["wss://broker.emqx.io:8084/mqtt","wss://broker.hivemq.com:8884/mqtt","wss://mqtt.eclipseprojects.io:443/mqtt"],TOP="mecmot/v1/rooms/";
+const BRK=["wss://broker.emqx.io:8084/mqtt","wss://broker.hivemq.com:8884/mqtt","wss://mqtt.eclipseprojects.io:443/mqtt","wss://test.mosquitto.org:8081"];
+const TOP="mecmot/v2/rooms/",GT="mecmot/v2/g/";
 const lbOk=()=>LB.ms.some(m=>m.connected);
-function pubTo(m,r){try{m.publish(TOP+LB.code,r?JSON.stringify(r):"",{retain:true,qos:0})}catch(e){}}
+function pubTo(m,tp,o,ret){try{m.publish(tp,o?JSON.stringify(o):"",{retain:!!ret,qos:0})}catch(e){}}
+function pubAll(tp,o,ret){LB.ms.forEach(m=>{if(m.connected)pubTo(m,tp,o,ret)})}
+function lbSet(r){LB.mine=r;pubAll(TOP+LB.code,r,true)}
 function lbStop(){const a=LB.ms;LB.ms=[];LB.rooms={};a.forEach(m=>{try{m.end(true)}catch(e){}})}
+function gsub(){if(NET&&NET.hid)LB.ms.forEach(m=>{if(m.connected)try{m.subscribe(GT+NET.hid)}catch(e){}})}
+function gsend(o){if(!NET||!NET.hid)return;o.from=LB.code;o.seq=++SEQ;pubAll(GT+NET.hid,o,false)}
 function lbStart(){
   if(typeof mqtt==="undefined"){$("#lmsg").textContent="No se pudo cargar el lobby. Revisá tu conexión a internet y recargá la página.";return}
   lbStop();if(!LB.code)LB.code=rcode();
   BRK.forEach((u,i)=>{
     let m;
-    try{m=mqtt.connect(u,{clientId:"mm"+LB.code+i+Math.random().toString(36).slice(2,6),clean:true,keepalive:15,reconnectPeriod:3000,connectTimeout:8000,will:{topic:TOP+LB.code,payload:"",retain:true,qos:0}})}catch(e){return}
+    try{m=mqtt.connect(u,{clientId:"mm"+LB.code+i+Math.random().toString(36).slice(2,6),clean:true,keepalive:15,reconnectPeriod:2000,connectTimeout:8000,will:{topic:TOP+LB.code,payload:"",retain:true,qos:0}})}catch(e){return}
     LB.ms.push(m);
-    m.on("connect",()=>{if(!LB.ms.includes(m))return;m.subscribe(TOP+"+");if(LB.mine)pubTo(m,LB.mine);lbDraw()});
+    m.on("connect",()=>{
+      if(!LB.ms.includes(m))return;
+      m.subscribe(TOP+"+");
+      if(NET&&NET.hid)m.subscribe(GT+NET.hid);
+      if(LB.mine)pubTo(m,TOP+LB.code,LB.mine,true);
+      lbDraw();
+    });
     m.on("message",(tp,b)=>{
       if(!LB.ms.includes(m))return;
-      const k=tp.slice(TOP.length),t=b.toString();
-      if(!t)delete LB.rooms[k];else try{const r=san(JSON.parse(t));if(r.pid&&r.id){const o=LB.rooms[k];r.seen=o?o.seen:Date.now();LB.rooms[k]=r}}catch(e){}
-      lbDraw();
+      const t=b.toString();
+      if(tp.indexOf(TOP)===0){
+        const k=tp.slice(TOP.length);
+        if(!t)delete LB.rooms[k];
+        else try{const r=san(JSON.parse(t),k);if(r.id){r.seen=Date.now();LB.rooms[k]=r}}catch(e){}
+        lbDraw();
+      }else if(tp.indexOf(GT)===0&&t){
+        try{gmsg(JSON.parse(t))}catch(e){}
+      }
     });
     m.on("error",()=>{});m.on("close",lbDraw);
   });
   lbDraw();
   setTimeout(()=>{if(LB.ms.length&&!lbOk()&&!NET)$("#lmsg").textContent="Sin conexión al lobby. Revisá internet; si estás en una red del colegio, puede estar bloqueando WebSocket."},10000);
 }
-function lbSet(r){LB.mine=r;LB.ms.forEach(m=>{if(m.connected)pubTo(m,r)})}
 function lbDraw(){
   const el=$("#rooms");if(!el)return;
-  const rs=Object.values(LB.rooms).filter(r=>!(LB.mine&&r.id===LB.mine.id)&&!r.q);
+  const now=Date.now(),rs=Object.values(LB.rooms).filter(r=>r.k==="r"&&r.id!==LB.code&&now-r.seen<15000);
   if(lbOk()&&!NET&&/^Sin conexión/.test($("#lmsg").textContent))$("#lmsg").textContent="";
-  $("#cnt").textContent=rs.length;$("#lbst").textContent=lbOk()?"En línea":"Conectando…";
+  const nb=LB.ms.filter(m=>m.connected).length;
+  $("#cnt").textContent=rs.length;$("#lbst").textContent=lbOk()?"En línea ("+nb+"/"+LB.ms.length+")":"Conectando…";
   el.innerHTML=rs.length?"":'<p class="empty">Todavía no hay salas abiertas. Creá una o practicá contra la compu.</p>';
   rs.forEach(r=>{
     const d=document.createElement("div");d.className="rm";
@@ -415,84 +406,153 @@ function lbDraw(){
     b.disabled=r.n>1||!!NET;b.onclick=()=>joinRoom(r);d.appendChild(b);el.appendChild(d);
   });
 }
-const roomInfo=n=>({id:LB.code,pid:NET.pid,name:nameVal(),map:NET.room.map,len:NET.room.len,n,q:NET.q,ts:NET.ts});
-function mkRoom(tries,q){
-  tries=tries||0;
-  if(!hasPeer())return;
-  netClose();saveName();
-  const pid=PFX+LB.code+rcode().slice(0,3),peer=new Peer(pid,PCFG);
-  NET={peer,host:true,conn:null,opp:"",pid,q:q?1:0,ts:Date.now(),room:{map:sel.map,len:OPT.len[sel.len][1]}};lockUI();ost("Creando sala…");
-  peer.on("open",()=>{if(!NET||NET.peer!==peer)return;lbSet(roomInfo(1));ost(NET.q?"Buscando rival… te emparejamos automáticamente apenas haya alguien.":lbOk()?"Tu sala está abierta. Esperá a que otro jugador se una. Si nadie se une en 15 segundos, también te emparejamos con quien busque partida rápida.":"Tu sala está abierta, pero el lobby todavía está conectando. Aparecerá en la lista en cuanto conecte.")});
-  peer.on("connection",c=>{
-    if(!NET||NET.peer!==peer)return;
-    if(NET.conn){c.close();return}
-    NET.conn=c;wire(c);
-  });
-  peer.on("error",e=>{
-    if(!NET||NET.peer!==peer)return;
-    if(e.type==="unavailable-id"&&tries<5){mkRoom(tries+1,q);return}
-    netClose();ost("Error de red: "+e.type);
-  });
+/* Reenvío periódico de la ficha (sala o búsqueda) para que no caduque, y refresco de la lista */
+setInterval(()=>{if(LB.mine&&lbOk())pubAll(TOP+LB.code,LB.mine,true)},4000);
+setInterval(lbDraw,3000);
+
+function view(){
+  const r=!!NET;$("#lbm").classList.toggle("hide",r);$("#rv").classList.toggle("hide",!r);
+  if(r&&NET.room)$("#rinfo").textContent=(NET.q?"Partida rápida · ":"")+TH[NET.room.map].n+" · "+NET.room.len/LAP+" vueltas";
+  $("#oleave").textContent=NET&&NET.q?"Cancelar búsqueda":"Salir de la sala";
+  lbDraw();
 }
-function joinRoom(r,qm){
-  if(!hasPeer())return;
-  netClose();saveName();
-  const peer=new Peer(PCFG);
-  NET={peer,host:false,conn:null,opp:"",qm:qm?1:0,room:r};lockUI();ost("Conectando…");
-  setTimeout(()=>{if(NET&&NET.peer===peer&&!NET.opp){netClose();ost("No se pudo conectar con esa sala. Probá de nuevo o con otra sala.");qRetry()}},15000);
-  peer.on("open",()=>{
-    if(!NET||NET.peer!==peer)return;
-    const c=peer.connect(r.pid,{reliable:true});
-    NET.conn=c;wire(c);
-  });
-  peer.on("error",e=>{
-    if(!NET||NET.peer!==peer)return;
-    const m=e.type==="peer-unavailable"?"Esa sala ya no está disponible.":"Error de red: "+e.type;
-    netClose();ost(m);qRetry();
-  });
+function ost(t){$("#ost").textContent=NET?t:"";$("#lmsg").textContent=NET?"":t;view()}
+function lockUI(){$("#qm").disabled=true;$("#mk").disabled=true;$("#solo").disabled=true;$("#oleave").classList.remove("hide")}
+function netClose(){
+  const n=NET;NET=null;
+  if(n&&n.hid){
+    if(n.oid)pubAll(GT+n.hid,{t:"bye",from:LB.code,to:n.oid,seq:++SEQ},false);
+    LB.ms.forEach(m=>{try{m.unsubscribe(GT+n.hid)}catch(e){}});
+  }
+  if(n)lbSet(null);
+  $("#ostart").classList.add("hide");$("#mk").disabled=false;$("#qm").disabled=false;$("#solo").disabled=false;view();
 }
-function wire(c){
-  c.on("open",()=>{c.send({t:"hello",name:nameVal(),qm:NET&&NET.qm?1:0})});
-  c.on("data",onNet);
-  c.on("close",()=>{
-    if(!NET||NET.conn!==c)return;
-    if(NET.host&&!G){NET.conn=null;NET.opp="";$("#ostart").classList.add("hide");lbSet(roomInfo(1));ost("Tu rival se fue. Esperando a otro jugador…");return}
-    if(!NET.host&&!G&&QS){netClose();ost("No se pudo emparejar, buscando de nuevo…");qRetry();return}
-    const was=!!G;
-    toMenu();ost(was?"Tu rival se desconectó. La carrera terminó.":"Tu rival se desconectó.");
-  });
+function hasNet(){
+  if(typeof mqtt==="undefined"){ost("No se pudo cargar la librería online (MQTT). Revisá tu conexión a internet y recargá.");return false}
+  return true;
+}
+function saveName(){try{localStorage.setItem("mototipeo-name",nameVal())}catch(e){}}
+const roomInfo=n=>({k:"r",name:nameVal(),map:NET.room.map,len:NET.room.len,n});
+
+/* Crear sala / unirse */
+function mkRoom(){
+  if(!hasNet())return;
+  netClose();saveName();
+  NET={host:true,hid:LB.code,oid:"",opp:"",q:0,last:0,room:{map:sel.map,len:OPT.len[sel.len][1]}};
+  lockUI();gsub();lbSet(roomInfo(1));
+  ost(lbOk()?"Tu sala está abierta. Esperá a que otro jugador se una.":"Conectando al servidor… tu sala aparecerá en la lista apenas conecte.");
+}
+function joinRoom(r){
+  if(!hasNet())return;
+  netClose();saveName();
+  NET={host:false,hid:r.id,oid:r.id,opp:"",q:0,last:0,t0:Date.now(),room:r};
+  lockUI();gsub();ost("Conectando…");
+  gsend({t:"hello",name:nameVal()});
+}
+
+/* Partida rápida: todos los que buscan publican una ficha; se ordenan por código y se
+   emparejan de a dos (1º con 2º, 3º con 4º…). Si el emparejamiento se mantiene 2 segundos,
+   se "reservan" mutuamente y se saludan. Si algo falla, se reintenta solo. */
+function quick(){
+  if(!hasNet())return;
+  netClose();saveName();QS=true;
+  NET={host:false,q:1,searching:1,hid:"",oid:"",opp:"",lk:"",cand:"",since:0,last:0,room:{map:sel.map,len:OPT.len[sel.len][1]}};
+  lockUI();qPub();ost(lbOk()?"Buscando rival…":"Conectando al servidor…");
+}
+function qPub(){lbSet({k:"q",name:nameVal(),lk:NET&&NET.lk||""})}
+function qRetry(){if(QS)setTimeout(()=>{if(QS&&!NET)quick()},1500+Math.random()*1500)}
+function qTick(){
+  if(!NET||!NET.searching||!lbOk())return;
+  const now=Date.now();
+  if(NET.lk){
+    if(now-NET.lkt>9000){
+      const h=NET.hid;LB.ms.forEach(m=>{try{m.unsubscribe(GT+h)}catch(e){}});
+      NET.lk="";NET.cand="";NET.since=0;NET.hid="";NET.oid="";NET.host=false;qPub();ost("Buscando rival…");
+    }
+    return;
+  }
+  const ids=Object.values(LB.rooms).filter(r=>r.k==="q"&&!r.lk&&r.id!==LB.code&&now-r.seen<14000).map(r=>r.id);
+  ids.push(LB.code);ids.sort();
+  const i=ids.indexOf(LB.code),p=i%2?ids[i-1]:ids[i+1];
+  if(!p){NET.cand="";NET.since=0;return}
+  if(p!==NET.cand){NET.cand=p;NET.since=now;return}
+  if(now-NET.since<2000)return;
+  const host=LB.code<p?LB.code:p;
+  NET.lk=p;NET.lkt=now;NET.oid=p;NET.hid=host;NET.host=host===LB.code;
+  qPub();gsub();gsend({t:"hello",name:nameVal()});
+  ost("Rival posible… conectando.");
+}
+setInterval(qTick,700);
+
+/* Latido, hellos y detección de desconexión */
+setInterval(()=>{
+  if(!NET)return;
+  const now=Date.now();
+  if(NET.oid&&NET.hid&&!G)gsend({t:"hello",name:nameVal()});
+  if(NET.opp&&NET.last&&now-NET.last>(G?7000:10000)){lost();return}
+  if(!NET.host&&!NET.q&&!NET.opp&&now-NET.t0>12000){netClose();ost("No se pudo conectar con esa sala. Probá de nuevo o con otra sala.");}
+},1000);
+function lost(){
+  if(!NET)return;
+  const was=!!G;
+  if(NET.q&&!G){netClose();ost("Se perdió el rival, buscando de nuevo…");qRetry();return}
+  if(NET.host&&!G){NET.oid="";NET.opp="";NET.last=0;$("#ostart").classList.add("hide");lbSet(roomInfo(1));ost("Tu rival se fue. Esperando a otro jugador…");return}
+  toMenu();ost(was?"Tu rival se desconectó. La carrera terminó.":"Tu rival se desconectó.");
+}
+function gmsg(d){
+  if(!NET||!NET.hid||!d||typeof d!=="object"||d.from===LB.code)return;
+  const f=idc(d.from);
+  if(!f||(d.to&&d.to!==LB.code))return;
+  const sq=+d.seq;if(!(sq>(LASTSEQ[f]||0)))return;LASTSEQ[f]=sq;
+  if(NET.host&&!NET.oid){if(d.t!=="hello")return;NET.oid=f}
+  else if(f!==NET.oid){if(d.t==="hello"&&NET.host)gsend({t:"full",to:f});return}
+  NET.last=Date.now();
+  onNet(d);
 }
 function onNet(d){
-  if(!NET||!d||typeof d!=="object")return;
+  if(!NET)return;
   if(d.t==="hello"){
-    NET.opp=clean(d.name)||"Rival";
-    if(NET.host){
-      try{NET.conn.send({t:"hello",name:nameVal()})}catch(e){}
-      lbSet(roomInfo(2));ost(NET.opp+" se unió. ¡Todo listo!");$("#ostart").classList.remove("hide");
-      if(NET.q||d.qm){ost("¡Rival encontrado: "+NET.opp+"! Empezando la carrera…");setTimeout(()=>{if(NET&&NET.host&&NET.conn&&NET.opp&&!G)startOnline()},1500)}
-    }else ost(NET.qm?"¡Rival encontrado: "+NET.opp+"! Empezando la carrera…":"Conectado con "+NET.opp+". Esperá a que quien creó la sala empiece la carrera.");
-  }else if(d.t==="start"&&!NET.host&&NET.opp){
+    const first=!NET.opp;NET.opp=clean(d.name)||"Rival";
+    if(!first)return;
+    NET.searching=0;NET.lk="";
+    if(NET.q){
+      lbSet(null);
+      ost("¡Rival encontrado: "+NET.opp+"!"+(NET.host?" Empezando la carrera…":" Esperá un instante…"));
+      if(NET.host)setTimeout(()=>{if(NET&&NET.host&&NET.oid&&NET.opp&&!G)startOnline()},1500);
+    }else if(NET.host){lbSet(roomInfo(2));ost(NET.opp+" se unió. ¡Todo listo!");$("#ostart").classList.remove("hide")}
+    else ost("Conectado con "+NET.opp+". Esperá a que quien creó la sala empiece la carrera.");
+  }else if(d.t==="start"&&!NET.host){
+    if(d.gid===NET.lastgid)return;NET.lastgid=d.gid;
     const len=LENS.includes(+d.len)?+d.len:900,map=TH[d.map|0]?d.map|0:0;
-    newGame({names:[NET.opp,nameVal()],me:1,len,map});
-  }else if(d.t==="rematch"&&NET.host){
+    if(d.name&&!NET.opp)NET.opp=clean(d.name);
+    newGame({names:[NET.opp||"Rival",nameVal()],me:1,len,map,gid:String(d.gid||"")});
+  }else if(d.t==="rematch"&&NET.host&&!G){
     startOnline();
-  }else if(d.t==="s"&&G&&G.online){
+  }else if(d.t==="full"&&!NET.host){
+    netClose();ost("Esa sala ya está ocupada.");
+  }else if(d.t==="bye"){
+    lost();
+  }else if(d.t==="s"&&G&&G.online&&d.g===G.gid){
     const r=G.rs[G.me?0:1];
-    r.pos=Math.max(0,Math.min(G.len,+d.pos||0));
+    r.tp=Math.max(0,Math.min(G.len,+d.pos||0));r.tt=performance.now();
     r.v=Math.max(0,Math.min(70,+d.v||0));
     if(d.fin&&!r.fin){r.fin=true;r.t=Math.max(0,+d.tm||G.time);r.v=0;r.pos=G.len}
   }
 }
 function startOnline(){
-  if(!NET||!NET.host||!NET.conn||!NET.opp)return;
-  const len=NET.room.len,map=NET.room.map;
-  try{NET.conn.send({t:"start",len,map})}catch(e){return}
-  newGame({names:[nameVal(),NET.opp],me:0,len,map});
+  if(!NET||!NET.host||!NET.oid||!NET.opp)return;
+  const len=NET.room.len,map=NET.room.map,gid=(Date.now()%1e9).toString(36)+Math.random().toString(36).slice(2,5);
+  NET.lastgid=gid;
+  const o={t:"start",len,map,gid,name:nameVal()};
+  gsend(Object.assign({},o));
+  setTimeout(()=>{if(NET&&NET.lastgid===gid)gsend(Object.assign({},o))},500);
+  setTimeout(()=>{if(NET&&NET.lastgid===gid)gsend(Object.assign({},o))},1200);
+  newGame({names:[nameVal(),NET.opp],me:0,len,map,gid});
 }
 function rematch(){
   if(!NET)return;
   if(NET.host)startOnline();
-  else{try{NET.conn.send({t:"rematch"})}catch(e){}}
+  else gsend({t:"rematch"});
 }
 
 /* ---------- Menú ---------- */
@@ -551,7 +611,7 @@ function newGame(on){
     if(h){r.cur=gen(r);r.next=gen(r)}
     rs.push(r);
   }
-  G={rs,n,len:on?on.len:OPT.len[sel.len][1],time:0,cd:3.99,state:"count",online:!!on,me:on?on.me:0,tx:0};
+  G={rs,n,len:on?on.len:OPT.len[sel.len][1],time:0,cd:3.99,state:"count",online:!!on,me:on?on.me:0,tx:0,gid:on?on.gid:0};
   const P=$("#panels");P.innerHTML="";
   rs.forEach(r=>{
     const d=document.createElement("div");d.className="p"+(r.h?" me":"");d.id="p"+r.id;d.style.setProperty("--c",r.c);
@@ -595,7 +655,9 @@ function step(dt){
   }
   if(G.state==="count"&&G.cd>1)return;
   G.rs.forEach(r=>{
-    if(r.remote){hudUpd(r);return}
+    if(r.remote){
+      if(!r.fin&&r.tt&&(G.state==="run"||G.state==="over")){const age=Math.min(.6,(performance.now()-r.tt)/1000),ex=Math.min(G.len,r.tp+r.v*age*.9);r.pos+=(ex-r.pos)*Math.min(1,dt*10)}
+      hudUpd(r);return}
     if(G.state==="run"&&!r.h&&!r.fin){
       r.acc+=dt*r.rate*(.7+.6*Math.random());
       while(r.acc>=1){r.acc--;if(Math.random()<.05)r.v*=.5;else r.v=Math.min(70,r.v+B)}
@@ -608,16 +670,13 @@ function step(dt){
     }
     hudUpd(r);
   });
-  if(G.online&&NET&&NET.conn&&NET.conn.open&&(G.state==="run"||G.state==="over")){
+  if(G.online&&NET&&NET.oid&&(G.state==="run"||G.state==="over")){
     G.tx-=dt;
-    if(G.tx<=0){
-      G.tx=.05;const m=G.rs[G.me];
-      try{NET.conn.send({t:"s",pos:m.pos,v:m.v,fin:m.fin,tm:m.t})}catch(e){}
-    }
+    if(G.tx<=0){G.tx=.1;const m=G.rs[G.me];gsend({t:"s",g:G.gid,pos:+m.pos.toFixed(1),v:+m.v.toFixed(2),fin:m.fin?1:0,tm:m.t})}
   }
   if(G.state==="run"&&G.rs.some(r=>r.fin)){
     if(G.ff==null)G.ff=G.time;
-    if(!G.online||G.time-G.ff>=.7||G.rs.every(r=>r.fin)){G.state="over";setTimeout(results,1400)}
+    if(!G.online||G.time-G.ff>=1.5||G.rs.every(r=>r.fin)){G.state="over";setTimeout(results,1400)}
   }
 }
 
