@@ -287,6 +287,8 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;bac
           <h2>Crear una sala</h2>
           <p class="empty">Tu sala aparece en la lista y cualquiera puede unirse.</p>
           <button class="btn pri nm" id="mk" type="button">Crear sala</button>
+          <button class="btn blue nm" id="qm" type="button">Partida rápida</button>
+          <p class="empty">Rápida: te empareja solo con quien esté buscando rival, en una partida privada.</p>
           <div class="fld"><span class="lb" id="diflb">Practicar contra la compu</span><div class="seg" data-g="dif" role="group" aria-labelledby="diflb"></div></div>
           <button class="btn nm" id="solo" type="button">Practicar solo</button>
         </div>
@@ -343,20 +345,30 @@ const clean=s=>String(s==null?"":s).replace(/[\u0000-\u001f<>]/g,"").trim().slic
 const nameVal=()=>clean($("#pname").value)||"Jugador";
 const LENS=[600,900,1500];
 const PCFG={config:{iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"},{urls:["turn:openrelay.metered.ca:80","turn:openrelay.metered.ca:443","turn:openrelay.metered.ca:443?transport=tcp"],username:"openrelayproject",credential:"openrelayproject"}]}};
-const san=r=>({pid:String(r&&r.pid||"").replace(/[^A-Za-z0-9_-]/g,"").slice(0,24),id:String(r&&r.id).toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,5),name:clean(r&&r.name)||"Jugador",map:TH[r&&r.map|0]?r.map|0:0,len:LENS.includes(+(r&&r.len))?+r.len:900,n:r&&r.n>1?2:1});
-let SOLO=false,LB={ms:[],rooms:{},mine:null,code:""};
+const san=r=>({pid:String(r&&r.pid||"").replace(/[^A-Za-z0-9_-]/g,"").slice(0,24),id:String(r&&r.id).toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,5),name:clean(r&&r.name)||"Jugador",map:TH[r&&r.map|0]?r.map|0:0,len:LENS.includes(+(r&&r.len))?+r.len:900,n:r&&r.n>1?2:1,q:r&&r.q?1:0,ts:+(r&&r.ts)||0});
+let QS=false,SOLO=false,LB={ms:[],rooms:{},mine:null,code:""};
 function rcode(){let s="";for(let i=0;i<5;i++)s+=CH[Math.random()*CH.length|0];return s}
+function quick(){if(!hasPeer())return;QS=true;mkRoom(0,true)}
+function qRetry(){if(QS)setTimeout(()=>{if(QS&&!NET)quick()},1500)}
+function qFind(){
+  const now=Date.now(),cs=Object.values(LB.rooms).filter(r=>r.id!==LB.code&&r.n===1&&(r.q?(r.ts<NET.ts||(r.ts===NET.ts&&r.id<LB.code)):now-r.seen>=15000));
+  if(!cs.length)return;
+  cs.sort((a,b)=>a.ts-b.ts||(a.id<b.id?-1:1));
+  const c=cs[0];netClose();joinRoom(c,true);
+}
+setInterval(()=>{if(QS&&NET&&NET.host&&NET.q&&!NET.conn&&lbOk())qFind()},1000);
 function view(){
   const r=!!NET;$("#lbm").classList.toggle("hide",r);$("#rv").classList.toggle("hide",!r);
-  if(r&&NET.room)$("#rinfo").textContent=TH[NET.room.map].n+" · "+NET.room.len/LAP+" vueltas";
+  if(r&&NET.room)$("#rinfo").textContent=(NET.q?"Partida rápida · ":"")+TH[NET.room.map].n+" · "+NET.room.len/LAP+" vueltas";
+  $("#oleave").textContent=NET&&(NET.q||NET.qm)?"Cancelar búsqueda":"Salir de la sala";
   lbDraw();
 }
 function ost(t){$("#ost").textContent=NET?t:"";$("#lmsg").textContent=NET?"":t;view()}
-function lockUI(){$("#mk").disabled=true;$("#solo").disabled=true;$("#oleave").classList.remove("hide")}
+function lockUI(){$("#qm").disabled=true;$("#mk").disabled=true;$("#solo").disabled=true;$("#oleave").classList.remove("hide")}
 function netClose(){
   const n=NET;NET=null;
   if(n){if(n.host)lbSet(null);try{n.conn&&n.conn.close()}catch(e){}try{n.peer&&n.peer.destroy()}catch(e){}}
-  $("#ostart").classList.add("hide");$("#mk").disabled=false;$("#solo").disabled=false;view();
+  $("#ostart").classList.add("hide");$("#mk").disabled=false;$("#qm").disabled=false;$("#solo").disabled=false;view();
 }
 function hasPeer(){
   if(typeof Peer==="undefined"){ost("No se pudo cargar la librería online (PeerJS). Revisá tu conexión a internet.");return false}
@@ -381,7 +393,7 @@ function lbStart(){
     m.on("message",(tp,b)=>{
       if(!LB.ms.includes(m))return;
       const k=tp.slice(TOP.length),t=b.toString();
-      if(!t)delete LB.rooms[k];else try{const r=san(JSON.parse(t));if(r.pid&&r.id)LB.rooms[k]=r}catch(e){}
+      if(!t)delete LB.rooms[k];else try{const r=san(JSON.parse(t));if(r.pid&&r.id){const o=LB.rooms[k];r.seen=o?o.seen:Date.now();LB.rooms[k]=r}}catch(e){}
       lbDraw();
     });
     m.on("error",()=>{});m.on("close",lbDraw);
@@ -392,7 +404,7 @@ function lbStart(){
 function lbSet(r){LB.mine=r;LB.ms.forEach(m=>{if(m.connected)pubTo(m,r)})}
 function lbDraw(){
   const el=$("#rooms");if(!el)return;
-  const rs=Object.values(LB.rooms).filter(r=>!(LB.mine&&r.id===LB.mine.id));
+  const rs=Object.values(LB.rooms).filter(r=>!(LB.mine&&r.id===LB.mine.id)&&!r.q);
   if(lbOk()&&!NET&&/^Sin conexión/.test($("#lmsg").textContent))$("#lmsg").textContent="";
   $("#cnt").textContent=rs.length;$("#lbst").textContent=lbOk()?"En línea":"Conectando…";
   el.innerHTML=rs.length?"":'<p class="empty">Todavía no hay salas abiertas. Creá una o practicá contra la compu.</p>';
@@ -403,14 +415,14 @@ function lbDraw(){
     b.disabled=r.n>1||!!NET;b.onclick=()=>joinRoom(r);d.appendChild(b);el.appendChild(d);
   });
 }
-const roomInfo=n=>({id:LB.code,pid:NET.pid,name:nameVal(),map:NET.room.map,len:NET.room.len,n});
-function mkRoom(tries){
+const roomInfo=n=>({id:LB.code,pid:NET.pid,name:nameVal(),map:NET.room.map,len:NET.room.len,n,q:NET.q,ts:NET.ts});
+function mkRoom(tries,q){
   tries=tries||0;
   if(!hasPeer())return;
   netClose();saveName();
   const pid=PFX+LB.code+rcode().slice(0,3),peer=new Peer(pid,PCFG);
-  NET={peer,host:true,conn:null,opp:"",pid,room:{map:sel.map,len:OPT.len[sel.len][1]}};lockUI();ost("Creando sala…");
-  peer.on("open",()=>{if(!NET||NET.peer!==peer)return;lbSet(roomInfo(1));ost(lbOk()?"Tu sala está abierta. Esperá a que otro jugador se una.":"Tu sala está abierta, pero el lobby todavía está conectando. Aparecerá en la lista en cuanto conecte.")});
+  NET={peer,host:true,conn:null,opp:"",pid,q:q?1:0,ts:Date.now(),room:{map:sel.map,len:OPT.len[sel.len][1]}};lockUI();ost("Creando sala…");
+  peer.on("open",()=>{if(!NET||NET.peer!==peer)return;lbSet(roomInfo(1));ost(NET.q?"Buscando rival… te emparejamos automáticamente apenas haya alguien.":lbOk()?"Tu sala está abierta. Esperá a que otro jugador se una. Si nadie se une en 15 segundos, también te emparejamos con quien busque partida rápida.":"Tu sala está abierta, pero el lobby todavía está conectando. Aparecerá en la lista en cuanto conecte.")});
   peer.on("connection",c=>{
     if(!NET||NET.peer!==peer)return;
     if(NET.conn){c.close();return}
@@ -418,16 +430,16 @@ function mkRoom(tries){
   });
   peer.on("error",e=>{
     if(!NET||NET.peer!==peer)return;
-    if(e.type==="unavailable-id"&&tries<5){mkRoom(tries+1);return}
+    if(e.type==="unavailable-id"&&tries<5){mkRoom(tries+1,q);return}
     netClose();ost("Error de red: "+e.type);
   });
 }
-function joinRoom(r){
+function joinRoom(r,qm){
   if(!hasPeer())return;
   netClose();saveName();
   const peer=new Peer(PCFG);
-  NET={peer,host:false,conn:null,opp:"",room:r};lockUI();ost("Conectando…");
-  setTimeout(()=>{if(NET&&NET.peer===peer&&!NET.opp){netClose();ost("No se pudo conectar con esa sala. Probá de nuevo o con otra sala.")}},15000);
+  NET={peer,host:false,conn:null,opp:"",qm:qm?1:0,room:r};lockUI();ost("Conectando…");
+  setTimeout(()=>{if(NET&&NET.peer===peer&&!NET.opp){netClose();ost("No se pudo conectar con esa sala. Probá de nuevo o con otra sala.");qRetry()}},15000);
   peer.on("open",()=>{
     if(!NET||NET.peer!==peer)return;
     const c=peer.connect(r.pid,{reliable:true});
@@ -436,15 +448,16 @@ function joinRoom(r){
   peer.on("error",e=>{
     if(!NET||NET.peer!==peer)return;
     const m=e.type==="peer-unavailable"?"Esa sala ya no está disponible.":"Error de red: "+e.type;
-    netClose();ost(m);
+    netClose();ost(m);qRetry();
   });
 }
 function wire(c){
-  c.on("open",()=>{c.send({t:"hello",name:nameVal()})});
+  c.on("open",()=>{c.send({t:"hello",name:nameVal(),qm:NET&&NET.qm?1:0})});
   c.on("data",onNet);
   c.on("close",()=>{
     if(!NET||NET.conn!==c)return;
     if(NET.host&&!G){NET.conn=null;NET.opp="";$("#ostart").classList.add("hide");lbSet(roomInfo(1));ost("Tu rival se fue. Esperando a otro jugador…");return}
+    if(!NET.host&&!G&&QS){netClose();ost("No se pudo emparejar, buscando de nuevo…");qRetry();return}
     const was=!!G;
     toMenu();ost(was?"Tu rival se desconectó. La carrera terminó.":"Tu rival se desconectó.");
   });
@@ -456,7 +469,8 @@ function onNet(d){
     if(NET.host){
       try{NET.conn.send({t:"hello",name:nameVal()})}catch(e){}
       lbSet(roomInfo(2));ost(NET.opp+" se unió. ¡Todo listo!");$("#ostart").classList.remove("hide");
-    }else ost("Conectado con "+NET.opp+". Esperá a que quien creó la sala empiece la carrera.");
+      if(NET.q||d.qm){ost("¡Rival encontrado: "+NET.opp+"! Empezando la carrera…");setTimeout(()=>{if(NET&&NET.host&&NET.conn&&NET.opp&&!G)startOnline()},1500)}
+    }else ost(NET.qm?"¡Rival encontrado: "+NET.opp+"! Empezando la carrera…":"Conectado con "+NET.opp+". Esperá a que quien creó la sala empiece la carrera.");
   }else if(d.t==="start"&&!NET.host&&NET.opp){
     const len=LENS.includes(+d.len)?+d.len:900,map=TH[d.map|0]?d.map|0:0;
     newGame({names:[NET.opp,nameVal()],me:1,len,map});
@@ -528,7 +542,7 @@ function hudUpd(r){
 function newGame(on){
   if(on&&!on.names)on=null;
   if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
-  SOLO=!on;PT=[];makeBg(on?on.map:sel.map);$("#mapn").textContent=T.n;
+  QS=false;SOLO=!on;PT=[];makeBg(on?on.map:sel.map);$("#mapn").textContent=T.n;
   const n=on?1:sel.n,tot=on?2:n+sel.cpu,rs=[];
   for(let i=0;i<tot;i++){
     const h=on?i===on.me:i<n,
@@ -601,9 +615,9 @@ function step(dt){
       try{NET.conn.send({t:"s",pos:m.pos,v:m.v,fin:m.fin,tm:m.t})}catch(e){}
     }
   }
-  const hs=G.online?G.rs:G.rs.filter(r=>r.h);
-  if(G.state==="run"&&(hs.every(r=>r.fin)||G.rs.every(r=>r.fin))){
-    G.state="over";setTimeout(results,1400);
+  if(G.state==="run"&&G.rs.some(r=>r.fin)){
+    if(G.ff==null)G.ff=G.time;
+    if(!G.online||G.time-G.ff>=.7||G.rs.every(r=>r.fin)){G.state="over";setTimeout(results,1400)}
   }
 }
 
@@ -926,7 +940,7 @@ function results(){
   cancelAnimationFrame(raf);G=null;
   $("#game").classList.add("hide");$("#end").classList.remove("hide");
 }
-function toMenu(){
+function toMenu(){QS=false;
   cancelAnimationFrame(raf);G=null;setOv("");
   ["#game","#end"].forEach(s=>$(s).classList.add("hide"));$("#lobby").classList.remove("hide");
   netClose();ost("");
@@ -942,10 +956,11 @@ function enter(){
 $("#pname").addEventListener("input",()=>{$("#enter").disabled=!clean($("#pname").value)});
 $("#pname").addEventListener("keydown",e=>{if(e.key==="Enter")enter()});
 $("#enter").onclick=enter;
-$("#chg").onclick=()=>{netClose();lbStop();$("#lobby").classList.add("hide");$("#login").classList.remove("hide");$("#pname").focus()};
+$("#chg").onclick=()=>{QS=false;netClose();lbStop();$("#lobby").classList.add("hide");$("#login").classList.remove("hide");$("#pname").focus()};
 $("#mk").onclick=()=>mkRoom();
+$("#qm").onclick=quick;
 $("#solo").onclick=solo;
-$("#oleave").onclick=()=>{netClose();ost("")};
+$("#oleave").onclick=()=>{QS=false;netClose();ost("")};
 $("#ostart").onclick=startOnline;
 try{$("#pname").value=localStorage.getItem("mototipeo-name")||""}catch(e){}
 $("#enter").disabled=!clean($("#pname").value);
