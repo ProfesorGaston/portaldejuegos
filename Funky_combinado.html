@@ -98,12 +98,12 @@ h1{filter:drop-shadow(0 0 min(1.2cqw,2.133cqh) #ff4fa3)}
 const $=s=>document.querySelector(s),cv=$('#cv'),g=cv.getContext('2d'),W=960,H=540;let X0=0,X1=W,Y0=0,Y1=H;
 const R=(a,b)=>a+Math.floor(Math.random()*(b-a+1)),shuf=a=>a.sort(()=>Math.random()-.5);
 const SONGS=[
-{n:'Tutorial Tropical',bpm:80,lv:1,sc:[0,2,4,7],ct:[0,4,7],prog:[0,5,7,5],pal:['#ffb703','#ff4fa3','#2b1055'],oc:1,on:'Profe Ábaco',spd:380},
-{n:'Cálculo Caliente',bpm:90,lv:2,sc:[0,3,5,7],ct:[0,3,7],prog:[0,-4,-2,-5],pal:['#ff5a36','#b5179e','#1a0b3b'],oc:2,on:'Robo Suma',spd:440},
-{n:'Fantasma Fracción',bpm:100,lv:3,sc:[0,3,7,10],ct:[0,3,7],prog:[0,-2,-4,-5],pal:['#7df9ff','#4361ee','#10002b'],oc:3,on:'Fantasma ½',spd:500},
-{n:'Potencia Pop',bpm:110,lv:4,sc:[0,2,5,7],ct:[0,4,7],prog:[0,7,5,3],pal:['#a3e635','#16a34a','#052e16'],oc:4,on:'Cuadrado Z',spd:540},
-{n:'Paréntesis Punk',bpm:120,lv:5,sc:[0,3,5,6],ct:[0,3,7],prog:[0,3,-2,-4],pal:['#f43f5e','#7c3aed','#1e0a3c'],oc:5,on:'Doña Llave',spd:580},
-{n:'Gran Final Galáctica',bpm:130,lv:6,sc:[0,3,7,10],ct:[0,3,7],prog:[0,-2,-4,-7],pal:['#38bdf8','#e879f9','#020617'],oc:6,on:'Rey Infinito',spd:620}];
+{n:'Tutorial Tropical',bpm:60,lv:1,sc:[0,2,4,7],ct:[0,4,7],prog:[0,5,7,5],pal:['#ffb703','#ff4fa3','#2b1055'],oc:1,on:'Profe Ábaco',spd:380},
+{n:'Cálculo Caliente',bpm:70,lv:2,sc:[0,3,5,7],ct:[0,3,7],prog:[0,-4,-2,-5],pal:['#ff5a36','#b5179e','#1a0b3b'],oc:2,on:'Robo Suma',spd:440},
+{n:'Fantasma Fracción',bpm:80,lv:3,sc:[0,3,7,10],ct:[0,3,7],prog:[0,-2,-4,-5],pal:['#7df9ff','#4361ee','#10002b'],oc:3,on:'Fantasma ½',spd:500},
+{n:'Potencia Pop',bpm:90,lv:4,sc:[0,2,5,7],ct:[0,4,7],prog:[0,7,5,3],pal:['#a3e635','#16a34a','#052e16'],oc:4,on:'Cuadrado Z',spd:540},
+{n:'Paréntesis Punk',bpm:100,lv:5,sc:[0,3,5,6],ct:[0,3,7],prog:[0,3,-2,-4],pal:['#f43f5e','#7c3aed','#1e0a3c'],oc:5,on:'Doña Llave',spd:580},
+{n:'Gran Final Galáctica',bpm:110,lv:6,sc:[0,3,7,10],ct:[0,3,7],prog:[0,-2,-4,-7],pal:['#38bdf8','#e879f9','#020617'],oc:6,on:'Rey Infinito',spd:620}];
 const CH=[{body:'#14b8a6',skin:'#f1c27d',pants:'#334155'},
 {body:'#6b7280',skin:'#e8b88a',pants:'#1f2937',gl:1},
 {body:'#60a5fa',skin:'#cbd5e1',pants:'#1e3a8a',rb:1},
