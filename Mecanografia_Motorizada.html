@@ -423,7 +423,7 @@ function lockUI(){$("#qm").disabled=true;$("#mk").disabled=true;$("#solo").disab
 function netClose(){
   const n=NET;NET=null;
   if(n&&n.hid){
-    pubAll(GT+n.hid,{t:"bye",from:LB.code,to:n.host?undefined:n.oid,seq:++SEQ},false);
+    pubAll(GT+n.hid,{t:"bye",from:LB.code,seq:++SEQ},false);
     LB.ms.forEach(m=>{try{m.unsubscribe(GT+n.hid)}catch(e){}});
   }
   if(n)lbSet(null);
@@ -499,7 +499,7 @@ setInterval(()=>{
     }else if(!NET.q||NET.gs.length)rosSend();
     return}
   if(NET.oid&&NET.hid&&!G)gsend({t:"hello",name:nameVal()});
-  if(NET.opp&&NET.last&&now-NET.last>(G?7000:10000)){lost();return}
+  if(NET.opp&&NET.last&&now-NET.last>(G?7000:10000)){if(G&&G.online){const i=G.ids.indexOf(NET.oid);if(i>=0)G.rs[i].out=true;NET.last=0}else lost();return}
   if(!NET.q&&!NET.opp&&now-NET.t0>12000){netClose();ost("No se pudo conectar con esa sala. Probá de nuevo o con otra sala.");}
 },1000);
 function lost(){
@@ -534,7 +534,7 @@ function gmsg(d){
     }else if(g){g.last=now;onNet(d,f)}
     return}
   if(f===NET.oid){NET.last=now;onNet(d,f)}
-  else if(d.t==="s"&&G&&G.ids&&G.ids.includes(f))onNet(d,f);
+  else if((d.t==="s"||d.t==="bye")&&G&&G.ids&&G.ids.includes(f))onNet(d,f);
 }
 function onNet(d,f){
   if(!NET)return;
@@ -560,7 +560,8 @@ function onNet(d,f){
       if(G){const i=G.ids.indexOf(f);if(i>=0)G.rs[i].out=true}
       else if(NET.q){netClose();ost("Se perdió el rival, buscando de nuevo…");qRetry()}
       else ros();
-    }else lost();
+    }else if(G&&G.ids&&G.ids.indexOf(f)>=0)G.rs[G.ids.indexOf(f)].out=true;
+    else if(f===NET.oid)lost();
   }else if(d.t==="s"&&G&&G.online&&d.g===G.gid){
     const i=G.ids.indexOf(f);if(i<0||i===G.me)return;
     const r=G.rs[i];r.seen=Date.now();
@@ -706,6 +707,10 @@ function step(dt){
   if(G.online&&NET&&NET.hid&&(G.state==="run"||G.state==="over")){
     G.tx-=dt;
     if(G.tx<=0){G.tx=.1;const m=G.rs[G.me];gsend({t:"s",g:G.gid,pos:+m.pos.toFixed(1),v:+m.v.toFixed(2),fin:m.fin?1:0,tm:m.t})}
+  }
+  if(G.online&&G.state==="run"&&!G.rs.some(r=>r.fin)){
+    const a=G.rs.filter(r=>!r.out);
+    if(a.length===1&&a[0].h){a[0].fin=true;a[0].t=G.time;a[0].pos=G.len;G.fo=1}
   }
   if(G.state==="run"&&G.rs.some(r=>r.fin)){
     if(G.ff==null)G.ff=G.time;
@@ -1023,7 +1028,7 @@ function results(){
   if(!G)return;
   const rs=[...G.rs].sort((a,b)=>(b.fin-a.fin)||(a.fin&&b.fin?a.t-b.t:b.pos-a.pos));
   const w=rs[0];
-  $("#rh").textContent=w.fin?(w.h?"¡Ganaste!":"Ganó "+w.name):"Carrera terminada";
+  $("#rh").textContent=w.fin?(w.h?(G.fo?"¡Ganaste por abandono!":"¡Ganaste!"):"Ganó "+w.name):"Carrera terminada";
   $("#rank").innerHTML=rs.map((r,i)=>{
     const t=r.fin?r.t:G.time,ppm=r.h&&t>0?Math.round(r.ok/(t/60)):"–",pr=r.h&&r.keys?Math.round(r.ok/r.keys*100)+"%":"–";
     return `<tr class="${i===0&&r.fin?"w":""}"><td>${["🥇","🥈","🥉","4º"][i]}</td><td><span class="dot" style="background:${r.c}"></span>${esc(r.name)}</td><td>${r.fin?r.t.toFixed(1)+" s":"No llegó"}</td><td>${ppm}</td><td>${pr}</td></tr>`;
