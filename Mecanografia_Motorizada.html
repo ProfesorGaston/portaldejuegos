@@ -267,7 +267,7 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;bac
   <div class="brand"><h1 class="logo">Mecanografía Motorizada</h1><p class="sub">Escribí rápido para acelerar. Un error y frenás a la mitad.</p></div>
   <canvas id="hero" aria-hidden="true"></canvas>
   <div class="pad">
-    <div class="chips"><span>2 jugadores en línea</span><span>5 pistas</span><span>100 palabras</span></div>
+    <div class="chips"><span>2 a 4 jugadores en línea</span><span>5 pistas</span><span>150 palabras sin repetir</span></div>
     <div class="go">
       <div class="fld"><label for="pname">Tu nombre</label><input class="t" id="pname" maxlength="14" placeholder="Cómo te llamás" autocomplete="off"></div>
       <button class="btn pri" id="enter" type="button" disabled>Entrar</button>
@@ -281,10 +281,11 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;bac
     <div id="lbm">
       <div class="fld" style="margin-top:20px"><span class="lb" id="maplb">Pista</span><div class="mps" id="maps" role="group" aria-labelledby="maplb"></div></div>
       <div class="fld" style="margin-top:18px"><span class="lb" id="lenlb">Largo de la carrera</span><div class="seg" data-g="len" role="group" aria-labelledby="lenlb"></div></div>
+      <div class="fld" style="margin-top:18px"><span class="lb" id="pllb">Jugadores por sala</span><div class="seg" data-g="pl" role="group" aria-labelledby="pllb"></div></div>
       <div class="opts">
         <div class="opt">
           <h2>Crear una sala</h2>
-          <p class="empty">Tu sala aparece en la lista y cualquiera puede unirse.</p>
+          <p class="empty">Elegí 2, 3 o 4 jugadores. Tu sala aparece en la lista y arrancás cuando quieras (desde 2).</p>
           <button class="btn pri nm" id="mk" type="button">Crear sala</button>
           <button class="btn blue nm" id="qm" type="button">Partida rápida</button>
           <p class="empty">Rápida: te empareja solo con quien esté buscando rival, en una partida privada.</p>
@@ -331,10 +332,11 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;bac
 const $=s=>document.querySelector(s), COL=["#e63b2e","#2f74e8","#f2b91f","#25b36b"];
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const ZN={2:["qazwsxedcrfvtgb","yhnujmikolpñ"],3:["qazwsxedc","rfvtgbyhn","ujmikolpñ"],4:["qazwsx","edcrfv","tgbyhn","ujmikolpñ"]};
-const WORDS="moto casco rueda freno curva pista meta salida carrera motor piloto gas turbo marcha cambio llanta asfalto bandera podio rival vuelta ruta camino viento fuego trueno rayo nube lluvia sol luna estrella cielo tierra arena nieve hielo bosque monte rio lago mar playa isla puente ciudad calle plaza campo arbol flor hoja libro lapiz cuaderno escuela amigo juego equipo gato perro caballo tigre aguila halcon zorro lobo oso delfin tiburon ballena barco tren avion cohete bicicleta camion taxi guante bota chaqueta gorra mochila reloj llave puerta ventana mesa silla cocina pan queso fruta limon naranja manzana cereza uva pera durazno".split(" ");
-const shuf=a=>{for(let i=a.length;i>1;){const j=Math.random()*i--|0;[a[i],a[j]]=[a[j],a[i]]}return a};
-const OPT={n:[1,2,3,4],cpu:[0,1,2,3],dif:[["Fácil",1.3],["Media",2.5],["Difícil",4.8]],len:[["2 vueltas",600],["3 vueltas",900],["5 vueltas",1500]]};
-const sel={n:1,cpu:0,dif:1,len:1,map:0},B=5;
+const WORDS="moto casco rueda freno curva pista meta salida carrera motor piloto gas turbo marcha cambio llanta asfalto bandera podio rival vuelta ruta camino viento fuego trueno rayo nube lluvia sol luna estrella cielo tierra arena nieve hielo bosque monte rio lago mar playa isla puente ciudad calle plaza campo arbol flor hoja libro lapiz cuaderno escuela amigo juego equipo gato perro caballo tigre aguila halcon zorro lobo oso delfin tiburon ballena barco tren avion cohete bicicleta camion taxi guante bota chaqueta gorra mochila reloj llave puerta ventana mesa silla cocina pan queso fruta limon naranja manzana cereza uva pera durazno bujia pedal tanque escape cadena chasis garaje taller bateria aceite nafta motociclista neumatico espejo manubrio caballete embrague pistones cilindro valvula radiador farol sirena bocina sensor ventilador tablero velocimetro cronometro medalla trofeo copa victoria campeon velocidad adrenalina destreza equilibrio inclinar trazada tribuna publico banderin estandarte emocion desafio esfuerzo constancia aventura tormenta".split(" ");
+const shuf=(a,R)=>{R=R||Math.random;for(let i=a.length;i>1;){const j=R()*i--|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+const seedR=s=>{let h=2166136261;for(const c of String(s))h=Math.imul(h^c.charCodeAt(0),16777619);return()=>{h=h+1831565813|0;let t=Math.imul(h^h>>>15,1|h);t^=t+Math.imul(t^t>>>7,61|t);return((t^t>>>14)>>>0)/4294967296}};
+const OPT={n:[1,2,3,4],cpu:[0,1,2,3],dif:[["Fácil",1.3],["Media",2.5],["Difícil",4.8]],len:[["2 vueltas",600],["3 vueltas",900],["5 vueltas",1500]],pl:[["2 jugadores",2],["3 jugadores",3],["4 jugadores",4]]};
+const sel={n:1,cpu:0,dif:1,len:1,map:0,pl:2},B=5;
 let S=(navigator.hardwareConcurrency||4)<=2?1:1.5,LOW=S<=1,CURMAP=0;const ctx=$("#c").getContext("2d"),W=960;function setRes(){$("#c").width=W*S;$("#c").height=600*S}setRes();
 let G=null,raf=0,last=0,NET=null;
 
@@ -348,7 +350,7 @@ const clean=s=>String(s==null?"":s).replace(/[\u0000-\u001f<>]/g,"").trim().slic
 const nameVal=()=>clean($("#pname").value)||"Jugador";
 const LENS=[600,900,1500];
 const idc=s=>String(s||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,5);
-const san=(r,id)=>({id:idc(id),k:r&&r.k==="q"?"q":"r",name:clean(r&&r.name)||"Jugador",map:TH[r&&r.map|0]?r.map|0:0,len:LENS.includes(+(r&&r.len))?+r.len:900,n:r&&r.n>1?2:1,lk:idc(r&&r.lk)});
+const san=(r,id)=>({id:idc(id),k:r&&r.k==="q"?"q":"r",name:clean(r&&r.name)||"Jugador",map:TH[r&&r.map|0]?r.map|0:0,len:LENS.includes(+(r&&r.len))?+r.len:900,n:Math.max(1,Math.min(4,+(r&&r.n)||1)),mx:Math.max(2,Math.min(4,+(r&&r.mx)||2)),g:r&&r.g?1:0,lk:idc(r&&r.lk)});
 let QS=false,SOLO=false,LB={ms:[],rooms:{},mine:null,code:""},SEQ=Date.now(),LASTSEQ={};
 function rcode(){let s="";for(let i=0;i<5;i++)s+=CH[Math.random()*CH.length|0];return s}
 
@@ -401,9 +403,9 @@ function lbDraw(){
   el.innerHTML=rs.length?"":'<p class="empty">Todavía no hay salas abiertas. Creá una o practicá contra la compu.</p>';
   rs.forEach(r=>{
     const d=document.createElement("div");d.className="rm";
-    d.innerHTML='<i class="sw" style="background:'+TH[r.map].g[0]+'"></i>'+"<div><b>"+esc(r.name)+"</b><small>"+esc(TH[r.map].n)+" · "+r.len/LAP+" vueltas</small></div>";
-    const b=document.createElement("button");b.type="button";b.className="btn sm blue";b.textContent=r.n>1?"En carrera":"Unirse";
-    b.disabled=r.n>1||!!NET;b.onclick=()=>joinRoom(r);d.appendChild(b);el.appendChild(d);
+    d.innerHTML='<i class="sw" style="background:'+TH[r.map].g[0]+'"></i>'+"<div><b>"+esc(r.name)+"</b><small>"+esc(TH[r.map].n)+" · "+r.len/LAP+" vueltas · "+r.n+"/"+r.mx+" jugadores</small></div>";
+    const b=document.createElement("button");b.type="button";b.className="btn sm blue";b.textContent=r.g?"En carrera":r.n>=r.mx?"Llena":"Unirse";
+    b.disabled=r.g||r.n>=r.mx||!!NET;b.onclick=()=>joinRoom(r);d.appendChild(b);el.appendChild(d);
   });
 }
 /* Reenvío periódico de la ficha (sala o búsqueda) para que no caduque, y refresco de la lista */
@@ -421,7 +423,7 @@ function lockUI(){$("#qm").disabled=true;$("#mk").disabled=true;$("#solo").disab
 function netClose(){
   const n=NET;NET=null;
   if(n&&n.hid){
-    if(n.oid)pubAll(GT+n.hid,{t:"bye",from:LB.code,to:n.oid,seq:++SEQ},false);
+    pubAll(GT+n.hid,{t:"bye",from:LB.code,to:n.host?undefined:n.oid,seq:++SEQ},false);
     LB.ms.forEach(m=>{try{m.unsubscribe(GT+n.hid)}catch(e){}});
   }
   if(n)lbSet(null);
@@ -432,15 +434,15 @@ function hasNet(){
   return true;
 }
 function saveName(){try{localStorage.setItem("mototipeo-name",nameVal())}catch(e){}}
-const roomInfo=n=>({k:"r",name:nameVal(),map:NET.room.map,len:NET.room.len,n});
+const roomInfo=n=>({k:"r",name:nameVal(),map:NET.room.map,len:NET.room.len,n,mx:NET.mx,g:NET.started?1:0});
 
 /* Crear sala / unirse */
 function mkRoom(){
   if(!hasNet())return;
   netClose();saveName();
-  NET={host:true,hid:LB.code,oid:"",opp:"",q:0,last:0,room:{map:sel.map,len:OPT.len[sel.len][1]}};
+  NET={host:true,hid:LB.code,oid:"",opp:"",q:0,last:0,gs:[],mx:OPT.pl[sel.pl][1],room:{map:sel.map,len:OPT.len[sel.len][1]}};
   lockUI();gsub();lbSet(roomInfo(1));
-  ost(lbOk()?"Tu sala está abierta. Esperá a que otro jugador se una.":"Conectando al servidor… tu sala aparecerá en la lista apenas conecte.");
+  ost(lbOk()?"Tu sala está abierta ("+NET.mx+" jugadores como máximo). Esperá a que se unan.":"Conectando al servidor… tu sala aparecerá en la lista apenas conecte.");
 }
 function joinRoom(r){
   if(!hasNet())return;
@@ -456,7 +458,7 @@ function joinRoom(r){
 function quick(){
   if(!hasNet())return;
   netClose();saveName();QS=true;
-  NET={host:false,q:1,searching:1,hid:"",oid:"",opp:"",lk:"",cand:"",since:0,last:0,room:{map:sel.map,len:OPT.len[sel.len][1]}};
+  NET={host:false,q:1,searching:1,gs:[],mx:2,hid:"",oid:"",opp:"",lk:"",cand:"",since:0,last:0,room:{map:sel.map,len:OPT.len[sel.len][1]}};
   lockUI();qPub();ost(lbOk()?"Buscando rival…":"Conectando al servidor…");
 }
 function qPub(){lbSet({k:"q",name:nameVal(),lk:NET&&NET.lk||""})}
@@ -479,7 +481,7 @@ function qTick(){
   if(now-NET.since<2000)return;
   const host=LB.code<p?LB.code:p;
   NET.lk=p;NET.lkt=now;NET.oid=p;NET.hid=host;NET.host=host===LB.code;
-  qPub();gsub();gsend({t:"hello",name:nameVal()});
+  qPub();gsub();if(!NET.host)gsend({t:"hello",name:nameVal()});
   ost("Rival posible… conectando.");
 }
 setInterval(qTick,700);
@@ -488,70 +490,99 @@ setInterval(qTick,700);
 setInterval(()=>{
   if(!NET)return;
   const now=Date.now();
+  if(NET.host){
+    if(G||!NET.hid)return;
+    const n0=NET.gs.length;NET.gs=NET.gs.filter(g=>now-g.last<10000);
+    if(NET.gs.length<n0){
+      if(NET.q){netClose();ost("Se perdió el rival, buscando de nuevo…");qRetry();return}
+      ros();
+    }else if(!NET.q||NET.gs.length)rosSend();
+    return}
   if(NET.oid&&NET.hid&&!G)gsend({t:"hello",name:nameVal()});
   if(NET.opp&&NET.last&&now-NET.last>(G?7000:10000)){lost();return}
-  if(!NET.host&&!NET.q&&!NET.opp&&now-NET.t0>12000){netClose();ost("No se pudo conectar con esa sala. Probá de nuevo o con otra sala.");}
+  if(!NET.q&&!NET.opp&&now-NET.t0>12000){netClose();ost("No se pudo conectar con esa sala. Probá de nuevo o con otra sala.");}
 },1000);
 function lost(){
   if(!NET)return;
   const was=!!G;
   if(NET.q&&!G){netClose();ost("Se perdió el rival, buscando de nuevo…");qRetry();return}
-  if(NET.host&&!G){NET.oid="";NET.opp="";NET.last=0;$("#ostart").classList.add("hide");lbSet(roomInfo(1));ost("Tu rival se fue. Esperando a otro jugador…");return}
   toMenu();ost(was?"Tu rival se desconectó. La carrera terminó.":"Tu rival se desconectó.");
+}
+function rosSend(){if(!NET||!NET.host||G)return;gsend({t:"ros",names:[nameVal()].concat(NET.gs.map(g=>g.name)),mx:NET.mx})}
+function ros(){
+  if(!NET||!NET.host||NET.q)return;
+  const n=NET.gs.length+1;lbSet(roomInfo(n));rosSend();
+  $("#ostart").classList.toggle("hide",n<2);
+  ost(n<2?"Tu sala está abierta ("+NET.mx+" jugadores como máximo). Esperá a que se unan.":"Jugadores ("+n+"/"+NET.mx+"): "+[nameVal()].concat(NET.gs.map(g=>g.name)).join(", ")+(n<NET.mx?". Podés empezar ya o esperar a más.":". ¡Sala completa!"));
 }
 function gmsg(d){
   if(!NET||!NET.hid||!d||typeof d!=="object"||d.from===LB.code)return;
   const f=idc(d.from);
   if(!f||(d.to&&d.to!==LB.code))return;
   const sq=+d.seq;if(!(sq>(LASTSEQ[f]||0)))return;LASTSEQ[f]=sq;
-  if(NET.host&&!NET.oid){if(d.t!=="hello")return;NET.oid=f}
-  else if(f!==NET.oid){if(d.t==="hello"&&NET.host)gsend({t:"full",to:f});return}
-  NET.last=Date.now();
-  onNet(d);
+  const now=Date.now();
+  if(NET.host){
+    const g=NET.gs.find(x=>x.id===f);
+    if(d.t==="hello"){
+      const nm=clean(d.name)||"Rival";
+      if(!g){
+        if(G||NET.started||NET.gs.length+1>=NET.mx){gsend({t:"full",to:f});return}
+        NET.gs.push({id:f,name:nm,last:now});NET.searching=0;NET.lk="";
+        if(NET.q){lbSet(null);ost("¡Rival encontrado: "+nm+"! Empezando la carrera…");setTimeout(()=>{if(NET&&NET.host&&NET.gs.length&&!G)startOnline()},1500)}
+        else ros();
+      }else{g.last=now;if(g.name!==nm){g.name=nm;ros()}}
+    }else if(g){g.last=now;onNet(d,f)}
+    return}
+  if(f===NET.oid){NET.last=now;onNet(d,f)}
+  else if(d.t==="s"&&G&&G.ids&&G.ids.includes(f))onNet(d,f);
 }
-function onNet(d){
+function onNet(d,f){
   if(!NET)return;
-  if(d.t==="hello"){
-    const first=!NET.opp;NET.opp=clean(d.name)||"Rival";
-    if(!first)return;
-    NET.searching=0;NET.lk="";
-    if(NET.q){
-      lbSet(null);
-      ost("¡Rival encontrado: "+NET.opp+"!"+(NET.host?" Empezando la carrera…":" Esperá un instante…"));
-      if(NET.host)setTimeout(()=>{if(NET&&NET.host&&NET.oid&&NET.opp&&!G)startOnline()},1500);
-    }else if(NET.host){lbSet(roomInfo(2));ost(NET.opp+" se unió. ¡Todo listo!");$("#ostart").classList.remove("hide")}
-    else ost("Conectado con "+NET.opp+". Esperá a que quien creó la sala empiece la carrera.");
+  if(d.t==="ros"&&!NET.host){
+    const first=!NET.opp,nm=(Array.isArray(d.names)?d.names:[]).slice(0,4).map(clean);
+    NET.opp=nm[0]||"Anfitrión";NET.searching=0;NET.lk="";
+    const tx=NET.q?"¡Rival encontrado: "+NET.opp+"! Esperá un instante…":"Sala de "+NET.opp+" ("+nm.length+"/"+Math.max(2,Math.min(4,+d.mx||4))+"): "+nm.join(", ")+". Esperá a que empiece la carrera.";
+    if(first&&NET.q)lbSet(null);
+    if(NET.rt!==tx){NET.rt=tx;ost(tx)}
   }else if(d.t==="start"&&!NET.host){
     if(d.gid===NET.lastgid)return;NET.lastgid=d.gid;
-    const len=LENS.includes(+d.len)?+d.len:900,map=TH[d.map|0]?d.map|0:0;
-    if(d.name&&!NET.opp)NET.opp=clean(d.name);
-    newGame({names:[NET.opp||"Rival",nameVal()],me:1,len,map,gid:String(d.gid||"")});
+    const len=LENS.includes(+d.len)?+d.len:900,map=TH[d.map|0]?d.map|0:0,
+      ps=(Array.isArray(d.ps)?d.ps:[]).slice(0,4).map(p=>({id:idc(p&&p.id),name:clean(p&&p.name)||"Jugador"})),me=ps.findIndex(p=>p.id===LB.code);
+    if(me<0||ps.length<2)return;
+    newGame({names:ps.map(p=>p.name),ids:ps.map(p=>p.id),me,len,map,gid:String(d.gid||"")});
   }else if(d.t==="rematch"&&NET.host&&!G){
     startOnline();
   }else if(d.t==="full"&&!NET.host){
-    netClose();ost("Esa sala ya está ocupada.");
+    netClose();ost("Esa sala ya está ocupada o ya empezó.");
   }else if(d.t==="bye"){
-    lost();
+    if(NET.host){
+      NET.gs=NET.gs.filter(g=>g.id!==f);
+      if(G){const i=G.ids.indexOf(f);if(i>=0)G.rs[i].out=true}
+      else if(NET.q){netClose();ost("Se perdió el rival, buscando de nuevo…");qRetry()}
+      else ros();
+    }else lost();
   }else if(d.t==="s"&&G&&G.online&&d.g===G.gid){
-    const r=G.rs[G.me?0:1];
+    const i=G.ids.indexOf(f);if(i<0||i===G.me)return;
+    const r=G.rs[i];r.seen=Date.now();
     r.tp=Math.max(0,Math.min(G.len,+d.pos||0));r.tt=performance.now();
     r.v=Math.max(0,Math.min(70,+d.v||0));
     if(d.fin&&!r.fin){r.fin=true;r.t=Math.max(0,+d.tm||G.time);r.v=0;r.pos=G.len}
   }
 }
 function startOnline(){
-  if(!NET||!NET.host||!NET.oid||!NET.opp)return;
-  const len=NET.room.len,map=NET.room.map,gid=(Date.now()%1e9).toString(36)+Math.random().toString(36).slice(2,5);
-  NET.lastgid=gid;
-  const o={t:"start",len,map,gid,name:nameVal()};
+  if(!NET||!NET.host||!NET.gs.length)return;
+  const len=NET.room.len,map=NET.room.map,gid=(Date.now()%1e9).toString(36)+Math.random().toString(36).slice(2,5),
+    ps=[{id:LB.code,name:nameVal()}].concat(NET.gs.map(g=>({id:g.id,name:g.name})));
+  NET.lastgid=gid;NET.started=1;if(!NET.q)lbSet(roomInfo(ps.length));
+  const o={t:"start",len,map,gid,ps};
   gsend(Object.assign({},o));
   setTimeout(()=>{if(NET&&NET.lastgid===gid)gsend(Object.assign({},o))},500);
   setTimeout(()=>{if(NET&&NET.lastgid===gid)gsend(Object.assign({},o))},1200);
-  newGame({names:[nameVal(),NET.opp],me:0,len,map,gid});
+  newGame({names:ps.map(p=>p.name),ids:ps.map(p=>p.id),me:0,len,map,gid});
 }
 function rematch(){
   if(!NET)return;
-  if(NET.host)startOnline();
+  if(NET.host){if(NET.gs.length)startOnline();else toMenu()}
   else gsend({t:"rematch"});
 }
 
@@ -585,7 +616,7 @@ function thumb(c,i){
   if(t.night){g.fillStyle="rgba(8,12,40,.35)";g.fillRect(0,0,120,76)}
 }
 function gen(r){
-  if(r.words){if(!r.bag||!r.bag.length)r.bag=shuf(WORDS.slice());return r.bag.pop()}
+  if(r.words){if(!r.bag||!r.bag.length)r.bag=shuf(WORDS.slice(),r.rng);return r.bag.pop()}
   let s="";for(let i=0;i<5;i++)s+=r.zone[Math.random()*r.zone.length|0];return s;
 }
 function setOv(t){
@@ -603,15 +634,15 @@ function newGame(on){
   if(on&&!on.names)on=null;
   if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
   QS=false;SOLO=!on;PT=[];makeBg(on?on.map:sel.map);$("#mapn").textContent=T.n;
-  const n=on?1:sel.n,tot=on?2:n+sel.cpu,rs=[];
+  const n=on?1:sel.n,tot=on?on.names.length:n+sel.cpu,rs=[];
   for(let i=0;i<tot;i++){
     const h=on?i===on.me:i<n,
       r={id:i,h,remote:!!on&&!h,name:on?on.names[i]:(h?(n>1?"Jugador "+(i+1):nameVal()):"Compu "+(i-n+1)),c:COL[i],pos:0,v:0,w:0,ok:0,errors:0,keys:0,fin:false,t:0,shake:0,bad:0,
-      zone:h&&n>1?ZN[n][i]:null,words:h&&n===1,rate:OPT.dif[sel.dif][1]*(.88+Math.random()*.24),acc:0,i:0};
+      zone:h&&n>1?ZN[n][i]:null,words:h&&n===1,rate:OPT.dif[sel.dif][1]*(.88+Math.random()*.24),acc:0,i:0,seen:Date.now(),rng:on?seedR(on.gid):null};
     if(h){r.cur=gen(r);r.next=gen(r)}
     rs.push(r);
   }
-  G={rs,n,len:on?on.len:OPT.len[sel.len][1],time:0,cd:3.99,state:"count",online:!!on,me:on?on.me:0,tx:0,gid:on?on.gid:0};
+  G={rs,n,len:on?on.len:OPT.len[sel.len][1],time:0,cd:3.99,state:"count",online:!!on,me:on?on.me:0,tx:0,gid:on?on.gid:0,ids:on?on.ids:null};
   const P=$("#panels");P.innerHTML="";
   rs.forEach(r=>{
     const d=document.createElement("div");d.className="p"+(r.h?" me":"");d.id="p"+r.id;d.style.setProperty("--c",r.c);
@@ -656,6 +687,8 @@ function step(dt){
   if(G.state==="count"&&G.cd>1)return;
   G.rs.forEach(r=>{
     if(r.remote){
+      if(!r.fin&&!r.out&&Date.now()-r.seen>10000)r.out=true;
+      if(r.out){r.v=0;hudUpd(r);r.el.querySelector(".tag").textContent="Fuera";return}
       if(!r.fin&&r.tt&&(G.state==="run"||G.state==="over")){const age=Math.min(.6,(performance.now()-r.tt)/1000),ex=Math.min(G.len,r.tp+r.v*age*.9);r.pos+=(ex-r.pos)*Math.min(1,dt*10)}
       hudUpd(r);return}
     if(G.state==="run"&&!r.h&&!r.fin){
@@ -670,13 +703,13 @@ function step(dt){
     }
     hudUpd(r);
   });
-  if(G.online&&NET&&NET.oid&&(G.state==="run"||G.state==="over")){
+  if(G.online&&NET&&NET.hid&&(G.state==="run"||G.state==="over")){
     G.tx-=dt;
     if(G.tx<=0){G.tx=.1;const m=G.rs[G.me];gsend({t:"s",g:G.gid,pos:+m.pos.toFixed(1),v:+m.v.toFixed(2),fin:m.fin?1:0,tm:m.t})}
   }
   if(G.state==="run"&&G.rs.some(r=>r.fin)){
     if(G.ff==null)G.ff=G.time;
-    if(!G.online||G.time-G.ff>=1.5||G.rs.every(r=>r.fin)){G.state="over";setTimeout(results,1400)}
+    if(!G.online||G.time-G.ff>=8||G.rs.every(r=>r.fin||r.out)){G.state="over";setTimeout(results,1400)}
   }
 }
 
