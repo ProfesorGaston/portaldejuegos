@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<!-- 
+  ====================================================
+  PORTAL DE JUEGOS EDUCATIVOS - PROF. GASTÓN
+  Área: Ciencias Naturales
+  Ciclo: Segundo Ciclo | Grado: 5.º Grado
+  Diseño Curricular CABA (2025): Propagación rectilínea de la luz (simulación con fuente extendida, penumbra e iluminación 1/d²); sombras; materiales opacos, translúcidos y transparentes; relación entre el tamaño de la sombra y la distancia fuente-objeto; actividad científica escolar
+  ====================================================
+-->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Ctext y=%27.9em%27 font-size=%2790%27%3E🔦%3C/text%3E%3C/svg%3E">
+<title>¿Cambia la sombra si me acerco a la luz?</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:wght@600;700&display=swap">
+<style>
+:root{--room:#dbe5ec;--ink:#13243a;--mute:#4d6078;--paper:#f7fafc;--grid:#d3e0ea;--pen:#2858d6;--warm:#ffcf6b;--ok:#12805c;--no:#b4441a;--line:#b4c4d3;color-scheme:light;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+:root[data-theme="dark"]{--room:#08121d;--ink:#e6eef7;--mute:#9bb0c6;--paper:#122336;--grid:#1d3550;--pen:#8bb0ff;--ok:#46d19a;--no:#ff9a62;--line:#2b4560;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--room);color:var(--ink);font:17px/1.55 'Atkinson Hyperlegible',system-ui,sans-serif}
+.wrap{max-width:960px;margin:0 auto;padding:18px 14px 44px}
+h1,h2{font-family:'Bricolage Grotesque','Atkinson Hyperlegible',system-ui,sans-serif;line-height:1.1;margin:0}
+h1{font-size:clamp(26px,5.5vw,42px);max-width:20ch}
+.sub{margin:6px 0 14px;color:var(--mute);font-size:15px}
+.stage{background:#060b14;border-radius:16px;overflow:hidden;position:relative;border:1px solid var(--line)}
+.stage canvas{display:block;width:100%;height:auto;touch-action:none;cursor:grab}
+.stage canvas:focus-visible{outline-offset:-3px}
+input[type=range]{accent-color:var(--pen);vertical-align:middle}
+.cols+.note,.three b{font-family:"Bricolage Grotesque",sans-serif;font-size:20px}
+.tools{position:absolute;right:10px;top:10px;display:flex;gap:6px}
+.tools label{background:#0e1a2b;color:#e6eef7;border:1px solid #2b4560;border-radius:99px;padding:3px 12px;font-size:14px;cursor:pointer}
+.nb{position:relative;margin-top:14px;border-radius:14px;border:1px solid var(--line);background:var(--paper);
+background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px;padding:16px 16px 18px 52px}
+.nb::before{content:"";position:absolute;left:34px;top:0;bottom:0;width:2px;background:#e0555f;opacity:.7}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.tabs button{font:inherit;font-size:14px;background:transparent;color:var(--mute);border:0;border-bottom:3px solid transparent;padding:2px 6px;cursor:pointer}
+.tabs button.on{color:var(--ink);border-color:var(--pen);font-weight:700}
+.tabs button.ok{color:var(--ok)}
+.tabs button:disabled{opacity:.4;cursor:not-allowed}
+h2{font-size:24px;margin-bottom:4px}
+p{margin:6px 0}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0;align-items:center}
+.b{font:inherit;color:var(--ink);background:var(--paper);border:2px solid var(--ink);border-radius:10px;padding:7px 14px;cursor:pointer;transition:transform .15s,background .2s}
+.b:hover{transform:translateY(-2px)}
+.b.sel{background:var(--pen);color:var(--paper);border-color:var(--pen)}
+.b.go{background:var(--ink);color:var(--paper);font-weight:700}
+.b:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.b.ok::after{content:" ✓"}
+.note{padding:8px 12px;border-left:4px solid var(--pen);background:color-mix(in srgb,var(--paper) 80%,var(--pen) 20%);border-radius:0 10px 10px 0;min-height:44px}
+.note.ok{border-color:var(--ok)}.note.no{border-color:var(--no)}
+.opts{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+.opts .b{text-align:left;padding:12px}
+.opts b{display:block;font-family:'Bricolage Grotesque',sans-serif;font-size:18px}
+table{border-collapse:collapse;min-width:230px}
+td,th{border-bottom:1px solid var(--line);padding:4px 12px 4px 0;text-align:left}
+td.v{font-weight:700;color:var(--pen)}
+.cols{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+select,textarea{font:inherit;color:var(--ink);background:var(--paper);border:2px solid var(--pen);border-radius:8px;padding:2px 6px}
+textarea{width:100%;min-height:62px}
+.three{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin-top:10px}
+.three div{border:2px solid var(--ink);border-radius:10px;padding:8px 12px;background:var(--paper)}
+.three small{display:block;color:var(--mute)}
+.ray{stroke-dasharray:10 8;animation:flow 1s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-18}}
+.glow{animation:pulse 2.4s ease-in-out infinite;transform-origin:70px 190px}
+@keyframes pulse{50%{opacity:.6;transform:scale(1.15)}}
+.norays .ray{display:none}
+#mk{opacity:0;transition:opacity .2s}#mk.on{opacity:1}
+#mk .pl{stroke-dasharray:30;stroke-dashoffset:30}
+#mk.on .pl{animation:dr .5s forwards}
+@keyframes dr{to{stroke-dashoffset:0}}
+#doll{cursor:grab}
+:focus-visible{outline:3px solid var(--pen);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.pill{display:inline-block;background:var(--pen);color:var(--paper);border-radius:99px;padding:3px 14px;font-size:14px;font-weight:700;margin-bottom:8px}
+.stage{box-shadow:0 14px 34px -14px rgba(8,18,29,.6)}
+.tools{flex-wrap:wrap;justify-content:flex-end;max-width:70%}
+.tools button{font:inherit;font-size:14px;background:#0e1a2b;color:#e6eef7;border:1px solid #2b4560;border-radius:99px;padding:3px 12px;cursor:pointer}
+.tabs button{border:2px solid var(--line);border-radius:99px;padding:4px 14px;background:var(--paper)}
+.tabs button.on{background:var(--pen);color:var(--paper);border-color:var(--pen)}
+.tabs button.ok{border-color:var(--ok)}
+.note.ok{animation:pop .45s}
+@keyframes pop{from{transform:scale(.97);opacity:.4}to{transform:none;opacity:1}}
+body.clase{font-size:21px}
+body.clase .wrap{max-width:1360px}
+body.clase h2{font-size:30px}
+body.clase #ch svg{width:440px}
+body.clase .tabs button,body.clase .b{font-size:18px}
+.stage:fullscreen{display:flex;align-items:center;justify-content:center;border-radius:0}
+.stage:fullscreen canvas{max-height:100vh;width:auto;max-width:100%}
+
+/* ===== MEJORAS VISUALES (solo estética; mecánicas intactas) ===== */
+body{background-image:radial-gradient(900px 520px at 88% -8%,rgba(255,207,107,.38),transparent 62%),radial-gradient(760px 520px at -8% 28%,rgba(40,88,214,.2),transparent 60%),radial-gradient(color-mix(in srgb,var(--ink) 9%,transparent) 1px,transparent 1.5px);background-size:auto,auto,22px 22px;background-attachment:fixed;font-size:18px}
+.wrap{padding-top:22px}
+.pill{background:linear-gradient(120deg,var(--pen),#7a4cff);box-shadow:0 6px 18px -6px var(--pen);letter-spacing:.02em;animation:fl 4s ease-in-out infinite}
+@keyframes fl{50%{transform:translateY(-3px)}}
+h1{background:linear-gradient(100deg,var(--ink) 25%,var(--pen) 70%,#d98a00);-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:-.015em;text-wrap:balance;filter:drop-shadow(0 2px 0 color-mix(in srgb,var(--paper) 70%,transparent))}
+.sub{font-size:16px}
+.stage{border:2px solid color-mix(in srgb,var(--warm) 55%,#2b4560);box-shadow:0 0 0 6px color-mix(in srgb,var(--warm) 14%,transparent),0 0 46px -6px rgba(255,200,100,.35),0 24px 48px -18px rgba(8,18,29,.75);border-radius:20px}
+.stage::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:radial-gradient(ellipse at 50% 45%,transparent 62%,rgba(0,0,0,.38)),repeating-linear-gradient(0deg,rgba(255,255,255,.018) 0 1px,transparent 1px 3px)}
+.tools label,.tools button{backdrop-filter:blur(6px);background:rgba(14,26,43,.78);transition:background .2s,transform .15s}
+.tools label:hover,.tools button:hover{background:rgba(40,88,214,.7);transform:translateY(-1px)}
+.nb{border-radius:20px;border:2px solid var(--line);box-shadow:0 22px 44px -24px rgba(8,18,29,.55),inset 0 1px 0 rgba(255,255,255,.5)}
+.nb::after{content:"";position:absolute;left:9px;top:0;bottom:0;width:16px;background:radial-gradient(circle,var(--room) 5px,color-mix(in srgb,var(--ink) 25%,transparent) 6px,transparent 7px) 0 8px/16px 38px repeat-y}
+.nb>*{animation:rise .5s cubic-bezier(.2,.8,.2,1) both}
+.nb>*:nth-child(2){animation-delay:.04s}.nb>*:nth-child(3){animation-delay:.1s}.nb>*:nth-child(4){animation-delay:.16s}.nb>*:nth-child(n+5){animation-delay:.22s}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.tabs{counter-reset:s;gap:8px}
+.tabs button{counter-increment:s;display:inline-flex;align-items:center;gap:7px;padding:4px 14px 4px 5px;font-weight:700;transition:transform .15s,box-shadow .2s}
+.tabs button::before{content:counter(s);display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--line);color:var(--ink);font-size:13px}
+.tabs button.on{box-shadow:0 8px 18px -8px var(--pen);transform:translateY(-2px)}
+.tabs button.on::before{background:var(--paper);color:var(--pen)}
+.tabs button.ok::before{content:"✓";background:var(--ok);color:#fff}
+.tabs button:not(:disabled):hover{transform:translateY(-2px)}
+h2{font-size:28px;display:flex;align-items:center;gap:10px}
+h2::before{content:"";width:8px;height:1em;border-radius:6px;background:linear-gradient(var(--pen),var(--warm))}
+.b{border-radius:14px;box-shadow:0 3px 0 var(--ink);font-weight:700;transition:transform .15s,box-shadow .15s,background .2s}
+.b:hover:not(:disabled){transform:translateY(-3px);box-shadow:0 6px 0 var(--ink)}
+.b:active:not(:disabled){transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
+.b.go{background:linear-gradient(120deg,var(--pen),#7a4cff);color:#fff;border-color:transparent;box-shadow:0 5px 0 color-mix(in srgb,var(--pen) 55%,#000),0 12px 22px -10px var(--pen)}
+.b.go:not(:disabled)::after{content:" →"}
+.b.go:not(:disabled):not(#mark):not(#again){animation:beat 2.2s ease-in-out infinite}
+@keyframes beat{50%{transform:scale(1.04)}}
+.b.sel{box-shadow:0 0 0 4px color-mix(in srgb,var(--pen) 30%,transparent),0 3px 0 var(--ink)}
+.b.ok{background:color-mix(in srgb,var(--paper) 80%,var(--ok) 20%);border-color:var(--ok)}
+#mats .b:nth-child(1)::before{content:"";display:inline-block;width:1.15em;height:1.15em;vertical-align:-.2em;margin-right:.3em;background:url(https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/1f4e6.svg) center/contain no-repeat}#mats .b:nth-child(2)::before{content:"";display:inline-block;width:1.15em;height:1.15em;vertical-align:-.2em;margin-right:.3em;background:url(https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/1f9c8.svg) center/contain no-repeat}#mats .b:nth-child(3)::before{content:"";display:inline-block;width:1.15em;height:1.15em;vertical-align:-.2em;margin-right:.3em;background:url(https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/1f36c.svg) center/contain no-repeat}#mats .b:nth-child(4)::before{content:"";display:inline-block;width:1.15em;height:1.15em;vertical-align:-.2em;margin-right:.3em;background:url(https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/1f9f5.svg) center/contain no-repeat}#mats .b:nth-child(5)::before{content:"";display:inline-block;width:1.15em;height:1.15em;vertical-align:-.2em;margin-right:.3em;background:url(https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/1f95b.svg) center/contain no-repeat}
+#cls .b[data-k=opaco]::before{content:"";display:inline-block;width:1.15em;height:1.15em;vertical-align:-.2em;margin-right:.3em;background:url(https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/2b1b.svg) center/contain no-repeat}#cls .b[data-k=translúcido]::before{content:"";display:inline-block;width:1.15em;height:1.15em;vertical-align:-.2em;margin-right:.3em;background:url(https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/1f32b.svg) center/contain no-repeat}#cls .b[data-k=transparente]::before{content:"";display:inline-block;width:1.15em;height:1.15em;vertical-align:-.2em;margin-right:.3em;background:url(https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/1f48e.svg) center/contain no-repeat}
+#hyp .b[data-h=cerca]::before{content:"";display:block;width:34px;height:34px;margin-bottom:4px;background:url(https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/1f525.svg) center/contain no-repeat}#hyp .b[data-h=lejos]::before{content:"";display:block;width:34px;height:34px;margin-bottom:4px;background:url(https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/1f30c.svg) center/contain no-repeat}#hyp .b[data-h=igual]::before{content:"";display:block;width:34px;height:34px;margin-bottom:4px;background:url(https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/2696.svg) center/contain no-repeat}
+.opts .b{border-radius:16px}
+.note{border-radius:0 14px 14px 0;box-shadow:0 6px 16px -12px var(--ink);font-size:1.02em}
+.note.ok{background:color-mix(in srgb,var(--paper) 78%,var(--ok) 22%)}.note.no{background:color-mix(in srgb,var(--paper) 80%,var(--no) 20%);animation:shake .4s}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+table{border-radius:12px;overflow:hidden;background:color-mix(in srgb,var(--paper) 85%,transparent);box-shadow:0 0 0 1px var(--line)}
+th{background:color-mix(in srgb,var(--pen) 14%,var(--paper))}td,th{padding:6px 14px}
+td.v{font-size:1.1em;font-variant-numeric:tabular-nums}
+#ch svg{background:color-mix(in srgb,var(--paper) 85%,transparent);border-radius:14px;box-shadow:0 0 0 1px var(--line)}
+#ch rect{rx:7;transform-box:fill-box;transform-origin:bottom;animation:grow .7s cubic-bezier(.2,.9,.3,1.2) both}
+@keyframes grow{from{transform:scaleY(0)}}
+.three div{border-radius:16px;border-width:2px;border-top:6px solid var(--pen);box-shadow:0 10px 20px -14px var(--ink);animation:rise .5s both}
+.three div:nth-child(2){border-top-color:var(--ok)}.three div:nth-child(3){border-top-color:var(--warm)}
+.three b{display:block;font-size:30px!important;color:var(--pen);font-variant-numeric:tabular-nums}
+select,textarea{border-radius:10px;transition:box-shadow .2s}
+select:focus,textarea:focus{outline:0;box-shadow:0 0 0 4px color-mix(in srgb,var(--pen) 28%,transparent)}
+input[type=range]{height:22px;cursor:pointer}
+body.clase{font-size:23px}body.clase h2{font-size:38px}body.clase .three b{font-size:44px!important}body.clase .tabs button{font-size:20px}
+#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:99}
+img.emoji{height:1.15em;width:1.15em;margin:0 .08em;vertical-align:-.2em;display:inline-block}
+:root{--room:#eaf3fb;--paper:#fffefa;--grid:#dbe9f5;--line:#bcd0e2;--pen:#3a6fe0;--mute:#4a5f78}
+.stage{background:#d4e6f8;border-color:#fff;box-shadow:0 0 0 6px rgba(255,255,255,.7),0 0 40px -6px rgba(255,190,90,.45),0 22px 40px -20px rgba(40,70,120,.45)}
+.stage::after{background:radial-gradient(ellipse at 50% 45%,transparent 70%,rgba(60,100,160,.16))}
+.tools label,.tools button{background:rgba(255,255,255,.85);color:#13243a;border-color:#9db4cf}
+.tools label:hover,.tools button:hover{background:#3a6fe0;color:#fff}
+.nb{box-shadow:0 18px 36px -22px rgba(40,70,120,.4),inset 0 1px 0 #fff}
+.b{box-shadow:0 3px 0 #9db4cf;border-color:#9db4cf}.b:hover:not(:disabled){box-shadow:0 6px 0 #9db4cf}.b:active:not(:disabled){box-shadow:0 1px 0 #9db4cf}
+.b.sel{border-color:var(--pen)}
+.three div{border-color:var(--line);border-top-width:6px}.three div:first-child{border-top-color:var(--pen)}
+</style>
+</head>
+<body>
+<canvas id="fx"></canvas>
+<div class="wrap">
+  <span class="pill">🔦 Ciencias Naturales · 5.º grado</span>
+  <h1>¿Cambia la sombra si me acerco a la luz?</h1>
+  <p class="sub">Ciencias Naturales, 5.º grado. Estoy en el aula a oscuras y el que experimenta soy yo.</p>
+
+  <div class="stage">
+    <div class="tools"><label><input type="checkbox" id="rays" checked> Ver rayos</label><label><input type="checkbox" id="clase"> Modo clase</label><button type="button" id="fs">⛶ Pantalla completa</button></div>
+    <canvas id="cv" tabindex="0" role="slider" aria-label="Distancia entre la linterna y el muñeco, en centímetros. Con las flechas lo muevo." aria-valuemin="14" aria-valuemax="90"></canvas>
+  </div>
+
+  <div class="nb" id="nb"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@twemoji/api@15.1.0/dist/twemoji.min.js" crossorigin="anonymous"></script>
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const fmt=n=>(Math.round(n*10)/10).toFixed(1).replace('.',',').replace(',0','');
+const S={p:0,top:0,hyp:null,done:{},sel:-1,rec:{},mode:'doll',idea:''};
+/* ===== Motor de óptica: fuente extendida, penumbra, fotones, 1/d² ===== */
+const cv=$('#cv'),cx=cv.getContext('2d'),VW=900,VH=380,AY=170,PX=6,WALL=100,BY=262,IX=722,IY=40,IW=170,IH=260,X=d=>60+PX*d,dpr=Math.min(window.devicePixelRatio||1,2);
+cv.width=VW*dpr;cv.height=VH*dpr;
+const RM=matchMedia('(prefers-reduced-motion:reduce)').matches;
+const P={ox:50,tx:50,lx:0,tlx:0,r:7,tr:7,hd:5,thd:5,T:0,tT:0,col:'#b88a58',op:1,panel:0,ang:0,av:0};
+let cur=50,auto=!RM,touched=false,markT=0,markD=0,showRays=true,drag=null,ph=[],sp=[],last=performance.now(),ariaV=-1;
+const snap=d=>Math.max(20,Math.min(80,Math.round(d/20)*20));
+function tween(to,t){P.tx=to;if(t!==undefined)P.tT=t}
+const col=b=>`rgb(${14+b*236|0},${12+b*226|0},${14+b*196|0})`;
+const Fd=(u,r)=>{u=Math.max(-r,Math.min(r,u));return(u*Math.sqrt(r*r-u*u)+r*r*Math.asin(u/r))/(Math.PI*r*r)+.5};
+/* fracción visible de la fuente (disco de radio r) desde un punto u de la pared */
+const vis=(u,a,r,T,xl,xo,xw)=>{const s=(xw-xo)/(xw-xl);return 1-(Fd(u+(a-u)/s,r)-Fd(u+(-a-u)/s,r))*(1-T)};
+const tx=(s,x,y,c='#31506f',f=14,al='center')=>{cx.fillStyle=c;cx.font=f+'px "Atkinson Hyperlegible",system-ui,sans-serif';cx.textAlign=al;cx.fillText(s,x,y)};
+const rr=(x,y,w,h,r)=>{cx.beginPath();cx.roundRect?cx.roundRect(x,y,w,h,r):cx.rect(x,y,w,h)};
+const SP=300,dm=Array.from({length:44},(_,i)=>({fx:Math.random(),fy:Math.random(),ph:Math.random()*6.28,s:.6+Math.random()*1.4}));
+
+
+function frame(now){
+ const dt=Math.min(.05,(now-last)/1e3);last=now;
+ if(auto&&S.p===0)P.tx=50+27*Math.sin(now/900);
+ const e=1-Math.exp(-dt*14),old=P.ox;
+ P.ox+=(P.tx-P.ox)*e;P.lx+=(P.tlx-P.lx)*e;P.T+=(P.tT-P.T)*e;P.r+=(P.tr-P.r)*e;P.hd+=(P.thd-P.hd)*e;cur=P.ox;
+ const v=(P.ox-old)/Math.max(dt,.001),tg=Math.max(-.12,Math.min(.12,-v*.0015));P.av+=((tg-P.ang)*180-P.av*9)*dt;P.ang+=P.av*dt;
+ const xl=X(P.lx),xo=X(P.ox),xw=X(WALL),a=(P.panel?7:P.hd/2)*PX,k=(xw-xl)/(xo-xl),r=Math.max(.6,P.r),Tr=P.T,Dk=1-Tr,
+  yIn=r+(a-r)*k,yOut=-r+(a+r)*k,dx=xw-xl,gain=Math.min(2.4,(600/dx)**2),fl=1+(RM?0:.025*Math.sin(now/70));
+ cx.setTransform(dpr,0,0,dpr,0,0);cx.globalCompositeOperation='source-over';cx.setLineDash([]);cx.shadowBlur=0;
+ const bg=cx.createLinearGradient(0,0,0,VH);bg.addColorStop(0,'#bcd8f5');bg.addColorStop(1,'#eef6fd');cx.fillStyle=bg;cx.fillRect(0,0,VW,VH);
+
+ /* haz, sombra en el aire, rayos y fotones */
+ cx.save();cx.beginPath();cx.rect(0,0,VW,BY);cx.clip();cx.globalCompositeOperation='source-over';
+ const cg=cx.createRadialGradient(xl,AY,0,xl,AY,dx+160);cg.addColorStop(0,`rgba(255,196,80,${.34*fl})`);cg.addColorStop(1,'rgba(255,205,110,.05)');
+ cx.fillStyle=cg;cx.beginPath();cx.moveTo(xl,AY);cx.lineTo(xw,-20);cx.lineTo(xw,BY+20);cx.fill();cx.globalCompositeOperation='source-over';
+ cx.fillStyle=`rgba(40,62,120,${.3*Dk})`;cx.beginPath();cx.moveTo(xo,AY-a);cx.lineTo(xw,AY-yOut);cx.lineTo(xw,AY+yOut);cx.lineTo(xo,AY+a);cx.fill();
+ if(yIn>0){cx.fillStyle=`rgba(40,62,120,${.6*Dk})`;cx.beginPath();cx.moveTo(xo,AY-a);cx.lineTo(xw,AY-yIn);cx.lineTo(xw,AY+yIn);cx.lineTo(xo,AY+a);cx.fill()}
+ if(!RM){cx.fillStyle='rgba(255,160,30,.5)';for(const m of dm){const mx=xl+8+m.fx*(dx-8)+9*Math.sin(now/1800+m.ph),py=m.fy*BY+7*Math.cos(now/1500+m.ph);if(mx>xo&&Math.abs(py-AY)<a+(yIn-a)*(mx-xo)/(xw-xo)+4)continue;const al=Math.max(0,1-Math.abs(py-AY)/(BY*.6));cx.globalAlpha=.15+.5*al*(.6+.4*Math.sin(now/600+m.ph));cx.beginPath();cx.arc(mx,py,m.s,0,7);cx.fill()}cx.globalAlpha=1}
+ if(showRays){
+  cx.lineCap='round';cx.setLineDash([10,8]);cx.lineDashOffset=-(now/55)%18;cx.strokeStyle='rgba(240,140,10,.95)';cx.lineWidth=2;
+  cx.beginPath();[-1,1].forEach(s=>{cx.moveTo(xl,AY);cx.lineTo(xw,AY+s*a*k)});cx.stroke();
+  if(r>3){cx.lineWidth=1;cx.strokeStyle='rgba(240,140,10,.45)';cx.beginPath();[-1,1].forEach(s=>{cx.moveTo(xl,AY-s*r);cx.lineTo(xw,AY+s*yIn);cx.moveTo(xl,AY+s*r);cx.lineTo(xw,AY+s*yOut)});cx.stroke()}
+  cx.setLineDash([]);
+  if(!RM){
+   for(let i=0;i<4&&ph.length<190;i++){const th=(Math.random()*2-1)*.42;ph.push({x:xl,y:AY+(Math.random()*2-1)*r,vx:Math.cos(th)*SP,vy:Math.sin(th)*SP})}
+   for(const p of ph){const x0=p.x;p.x+=p.vx*dt;p.y+=p.vy*dt;
+    if(x0<xo&&p.x>=xo&&Math.abs(p.y-AY)<=a){if(Math.random()>Tr){p.d=1;sp.push({x:xo,y:p.y,t:0})}else if(Tr<.97){const an=Math.atan2(p.vy,p.vx)+(Math.random()-.5)*1.8*(1-Tr);p.vx=Math.cos(an)*SP;p.vy=Math.sin(an)*SP}}
+    if(p.x>=xw||p.x<xl-4||p.y<0||p.y>BY)p.d=1}
+   ph=ph.filter(p=>!p.d);
+   cx.globalCompositeOperation='source-over';cx.strokeStyle='rgba(255,140,10,.95)';cx.lineWidth=1.8;cx.beginPath();
+   for(const p of ph){cx.moveTo(p.x-p.vx*.02,p.y-p.vy*.02);cx.lineTo(p.x,p.y)}cx.stroke();
+   sp.forEach(s=>{s.t+=dt;cx.fillStyle=`rgba(255,150,60,${Math.max(0,1-s.t/.3)})`;cx.beginPath();cx.arc(s.x,s.y,3,0,7);cx.fill()});sp=sp.filter(s=>s.t<.3&&sp.length<80);
+  }
+ }else ph=[];
+ cx.restore();
+
+ /* banco con regla */
+ const bf=cx.createLinearGradient(0,BY+14,0,VH);bf.addColorStop(0,'#e6d2ae');bf.addColorStop(1,'#c8ab80');cx.fillStyle=bf;cx.fillRect(24,BY+14,640,VH-BY-14);cx.fillStyle='rgba(255,255,255,.45)';cx.fillRect(24,BY+14,640,2);
+ const wg=cx.createLinearGradient(0,BY,0,BY+14);wg.addColorStop(0,'#c9975e');wg.addColorStop(1,'#8b6538');cx.fillStyle=wg;cx.fillRect(14,BY,660,14);
+ cx.fillStyle='#f6e7b4';cx.fillRect(X(0),BY,600,12);cx.strokeStyle='#3a3322';cx.lineWidth=1;cx.beginPath();for(let q=0;q<=100;q+=5){cx.moveTo(X(q),BY);cx.lineTo(X(q),BY+(q%10?4:8))}cx.stroke();
+ for(let q=0;q<=100;q+=20)tx(q,X(q),BY+27);
+ cx.save();cx.globalCompositeOperation='lighter';cx.beginPath();cx.rect(0,BY,VW,12);cx.clip();const bl=cx.createRadialGradient(xl,BY,0,xl,BY,200);bl.addColorStop(0,'rgba(255,210,120,.4)');bl.addColorStop(1,'rgba(255,210,120,0)');cx.fillStyle=bl;cx.fillRect(xl-200,BY,400,12);cx.restore();
+
+ /* pared y hoja: iluminación real fila por fila (1/d², coseno y penumbra) */
+ cx.fillStyle='#a9bfd8';cx.fillRect(xw,0,44,BY+14);
+ for(let y=0;y<BY;y++){const u=AY-y,E=dx**3/(dx*dx+u*u)**1.5;cx.fillStyle=col(1-Math.exp(-1.6*E*gain*vis(u,a,r,Tr,xl,xo,xw)));cx.fillRect(xw-12,y,12,1.3)}
+ cx.fillStyle='#31506f';cx.fillRect(xw-16,AY-89,5,1);cx.fillRect(xw-16,AY+89,5,1);tx('hoja A4',xw-6,AY-97);
+
+ /* linterna */
+ cx.fillStyle='#2b3a52';cx.fillRect(xl-3,AY+16,6,BY-AY-16);cx.fillStyle='#3b4a63';cx.fillRect(xl-15,BY-5,30,5);
+ const lgm=cx.createLinearGradient(0,AY-13,0,AY+13);lgm.addColorStop(0,'#8ea2c9');lgm.addColorStop(.5,'#56678a');lgm.addColorStop(1,'#34425f');cx.fillStyle=lgm;rr(xl-46,AY-13,36,26,6);cx.fill();cx.fillStyle='rgba(255,255,255,.2)';[-38,-32,-26].forEach(o=>cx.fillRect(xl+o,AY-11,2,22));cx.fillStyle='#ff6b5e';cx.beginPath();cx.arc(xl-20,AY-13,2.8,0,7);cx.fill();cx.fillStyle='#7b8fb3';cx.beginPath();cx.moveTo(xl-12,AY-12);cx.lineTo(xl-3,AY-21);cx.lineTo(xl-3,AY+21);cx.lineTo(xl-12,AY+12);cx.fill();
+ cx.save();cx.globalCompositeOperation='lighter';const R=70+r*3,lg=cx.createRadialGradient(xl,AY,0,xl,AY,R);lg.addColorStop(0,`rgba(255,235,160,${.8*fl})`);lg.addColorStop(1,'rgba(255,200,80,0)');cx.fillStyle=lg;cx.beginPath();cx.arc(xl,AY,R,0,7);cx.fill();cx.restore();
+ const eg=cx.createRadialGradient(xl,AY,0,xl,AY,r);eg.addColorStop(0,'#fffef0');eg.addColorStop(1,'#ffe08a');cx.fillStyle=eg;cx.beginPath();cx.arc(xl,AY,r,0,7);cx.fill();
+
+ /* objeto con balanceo (péndulo amortiguado) */
+ cx.save();cx.translate(xo,BY);
+ cx.fillStyle='#3b4a63';cx.fillRect(-2.5,-(BY-AY)+a,5,BY-AY-a);cx.fillStyle='#2f9a73';cx.beginPath();cx.ellipse(0,-2,15,6,0,0,7);cx.fill();
+ cx.globalAlpha=P.op;cx.fillStyle=P.col;cx.strokeStyle='rgba(20,12,4,.6)';cx.lineWidth=1.5;cx.translate(0,AY-BY);cx.rotate(P.ang*.35);
+ if(P.panel){cx.fillRect(-3,-a,6,2*a);cx.strokeRect(-3,-a,6,2*a)}else{const H=2*a;cx.beginPath();cx.arc(0,-.28*H,.22*H,0,7);cx.fill();cx.stroke();rr(-.3*H,-.05*H,.6*H,.55*H,.08*H);cx.fill();cx.stroke();cx.fillStyle='rgba(30,18,6,.8)';[-1,1].forEach(s=>{cx.beginPath();cx.arc(s*.08*H,-.3*H,.026*H,0,7);cx.fill()});cx.strokeStyle='rgba(30,18,6,.8)';cx.lineWidth=Math.max(1,.012*H);cx.beginPath();cx.arc(0,-.27*H,.08*H,.25,Math.PI-.25);cx.stroke();cx.fillStyle='rgba(255,255,255,.22)';cx.fillRect(-.27*H,.05*H,.54*H,.06*H);[0,1].forEach(i=>{cx.beginPath();cx.arc(0,(.2+i*.14)*H,.022*H,0,7);cx.fill()})}
+ cx.restore();
+ tx('linterna',xl-28,AY-28);tx(P.panel?'material':`muñeco ${fmt(P.hd)} cm`,xo,AY-a-12);
+ if(!touched)tx(S.p===5?'↔ arrastrá la linterna y el muñeco':'↔ arrastrame',xo,AY-a-30,`rgba(31,95,191,${.65+.35*Math.sin(now/300)})`,14);
+ const my=BY+46;cx.strokeStyle='#1f5fbf';cx.lineWidth=2;cx.beginPath();cx.moveTo(xl,my);cx.lineTo(xo,my);[xl,xo].forEach(q=>{cx.moveTo(q,my-6);cx.lineTo(q,my+6)});cx.stroke();{const mx=(xl+xo)/2;rr(mx-44,my+5,88,30,15);cx.fillStyle='rgba(255,255,255,.8)';cx.fill();cx.strokeStyle='rgba(31,95,191,.85)';cx.lineWidth=1.5;cx.stroke()}tx(Math.round(P.ox-P.lx)+' cm',(xl+xo)/2,my+27,'#123e8c',21);
+
+ /* vista de frente de la pared: sombra con penumbra real (muestreo de la fuente) */
+ cx.save();rr(IX,IY,IW,IH,12);cx.clip();
+ const cx0=IX+IW/2,gr=cx.createRadialGradient(cx0,AY,0,cx0,AY,170);
+ [0,.25,.5,.75,1].forEach(s=>{const u=s*170;gr.addColorStop(s,col(1-Math.exp(-1.6*gain*dx**3/(dx*dx+u*u)**1.5)))});
+ cx.fillStyle=gr;cx.fillRect(IX,IY,IW,IH);
+ const n=RM?1:26,rb=r*(xw-xo)/(xo-xl),H=2*a*k,D=Math.min(.96,Dk);
+ cx.fillStyle=`rgba(4,6,12,${1-Math.pow(1-D,1/n)})`;
+ for(let i=0;i<n;i++){const rad=rb*Math.sqrt((i+.5)/n),an=i*2.39996;cx.save();cx.translate(cx0+Math.cos(an)*rad,AY+Math.sin(an)*rad);
+  if(P.panel)cx.fillRect(-24*k,-H/2,48*k,H);else{cx.beginPath();cx.arc(0,-.28*H,.22*H,0,7);cx.fill();cx.fillRect(-.3*H,-.05*H,.6*H,.55*H)}cx.restore()}
+ cx.strokeStyle='rgba(60,80,110,.8)';cx.setLineDash([4,4]);cx.strokeRect(cx0-63,AY-89,126,178);cx.setLineDash([]);
+ if(markT&&Math.abs(P.ox-markD)<.5){const q=Math.min(1,(now-markT)/350),h=Math.min(a*k,IH/2-6);cx.strokeStyle='#2858d6';cx.lineWidth=3;cx.beginPath();
+  [-h,h].forEach(y=>{cx.moveTo(IX,AY+y);cx.lineTo(IX+IW*q,AY+y)});cx.moveTo(IX+14,AY-h);cx.lineTo(IX+14,AY+h);cx.stroke();
+  cx.shadowColor='#fff';cx.shadowBlur=8;tx(fmt(2*a*k/PX)+' cm',IX+IW-8,AY+7,'#1d3fa8',22,'right');cx.shadowBlur=0}
+ cx.restore();cx.strokeStyle='#7e9cc0';cx.lineWidth=1.5;rr(IX,IY,IW,IH,12);cx.stroke();tx('la pared vista de frente',IX+IW/2,IY-10,'#27456a',15);if(!P.panel)tx('sombra: '+fmt(P.hd*(WALL-P.lx)/(P.ox-P.lx))+' cm',IX+IW/2,IY+IH+28,'#b45f00',20);
+ if(markT&&Math.abs(P.ox-markD)<.5){const h=a*k,q=Math.min(1,(now-markT)/350);cx.strokeStyle='#5b8cff';cx.lineWidth=3;cx.beginPath();[-h,h].forEach(y=>{cx.moveTo(xw+4,AY+y);cx.lineTo(xw+4-34*q,AY+y)});cx.stroke()}
+
+ /* lecturas */
+ const r1=$('#r1');if(r1){const Dd=WALL-P.lx,d=P.ox-P.lx;r1.textContent=fmt(P.hd*Dd/d)+' cm';$('#r2').textContent=fmt(2*P.r*(WALL-P.ox)/d/PX)+' cm';$('#r3').textContent=Math.round(100*(100/Dd)**2)+' %'}
+ const av=Math.round(P.ox-P.lx);if(av!==ariaV){ariaV=av;cv.setAttribute('aria-valuenow',av);cv.setAttribute('aria-valuetext',av+' cm')}
+ requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+
+/* interacción: arrastrar muñeco y (en el laboratorio) la linterna */
+const pos=e=>{const b=cv.getBoundingClientRect();return[(e.clientX-b.left)/b.width*VW,(e.clientY-b.top)/b.height*VH]};
+function pick(x,y){const dd=Math.abs(x-X(P.ox)),dl=S.p===5?Math.abs(x-X(P.lx)):1e9,ok=y>AY-70&&y<BY+16;
+ if(ok&&Math.min(dd,dl)<34)return dl<dd?'l':'o';return y>BY-10&&y<BY+34&&x<X(WALL)?'o':null}
+function mv(e){const x=pos(e)[0],d=(x-60)/PX;
+ if(drag==='o'){const lo=S.p===5?P.tlx+8:S.p===3?20:14,hi=S.p===3?80:90;P.tx=Math.max(lo,Math.min(hi,d))}
+ else if(drag==='l')P.tlx=Math.max(0,Math.min(Math.min(70,P.tx-8),d))}
+cv.addEventListener('pointerdown',e=>{const[x,y]=pos(e),k=pick(x,y);if(!k)return;drag=k;touched=true;auto=false;cv.setPointerCapture(e.pointerId);cv.style.cursor='grabbing';mv(e)});
+cv.addEventListener('pointermove',e=>{if(drag)mv(e);else{const[x,y]=pos(e);cv.style.cursor=pick(x,y)?'grab':'default'}});
+const rel=()=>{if(drag){drag=null;cv.style.cursor='grab';if(S.p===3)tween(snap(P.tx))}};
+cv.addEventListener('pointerup',rel);cv.addEventListener('pointercancel',rel);
+cv.addEventListener('keydown',e=>{const k={ArrowLeft:-1,ArrowDown:-1,ArrowRight:1,ArrowUp:1}[e.key];if(!k)return;e.preventDefault();touched=true;auto=false;
+ if(S.p===3)tween(snap(P.tx+k*20));else P.tx=Math.max(S.p===5?P.tlx+8:14,Math.min(90,P.tx+k*5))});
+$('#rays').onchange=e=>{showRays=e.target.checked};
+
+/* materiales */
+const M=[{n:'Cartón',t:0,c:'#a67c52',o:1,k:'opaco',x:'No deja pasar nada de luz: la sombra es la más oscura.'},
+{n:'Papel manteca',t:.45,c:'#f3e6c4',o:.75,k:'translúcido',x:'Deja pasar un poco de luz y no se ve nítido lo que hay detrás.'},
+{n:'Celofán o film',t:.92,c:'#bfe9ff',o:.35,k:'transparente',x:'Deja pasar casi toda la luz: casi no hay sombra.'},
+{n:'Tela fina',t:.55,c:'#e8b4d8',o:.6,k:'translúcido',x:'Pasa una parte de la luz y la sombra es suave.'},
+{n:'Vaso de vidrio',t:.88,c:'#9fe3e6',o:.4,k:'transparente',x:'Deja pasar casi toda la luz y se ve a través.'}];
+function panel(){const m=M[S.sel];P.col=m?m.c:'#fff';P.op=m?m.o:0;tween(P.tx,m?m.t:1)}
+
+/* cuaderno */
+const T=['Miro','Pruebo materiales','Hipótesis','Mido','Concluyo','Laboratorio'];
+const HT={cerca:'cuanto más cerca de la linterna, más grande la sombra',lejos:'cuanto más lejos de la linterna, más grande la sombra',igual:'la sombra no cambia con la distancia'};
+const note=(id,t,c='')=>{const e=$(id);e.className='note '+c;e.innerHTML=t};
+function chart(){let s='<svg viewBox="0 0 300 170" width="300" style="max-width:100%"><line x1="30" x2="290" y1="140" y2="140" stroke="currentColor"/>';
+ [20,40,60,80].forEach((d,i)=>{const x=42+i*62,v=S.rec[d],h=v!=null?v/25*105:0;
+  s+=v!=null?`<rect x="${x}" y="${140-h}" width="44" height="${h}" fill="var(--pen)" opacity=".85"/><text x="${x+22}" y="${134-h}" text-anchor="middle" font-size="13" font-weight="700" fill="currentColor">${fmt(v)}</text>`:`<rect x="${x}" y="35" width="44" height="105" fill="none" stroke="var(--mute)" stroke-dasharray="4 4"/>`;
+  s+=`<text x="${x+22}" y="158" text-anchor="middle" font-size="12" fill="currentColor">${d} cm</text>`});
+ return s+'<text x="2" y="14" font-size="12" fill="currentColor">altura de la sombra (cm)</text></svg>'}
+function table(){return `<table><tr><th>Distancia</th><th>Sombra</th></tr>${[20,40,60,80].map(d=>`<tr><td>${d} cm</td><td class="v">${S.rec[d]!=null?fmt(S.rec[d])+' cm':'—'}</td></tr>`).join('')}</table>`}
+function go(p){S.p=p;S.top=Math.max(S.top,p);P.panel=p===1?1:0;auto=p===0&&!touched&&!RM;
+ if(p!==5){P.tr=7;P.thd=5;P.tlx=0}
+ if(p===1)panel();else{P.col='#b88a58';P.op=1;P.tT=0;if(p>=2&&p<5)tween(snap(cur))}
+ cv.setAttribute('aria-valuemin',p===3?20:14);cv.setAttribute('aria-valuemax',p===3?80:90);render()}
+function render(){const p=S.p,B=[];
+ const tabs=`<div class="tabs">${T.map((t,i)=>`<button class="${i===p?'on':''} ${i<S.top&&i!==p?'ok':''}" ${i>S.top?'disabled':''} data-i="${i}">${t}</button>`).join('')}</div>`;
+ if(p===0)B.push(`<h2>Miro la sombra</h2><p>El muñeco se mueve solo, pero puedo agarrarlo y arrastrarlo yo por el banco. Miro la pared y el dibujo de la derecha, que muestra la sombra de frente. Me fijo en el número celeste (la distancia) y en el amarillo (la altura de la sombra).</p><p><b>¿Qué le pasa a la sombra? ¿Por qué cambia?</b></p><textarea id="idea" placeholder="Escribo lo que veo y lo que pienso…">${S.idea}</textarea><div class="row" id="demo"><button class="b" data-d="25">⬅ Acercar a la linterna</button><button class="b" data-d="75">Alejar ➡</button><button class="b" data-d="auto">▶ Que se mueva solo</button></div><div class="row"><button class="b go" id="nx">Quiero probar materiales</button></div>`);
+ if(p===1)B.push(`<h2>Pruebo qué materiales hacen sombra</h2><p>Pongo cada material entre la linterna y la pared. Miro la hoja: ¿pasa toda la luz, un poco o nada?</p><div class="row" id="mats">${M.map((m,i)=>`<button class="b ${S.done[i]?'ok':''} ${S.sel===i?'sel':''}" data-i="${i}">${m.n}</button>`).join('')}</div><div class="row" id="cls" style="${S.sel<0?'display:none':''}">Lo clasifico: ${['opaco','translúcido','transparente'].map(k=>`<button class="b" data-k="${k}">${k}</button>`).join('')}</div><div class="note" id="fb">Elijo un material para probarlo.</div><div class="row"><button class="b go" id="nx" ${Object.keys(S.done).length<5?'disabled':''}>Armar mi hipótesis</button></div>`);
+ if(p===2)B.push(`<h2>Mi pregunta y mi hipótesis</h2><p><b>¿Cambia el tamaño de la sombra del muñeco si cambio su distancia a la linterna?</b> Se puede investigar porque se responde midiendo.</p><p>Antes de medir, creo que…</p><div class="opts" id="hyp">${[['cerca','Cerca, más grande','Cuanto más cerca de la linterna, más grande la sombra.'],['lejos','Lejos, más grande','Cuanto más lejos de la linterna, más grande la sombra.'],['igual','No cambia','La sombra mide lo mismo a cualquier distancia.']].map(([k,t,d])=>`<button class="b ${S.hyp===k?'sel':''}" data-h="${k}"><b>${t}</b>${d}</button>`).join('')}</div><table style="margin-top:12px"><tr><th>Mido</th><td>la altura de la sombra en la hoja, en cm</td></tr><tr><th>Modifico</th><td>la distancia linterna–muñeco: 20, 40, 60 y 80 cm</td></tr><tr><th>Dejo igual</th><td>linterna, altura, pared a 100 cm, muñeco de 5 cm, aula oscura</td></tr></table><p style="color:var(--mute)">Si cambiara dos cosas a la vez, ¿cómo sabría cuál produjo el cambio?</p><div class="row"><button class="b go" id="nx" ${S.hyp?'':'disabled'}>Ir a medir</button></div>`);
+ if(p===3)B.push(`<h2>Mido y anoto</h2><p>Arrastro el muñeco por el banco (o uso las flechas del teclado). Al soltarlo queda en 20, 40, 60 u 80 cm. Después marco con lápiz el borde de arriba y el de abajo de la sombra.</p><div class="row" id="snaps">${[20,40,60,80].map(d=>`<button class="b" data-d="${d}">${d} cm</button>`).join('')}<button class="b go" id="mark">Marcar y medir</button></div><div class="cols"><div id="tb">${table()}</div><div id="ch">${chart()}</div></div><div class="note" id="fb">Me faltan las cuatro medidas.</div><div class="row"><button class="b go" id="nx" ${Object.keys(S.rec).length<4?'disabled':''}>Sacar mi conclusión</button></div>`);
+ if(p===4){const ok=S.hyp==='cerca',r=S.rec;B.push(`<h2>Mi conclusión</h2><div class="note ${ok?'ok':'no'}"><b>${ok?'Mi hipótesis se confirmó.':'Mi hipótesis no coincidió con lo que medí.'}</b> Pensaba que ${HT[S.hyp]}. Medí ${fmt(r[20])} cm a 20 cm, ${fmt(r[40])} cm a 40 cm, ${fmt(r[60])} cm a 60 cm y ${fmt(r[80])} cm a 80 cm. ${ok?'La sombra fue mayor a 20 cm y menor a 80 cm.':'Reformulo mi idea: la sombra es mayor cuando el muñeco está más cerca de la linterna.'}</div><p><b>¿Por qué pasó?</b> La luz viaja en línea recta, en rayos. Los rayos que rozan los bordes del muñeco siguen derechos hasta la pared y entre ellos no llega luz: esa zona es la sombra. Lo completo:</p><p>Cuanto más <select id="q1"><option value="">…</option><option>cerca</option><option>lejos</option></select> está el muñeco de la linterna, los rayos de sus bordes se separan <select id="q2"><option value="">…</option><option>más</option><option>menos</option></select> y la sombra es <select id="q3"><option value="">…</option><option value="g">más grande</option><option value="c">más chica</option></select>.</p><div class="note" id="fb">Elijo las tres palabras.</div><div class="three" id="three" style="display:none"><div><small>¿Qué pensábamos antes?</small>${HT[S.hyp][0].toUpperCase()+HT[S.hyp].slice(1)}.</div><div><small>¿Qué pensamos ahora?</small>Cuanto más cerca de la luz, más grande es la sombra.</div><div><small>¿Qué nos lo mostró?</small>Las mediciones y el esquema de rayos rectos.</div></div><p style="color:var(--mute);font-size:15px">Las medidas reales varían un poco porque la linterna no es un punto de luz y el borde de la sombra se ve difuso. Lo importante es el patrón. Para estar más seguro, repetiría la experiencia cambiando otra cosa.</p><div class="row"><button class="b" id="again">Repetir la experiencia</button><button class="b go" id="lab">Ir al laboratorio</button></div>`)}
+ if(p===5)B.push(`<h2>Laboratorio libre</h2><p>Ahora cambio lo que quiero y miro qué pasa. Arrastro la <b>linterna</b> y el <b>muñeco</b> por el banco.</p><div class="row" id="srcs"><span>Fuente de luz:</span>${[['Punto',1.5],['Linterna',7],['Lámpara grande',24]].map(([n,r])=>`<button class="b ${r===7?'sel':''}" data-r="${r}">${n}</button>`).join('')}</div><div class="row"><label>Altura del muñeco <input type="range" id="hd" min="3" max="9" step="1" value="5"> <b id="hdv">5 cm</b></label><label>Material <select id="mt">${M.map((m,i)=>`<option value="${i}">${m.n}</option>`).join('')}</select></label></div><div class="three"><div><small>Altura de la sombra</small><b id="r1"></b></div><div><small>Zona de penumbra (borde difuso)</small><b id="r2"></b></div><div><small>Luz que llega a la pared</small><b id="r3"></b></div></div><div class="note" style="margin-top:10px">Pruebo: ¿qué pasa con el borde de la sombra si agrando la fuente de luz? ¿Y si acerco la linterna a la pared? ¿Y con el celofán o el papel manteca?</div>`);
+ $('#nb').innerHTML=tabs+B.join('');wire()}
+function wire(){const p=S.p,nx=$('#nx');
+ $$('.tabs button').forEach(b=>b.onclick=()=>go(+b.dataset.i));
+ if(nx)nx.onclick=()=>go(p+1);
+ if(p===0){$('#idea').oninput=e=>S.idea=e.target.value;$$('#demo .b').forEach(b=>b.onclick=()=>{touched=true;if(b.dataset.d==='auto')auto=!RM;else{auto=false;P.tx=+b.dataset.d}})}
+ if(p===1){$$('#mats .b').forEach(b=>b.onclick=()=>{S.sel=+b.dataset.i;$$('#mats .b').forEach(c=>c.classList.toggle('sel',c===b));$('#cls').style.display='flex';panel();note('#fb',`Probé ${M[S.sel].n.toLowerCase()}. ¿Cómo lo clasifico?`)});
+  $$('#cls .b').forEach(b=>b.onclick=()=>{const m=M[S.sel];if(b.dataset.k===m.k){S.done[S.sel]=1;$$('#mats .b')[S.sel].classList.add('ok');const all=Object.keys(S.done).length===5;note('#fb',`✅ Es ${m.k}. ${m.x}${all?' Ya clasifiqué los cinco. Para el experimento uso un muñeco de cartón: es opaco y hace la sombra más oscura.':''}`,'ok');$('#nx').disabled=!all}else note('#fb','🔎 Todavía no. Miro cuánta luz llega a la hoja y pruebo de nuevo.','no')})}
+ if(p===2){$$('#hyp .b').forEach(b=>b.onclick=()=>{S.hyp=b.dataset.h;$$('#hyp .b').forEach(c=>c.classList.toggle('sel',c===b));$('#nx').disabled=false})}
+ if(p===3){$$('#snaps .b[data-d]').forEach(b=>b.onclick=()=>tween(+b.dataset.d));
+  $('#mark').onclick=()=>{const d=snap(cur);if(Math.abs(cur-d)>.6){note('#fb','Primero suelto el muñeco para que quede quieto en 20, 40, 60 u 80 cm.','no');return}
+   S.rec[d]=500/d;markT=performance.now();markD=P.ox;$('#tb').innerHTML=table();$('#ch').innerHTML=chart();
+   const n=Object.keys(S.rec).length;if(n<4)note('#fb',`A ${d} cm la sombra mide ${fmt(S.rec[d])} cm. Me faltan ${4-n}.`,'ok');
+   else{note('#fb',`Lo que noto: cuando el muñeco se aleja de la linterna, la sombra se achica, de ${fmt(S.rec[20])} cm a ${fmt(S.rec[80])} cm.`,'ok');$('#nx').disabled=false}}}
+ if(p===4){const chk=()=>{const a=$('#q1').value,b=$('#q2').value,c=$('#q3').value;if(!a||!b||!c){note('#fb','Elijo las tres palabras.');return}
+   if(a==='cerca'&&b==='más'&&c==='g'){note('#fb','🎉 Exacto. Cerca de la linterna los rayos de los bordes se abren más y la sombra crece. Lejos, casi van paralelos y la sombra se achica.','ok');$('#three').style.display='grid'}
+   else{note('#fb','Casi. Muevo el muñeco y miro cómo se abren los rayos cuando se acerca a la linterna.','no');$('#three').style.display='none'}};
+  ['#q1','#q2','#q3'].forEach(i=>$(i).onchange=chk);
+  $('#again').onclick=()=>{S.rec={};S.hyp=null;S.top=2;go(2)};$('#lab').onclick=()=>go(5)}
+ if(p===5)labWire()}
+function labWire(){P.tr=7;P.thd=5;$$('#srcs .b').forEach(b=>b.onclick=()=>{P.tr=+b.dataset.r;$$('#srcs .b').forEach(c=>c.classList.toggle('sel',c===b))});
+ $('#hd').oninput=e=>{P.thd=+e.target.value;$('#hdv').textContent=e.target.value+' cm'};
+ $('#mt').onchange=e=>{const m=M[+e.target.value];P.tT=m.t;P.col=m.c;P.op=m.o}}
+$('#clase').onchange=e=>document.body.classList.toggle('clase',e.target.checked);
+if(!document.fullscreenEnabled)$('#fs').hidden=true;
+$('#fs').onclick=()=>{const s=$('.stage');if(document.fullscreenElement)document.exitFullscreen();else s.requestFullscreen&&s.requestFullscreen().catch(()=>{})};
+/* confeti de festejo (solo visual) */
+(()=>{const c=$('#fx'),g=c.getContext('2d');let ps=[],run=false;
+const rs=()=>{c.width=innerWidth;c.height=innerHeight};rs();addEventListener('resize',rs);
+const burst=()=>{if(RM)return;const cl=['#ffcf6b','#2858d6','#46d19a','#ff7aa8','#8bb0ff','#fff'];
+ for(let i=0;i<60;i++)ps.push({x:innerWidth/2+(Math.random()-.5)*300,y:innerHeight*.7,vx:(Math.random()-.5)*14,vy:-8-Math.random()*12,w:6+Math.random()*6,a:Math.random()*6,va:(Math.random()-.5)*.4,c:cl[i%6],l:1});
+ if(!run){run=true;requestAnimationFrame(step)}};
+const step=()=>{g.clearRect(0,0,c.width,c.height);ps.forEach(p=>{p.vy+=.45;p.vx*=.99;p.x+=p.vx;p.y+=p.vy;p.a+=p.va;p.l-=.011;g.save();g.globalAlpha=Math.max(0,p.l);g.translate(p.x,p.y);g.rotate(p.a);g.fillStyle=p.c;g.fillRect(-p.w/2,-p.w/4,p.w,p.w/2);g.restore()});
+ ps=ps.filter(p=>p.l>0);if(ps.length)requestAnimationFrame(step);else{run=false;g.clearRect(0,0,c.width,c.height)}};
+new MutationObserver(ms=>{for(const m of ms){const t=m.target;if(t.classList&&t.classList.contains('note')&&t.classList.contains('ok'))return burst()}}).observe($('#nb'),{subtree:true,attributes:true,attributeFilter:['class']})})();
+/* Twemoji: convierte emojis en texto, también los que se generan al cambiar de pestaña */
+(()=>{if(!window.twemoji)return;let q=0;const o={base:'https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/',folder:'svg',ext:'.svg'};
+const run=()=>{q=0;twemoji.parse(document.body,o)};
+new MutationObserver(()=>{if(!q)q=requestAnimationFrame(run)}).observe(document.body,{childList:true,subtree:true});run()})();
+go(0);
+</script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>
