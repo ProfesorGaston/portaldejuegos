@@ -201,6 +201,9 @@ body.mode-facil .difficulty-btn[data-difficulty="facil"],body.mode-normal .diffi
 img.emoji{height:1em;width:1em;vertical-align:-.13em;display:inline-block;max-width:1em}
 .illustration img.emoji{height:1.15em;width:1.15em;max-width:1.15em;vertical-align:middle}
 .brief img.emoji,.hud img.emoji,.instructions img.emoji,.trophy img.emoji{height:1.15em;width:1.15em;vertical-align:-.16em}
+.word.plain,.word.hid{border-bottom:0;background:none;font:inherit;color:inherit;padding:0 1px;border-radius:4px}
+.word.plain:hover,.word.hid:hover,.word.hid.selected{background:#ffe8a5;border-bottom:0}
+.word.hid.solved{background:#e0f2e6;color:#176b45;border-bottom:3px solid var(--green);cursor:default}
 </style>
 </head>
 <body>
@@ -222,13 +225,13 @@ img.emoji{height:1em;width:1em;vertical-align:-.13em;display:inline-block;max-wi
    <div class="startgrid">
     <div><div class="eyebrow">Se busca equipo de correctores</div>
      <h1 class="hero-title">¡La edición está por salir y <em>necesita tu ayuda!</em></h1>
-     <p class="lead">Las noticias llegaron a la redacción con errores de ortografía, tildes, mayúsculas y puntuación. Tu misión es revisar cada texto, elegir la forma correcta y dejar el diario listo para publicar.</p>
+     <p class="lead">Las noticias llegaron a la redacción con errores de ortografía, tildes y puntuación. Tu misión es revisar cada texto, elegir la forma correcta y dejar el diario listo para publicar.</p>
      <div class="difficulty-picker">
       <p class="difficulty-title">Elegí una categoría para comenzar</p>
       <div class="difficulty-buttons">
-       <button class="btn primary difficulty-btn" data-difficulty="facil"><strong>FÁCIL</strong><small>2 opciones · sin perder puntos · pistas disponibles</small><span>→</span></button>
-       <button class="btn primary difficulty-btn" data-difficulty="normal"><strong>NORMAL</strong><small>3 opciones · puntaje estándar · desafío equilibrado</small><span>→</span></button>
-       <button class="btn primary difficulty-btn" data-difficulty="dificil"><strong>DIFÍCIL</strong><small>todas las opciones · sin pistas · penalización mayor</small><span>→</span></button>
+       <button class="btn primary difficulty-btn" data-difficulty="facil"><strong>FÁCIL</strong><small>2 opciones · palabras mal escritas · sin perder puntos</small><span>→</span></button>
+       <button class="btn primary difficulty-btn" data-difficulty="normal"><strong>NORMAL</strong><small>3 opciones · mp, mb, nv, c, z y s</small><span>→</span></button>
+       <button class="btn primary difficulty-btn" data-difficulty="dificil"><strong>DIFÍCIL</strong><small>errores sin marcar · tildes, comas y puntos</small><span>→</span></button>
       </div>
      </div>
     </div>
@@ -257,7 +260,7 @@ img.emoji{height:1em;width:1em;vertical-align:-.13em;display:inline-block;max-wi
    <div class="article-text" id="articleText"></div>
    <figure class="photo-card"><div class="illustration" id="illustration"></div><figcaption class="photo-caption" id="caption"></figcaption></figure>
   </div>
-  <div class="instructions"><span>💡</span><span><b>Consejo de redacción:</b> tocá o hacé clic en cada fragmento subrayado para revisarlo. Podés usar las teclas 1, 2 y 3 para elegir.</span><button class="iconbtn" id="hintBtn" title="Mostrar una pista" aria-label="Mostrar una pista">💡</button></div>
+  <div class="instructions"><span>💡</span><span id="instrText"><b>Consejo de redacción:</b> tocá o hacé clic en cada fragmento subrayado para revisarlo. Podés usar las teclas 1, 2 y 3 para elegir.</span><button class="iconbtn" id="hintBtn" title="Mostrar una pista" aria-label="Mostrar una pista">💡</button></div>
   <div class="feedback" id="feedback" aria-live="polite"></div>
   <div class="article-footer"><span class="progress-copy" id="progressCopy">0 de 4 correcciones resueltas</span><button class="btn primary printbtn" id="publishBtn">🖨️ Aprobar y publicar</button></div>
  </article>
@@ -294,164 +297,82 @@ function renderTwemoji(root=document.body){
 }
 document.addEventListener("DOMContentLoaded",()=>renderTwemoji());
 
-const STORIES=[
- {title:"La escuela organizó un gran torneo deportivo",cat:"Deportes",colors:["#9bd8f4","#77bd78"],icons:["🏟️","⚽","📣"],caption:"La comunidad escolar acompañó a los equipos durante toda la jornada.",text:"El {a} pasado se jugó la final en el {b} de deportes. {c} los alumnos llevaron un gran {d} para alentar a su equipo.",items:{
- a:{shown:"domingo",answer:"domingo",options:["Domingo","domingo"],tag:"Mayúsculas",rule:"Los días de la semana se escriben con minúscula, salvo cuando aparecen al comienzo de una oración."},
- b:{shown:"canpo",answer:"campo",options:["canpo","campo","cambo"],tag:"M antes de P",rule:"Antes de p siempre se escribe m: campo."},
- c:{shown:"todos",answer:"Todos",options:["todos","Todos"],tag:"Mayúsculas",rule:"Después de un punto, la oración nueva comienza con mayúscula."},
- d:{shown:"tanbor",answer:"tambor",options:["tanbor","tambor","tampor"],tag:"M antes de B",rule:"Antes de b siempre se escribe m: tambor."}}},
- {title:"Un invento para cuidar el ambiente",cat:"Ciencia y ambiente",colors:["#d8c2ff","#86d5c5"],icons:["🔬","♻️","💡"],caption:"El proyecto busca reducir los residuos que se producen en la escuela.",text:"Los chicos de quinto grado enviaron una {a} a la feria de ciencias. Su nuevo {b} servirá para reciclar plástico varias {c} durante la semana{d}",items:{
- a:{shown:"inbitación",answer:"invitación",options:["inbitación","invitación","invitacion"],tag:"N antes de V y tildes",rule:"Antes de v se escribe n. Invitación es una palabra aguda terminada en n, por eso lleva tilde."},
- b:{shown:"imbento",answer:"invento",options:["imbento","invento","inbento"],tag:"N antes de V",rule:"Antes de v se escribe n: invento."},
- c:{shown:"veses",answer:"veces",options:["veses","veces","vezes"],tag:"Plural de palabras con Z",rule:"Las palabras terminadas en z cambian la z por c al formar el plural: vez → veces."},
- d:{shown:"",answer:".",options:[",","."],tag:"Puntuación",rule:"El punto final señala que el texto terminó."}}},
- {title:"Un viaje de estudios a Mendoza",cat:"Comunidad",colors:["#ffd49a","#9fc3ee"],icons:["🏔️","🍇","🚌"],caption:"El grupo conocerá paisajes y actividades de la región cuyana.",text:"Durante el {a} viajarán a la ciudad de {b} para visitar los viñedos. Todos tienen la {c} de conocer la cordillera de los {d}.",items:{
- a:{shown:"imbierno",answer:"invierno",options:["imbierno","invierno","inbierno"],tag:"N antes de V",rule:"Antes de v se escribe n: invierno."},
- b:{shown:"mendoza",answer:"Mendoza",options:["mendoza","Mendoza"],tag:"Nombres propios",rule:"Los nombres propios de ciudades y provincias comienzan con mayúscula."},
- c:{shown:"ilución",answer:"ilusión",options:["ilución","ilusión","iluzión"],tag:"Uso de S",rule:"Ilusión se escribe con s. La familia de palabras puede ayudar a reconocer su escritura: ilusionar, ilusionado."},
- d:{shown:"andes",answer:"Andes",options:["andes","Andes"],tag:"Nombres propios",rule:"Los nombres propios geográficos, como la cordillera de los Andes, se escriben con mayúscula."}}},
- {title:"Un concurso de cuentos fantásticos",cat:"Cultura",colors:["#c2b1f7","#f5a9c9"],icons:["📚","🐉","✨"],caption:"Los relatos seleccionados se compartirán con toda la comunidad.",text:"Un jurado elegirá el cuento ganador{a} {b} premiación será el viernes por la tarde. El premio será un {c} libro y habrá {d} en vivo.",items:{
- a:{shown:"",answer:".",options:[",","."],tag:"Puntuación",rule:"El punto seguido separa dos oraciones. Después de un punto se inicia una nueva oración."},
- b:{shown:"la",answer:"La",options:["la","La"],tag:"Mayúsculas",rule:"La primera palabra de una oración comienza con mayúscula."},
- c:{shown:"asonbroso",answer:"asombroso",options:["asonbroso","asombroso","asombrozo"],tag:"M antes de B y uso de S",rule:"Antes de b se escribe m. Además, el sufijo -oso se escribe con s: asombroso."},
- d:{shown:"musica",answer:"música",options:["musica","música"],tag:"Tildación",rule:"Música es una palabra esdrújula. Todas las palabras esdrújulas llevan tilde."}}},
- {title:"La biblioteca sumó nuevos libros",cat:"Lectura",colors:["#f4c4a1","#b7d8a8"],icons:["📚","📖","🦉"],caption:"Los nuevos ejemplares ya están disponibles para los lectores.",text:"La biblioteca recibió {a} {b} para los estudiantes. La directora explicó que cada {c} invita a descubrir nuevas {d}.",items:{
- a:{shown:"nuebos",answer:"nuevos",options:["nuebos","nuevos","nueboz"],tag:"Uso de V y B",rule:"Nuevo se escribe con v. La familia de palabras conserva esa letra: nueva, nuevamente."},
- b:{shown:"libros",answer:"libros",options:["Libros","libros"],tag:"Mayúsculas",rule:"Los sustantivos comunes se escriben con minúscula dentro de la oración."},
- c:{shown:"libro",answer:"libro",options:["Libro","libro"],tag:"Mayúsculas",rule:"Después de cada, el sustantivo común se escribe con minúscula."},
- d:{shown:"aventuras",answer:"aventuras",options:["Aventuras","aventuras"],tag:"Mayúsculas",rule:"Los sustantivos comunes se escriben con minúscula dentro de la oración."}}},
- {title:"Una huerta que crece entre todos",cat:"Ambiente",colors:["#b9e1a4","#f2d48e"],icons:["🌱","🥕","🐝"],caption:"Estudiantes y docentes trabajan juntos en la huerta escolar.",text:"Los estudiantes prepararon la tierra y sembraron {a}. Luego colocaron carteles para {b} las plantas. La primera {c} será compartida con las {d} familias.",items:{
- a:{shown:"semiyas",answer:"semillas",options:["semiyas","semillas","semillaz"],tag:"Uso de LL y S",rule:"Semillas se escribe con ll y termina en s porque está en plural."},
- b:{shown:"proteger",answer:"proteger",options:["Proteger","proteger"],tag:"Mayúsculas",rule:"Los verbos dentro de una oración se escriben con minúscula, salvo al comienzo."},
- c:{shown:"cosecha",answer:"cosecha",options:["cosecha","Cosecha"],tag:"Mayúsculas",rule:"Los sustantivos comunes se escriben con minúscula dentro de la oración."},
- d:{shown:"demas",answer:"demás",options:["demas","demás"],tag:"Tildación",rule:"Demás lleva tilde en la a."}}},
- {title:"Una jornada para aprender sobre el agua",cat:"Ciencias",colors:["#a9d9f1","#7db7d2"],icons:["💧","🌎","🧪"],caption:"La propuesta invita a cuidar un recurso fundamental.",text:"Durante la jornada, los grupos investigaron cómo {a} el agua. También prepararon {b} para explicar por qué es importante evitar su {c}. Al final, cada equipo presentó sus {d}.",items:{
- a:{shown:"cuidár",answer:"cuidar",options:["cuidár","cuidar"],tag:"Tildación",rule:"Los infinitivos terminados en -ar, -er e -ir no llevan tilde: cuidar."},
- b:{shown:"afiches",answer:"afiches",options:["Afiches","afiches"],tag:"Mayúsculas",rule:"Los sustantivos comunes se escriben con minúscula dentro de la oración."},
- c:{shown:"contaminasión",answer:"contaminación",options:["contaminasión","contaminación","contaminazión"],tag:"Uso de C",rule:"Contaminación se escribe con c en la terminación -ción."},
- d:{shown:"concluciones",answer:"conclusiones",options:["concluciones","conclusiones","concluziones"],tag:"Uso de S",rule:"Conclusiones se escribe con s. Es útil reconocer la familia de palabras: concluir, conclusión."}}},
- {title:"La música fue protagonista del encuentro",cat:"Cultura",colors:["#f3c2c8","#b6b4ee"],icons:["🎸","🎤","🥁"],caption:"El encuentro reunió a estudiantes de distintos grados.",text:"El viernes se realizó un {a} musical en el patio. Cada grupo preparó una {b} diferente y compartió sus canciones favoritas. El público aplaudió con {c} y pidió otra {d}.",items:{
- a:{shown:"espectaculo",answer:"espectáculo",options:["espectaculo","espectáculo"],tag:"Tildación",rule:"Espectáculo es una palabra esdrújula y, como todas las esdrújulas, lleva tilde."},
- b:{shown:"presentasión",answer:"presentación",options:["presentasión","presentación","presentazión"],tag:"Uso de C",rule:"Presentación se escribe con c en la terminación -ción."},
- c:{shown:"entuciasmo",answer:"entusiasmo",options:["entuciasmo","entusiasmo","entuziasmo"],tag:"Uso de S",rule:"Entusiasmo se escribe con s."},
- d:{shown:"cansion",answer:"canción",options:["cansion","canción","cancíon"],tag:"Tildación y C",rule:"Canción lleva c y tilde porque es una palabra aguda terminada en n."}}},
-{title:"El museo abrió una muestra interactiva",cat:"Cultura y tecnología",colors:["#b9c9ee","#e9c49a"],icons:["🏛️","🖼️","🤖"],caption:"La exposición permite conocer objetos y relatos de distintas épocas.",text:"El {a} de la ciudad inauguró una muestra sobre inventos. Los visitantes podrán observar piezas {b} y participar de actividades. La exposición estará abierta hasta el {c} de {d}.",items:{
- a:{shown:"museo",answer:"museo",options:["Museo","museo"],tag:"Mayúsculas",rule:"Los sustantivos comunes, como museo, se escriben con minúscula dentro de la oración."},
- b:{shown:"antiguas",answer:"antiguas",options:["Antiguas","antiguas"],tag:"Mayúsculas",rule:"Los adjetivos comunes se escriben con minúscula dentro de la oración."},
- c:{shown:"sabado",answer:"sábado",options:["sabado","sábado"],tag:"Tildación",rule:"Sábado es una palabra esdrújula y siempre lleva tilde."},
- d:{shown:"diciembre",answer:"diciembre",options:["Diciembre","diciembre"],tag:"Mayúsculas",rule:"Los meses del año se escriben con minúscula."}}},
- {title:"El equipo local ganó la final",cat:"Deportes",colors:["#a8d6c0","#f3d58e"],icons:["🏆","🏀","🎉"],caption:"La final se disputó ante una tribuna llena de familias.",text:"El equipo de la escuela {a} el campeonato de básquet. Durante el último {b}, los jugadores demostraron mucho {c}. Al terminar, recibieron una gran {d}.",items:{
- a:{shown:"obtuvo",answer:"obtuvo",options:["Obtuvo","obtuvo"],tag:"Mayúsculas",rule:"Los verbos dentro de una oración se escriben con minúscula, salvo al comienzo."},
- b:{shown:"cuarto",answer:"cuarto",options:["Cuarto","cuarto"],tag:"Mayúsculas",rule:"Los sustantivos comunes se escriben con minúscula dentro de la oración."},
- c:{shown:"esfuerso",answer:"esfuerzo",options:["esfuerso","esfuerzo","esfuerco"],tag:"Uso de Z",rule:"Esfuerzo se escribe con z. La familia de palabras ayuda a recordarlo: esforzarse, esforzado."},
- d:{shown:"felisitación",answer:"felicitación",options:["felisitación","felicitación","felicitazión"],tag:"Uso de C",rule:"Felicitación se escribe con c en la terminación -ción."}}},
- {title:"Una campaña para donar útiles escolares",cat:"Solidaridad",colors:["#f3c6a6","#b6d4ec"],icons:["✏️","🎒","📦"],caption:"La iniciativa reúne materiales para acompañar el comienzo de clases.",text:"La comunidad inició una campaña de {a} de útiles. Se pueden acercar cuadernos, lápices y {b}. Cada {c} será revisado antes de preparar los paquetes. La entrega se realizará el próximo {d}.",items:{
- a:{shown:"donasión",answer:"donación",options:["donasión","donación","donazión"],tag:"Uso de C",rule:"Donación se escribe con c en la terminación -ción."},
- b:{shown:"gomas",answer:"gomas",options:["Gomas","gomas"],tag:"Mayúsculas",rule:"Los sustantivos comunes se escriben con minúscula dentro de la oración."},
- c:{shown:"material",answer:"material",options:["Material","material"],tag:"Mayúsculas",rule:"Los sustantivos comunes dentro de una oración se escriben con minúscula."},
- d:{shown:"miercoles",answer:"miércoles",options:["miercoles","miércoles"],tag:"Tildación",rule:"Miércoles es una palabra esdrújula y lleva tilde."}}},
- {title:"Descubren huellas de animales en la reserva",cat:"Ciencia",colors:["#b5d5a6","#d8c39c"],icons:["🐾","🔍","🌳"],caption:"El hallazgo permitirá conocer qué especies habitan la zona.",text:"Un grupo de investigadores encontró {a} cerca del arroyo. Las marcas podrían pertenecer a un zorro. El equipo tomó fotografías y registró la {b} de cada huella. El informe se publicará en una revista {c}. La reserva pidió no {d} el lugar.",items:{
- a:{shown:"huellas",answer:"huellas",options:["Huellas","huellas"],tag:"Mayúsculas",rule:"Los sustantivos comunes se escriben con minúscula dentro de la oración."},
- b:{shown:"ubicación",answer:"ubicación",options:["Ubicación","ubicación"],tag:"Mayúsculas",rule:"Los sustantivos comunes se escriben con minúscula dentro de la oración."},
- c:{shown:"cientifica",answer:"científica",options:["cientifica","científica"],tag:"Tildación",rule:"Científica es esdrújula y lleva tilde."},
- d:{shown:"modificar",answer:"modificar",options:["Modificar","modificar"],tag:"Mayúsculas",rule:"Los verbos dentro de una oración se escriben con minúscula."}}},
- {title:"La plaza tendrá nuevos juegos",cat:"Barrio",colors:["#b7d8a8","#f4cf91"],icons:["🛝","🌳","🧒"],caption:"Las obras fueron pensadas para que chicos y grandes disfruten del espacio.",text:"La plaza del barrio tendrá una zona de juegos {a}. También se repararán los bancos y se plantarán {b}. La {c} comenzará la próxima semana. Los vecinos podrán acercar sus {d}.",items:{
- a:{shown:"nuebos",answer:"nuevos",options:["nuebos","nuevos","nueboz"],tag:"Uso de V y B",rule:"Nuevo se escribe con v. La familia conserva esa letra: nueva, nuevamente."},
- b:{shown:"arboles",answer:"árboles",options:["arboles","árboles"],tag:"Tildación",rule:"Árboles es una palabra esdrújula y lleva tilde."},
- c:{shown:"construcción",answer:"construcción",options:["Construcción","construcción"],tag:"Mayúsculas",rule:"Los sustantivos comunes se escriben con minúscula dentro de la oración."},
- d:{shown:"propuestas",answer:"propuestas",options:["Propuestas","propuestas"],tag:"Mayúsculas",rule:"Los sustantivos comunes dentro de la oración se escriben con minúscula."}}},
- {title:"Una estudiante representará a la escuela",cat:"Comunidad",colors:["#edc3d2","#c5c4f0"],icons:["🎤","🏫","🌟"],caption:"La alumna participará de un encuentro de lectura en otra institución.",text:"{a} representará a la escuela en un encuentro de lectura. La estudiante preparó una {b} sobre su libro favorito. Sus compañeros le desearon {c} y la acompañarán el día de la {d}.",items:{
- a:{shown:"lucía",answer:"Lucía",options:["lucía","Lucía"],tag:"Nombres propios",rule:"Los nombres propios de personas comienzan con mayúscula."},
- b:{shown:"reseña",answer:"reseña",options:["Reseña","reseña"],tag:"Mayúsculas",rule:"Los sustantivos comunes dentro de la oración se escriben con minúscula."},
- c:{shown:"suerte",answer:"suerte",options:["Suerte","suerte"],tag:"Mayúsculas",rule:"Los sustantivos comunes se escriben con minúscula dentro de la oración."},
- d:{shown:"presentación",answer:"presentación",options:["Presentación","presentación"],tag:"Mayúsculas",rule:"Los sustantivos comunes dentro de la oración se escriben con minúscula."}}},
- {title:"Preparan una función de teatro",cat:"Arte",colors:["#e9b3b2","#aeb9e8"],icons:["🎭","🎟️","🎬"],caption:"La obra fue creada por estudiantes de distintos grados.",text:"Los chicos ensayan una obra {a} para compartir con las familias. El vestuario fue preparado con mucha {b}. La función será el {c} a las seis de la tarde. Al finalizar, habrá un espacio para {d}.",items:{
- a:{shown:"teatral",answer:"teatral",options:["Teatral","teatral"],tag:"Mayúsculas",rule:"Los adjetivos comunes se escriben con minúscula dentro de la oración."},
- b:{shown:"creatividad",answer:"creatividad",options:["Creatividad","creatividad"],tag:"Mayúsculas",rule:"Los sustantivos comunes se escriben con minúscula dentro de la oración."},
- c:{shown:"jueves",answer:"jueves",options:["Jueves","jueves"],tag:"Mayúsculas",rule:"Los días de la semana se escriben con minúscula."},
- d:{shown:"conversar",answer:"conversar",options:["Conversar","conversar"],tag:"Mayúsculas",rule:"Los verbos dentro de la oración se escriben con minúscula."}}},
- {title:"El club de ciencias construyó un robot",cat:"Tecnología",colors:["#b9c9ee","#9ad4c9"],icons:["🤖","⚙️","💻"],caption:"El prototipo puede recorrer un camino y reconocer obstáculos.",text:"El club de ciencias presentó un {a} que se mueve con sensores. Para construirlo, los estudiantes trabajaron en {b}. El proyecto recibió una {c} especial del jurado. Ahora quieren {d} el diseño.",items:{
- a:{shown:"prototipo",answer:"prototipo",options:["Prototipo","prototipo"],tag:"Mayúsculas",rule:"Los sustantivos comunes se escriben con minúscula dentro de la oración."},
- b:{shown:"equipo",answer:"equipo",options:["Equipo","equipo"],tag:"Mayúsculas",rule:"Los sustantivos comunes dentro de la oración se escriben con minúscula."},
- c:{shown:"mención",answer:"mención",options:["Mención","mención"],tag:"Mayúsculas",rule:"Los sustantivos comunes dentro de la oración se escriben con minúscula."},
- d:{shown:"mejorar",answer:"mejorar",options:["Mejorar","mejorar"],tag:"Mayúsculas",rule:"Los verbos dentro de la oración se escriben con minúscula."}}},
- {title:"Una receta tradicional llegó al comedor",cat:"Vida escolar",colors:["#f2c69b","#c3d9a8"],icons:["🥣","🥕","🍞"],caption:"Las familias compartieron recetas para armar un recetario colectivo.",text:"El comedor preparó una receta de {a} con verduras de estación. La cocinera explicó cada {b} y contó de dónde viene la tradición. Los estudiantes anotaron los {c} en sus cuadernos para poder {d} la preparación en casa.",items:{
- a:{shown:"guiso",answer:"guiso",options:["Guiso","guiso"],tag:"Mayúsculas",rule:"Los sustantivos comunes se escriben con minúscula dentro de la oración."},
- b:{shown:"paso",answer:"paso",options:["Paso","paso"],tag:"Mayúsculas",rule:"Los sustantivos comunes dentro de la oración se escriben con minúscula."},
- c:{shown:"ingredientes",answer:"ingredientes",options:["Ingredientes","ingredientes"],tag:"Mayúsculas",rule:"Los sustantivos comunes se escriben con minúscula dentro de la oración."},
- d:{shown:"repetir",answer:"repetir",options:["Repetir","repetir"],tag:"Mayúsculas",rule:"Los verbos dentro de la oración se escriben con minúscula."}}},
- {title:"El barrio celebró su aniversario",cat:"Comunidad",colors:["#f1c5a4","#c5c5ed"],icons:["🎈","🏘️","🎶"],caption:"Hubo música, juegos y una muestra de fotografías antiguas.",text:"El sábado, el barrio de {a} celebró un nuevo aniversario. Las familias organizaron una {b} con fotos y objetos antiguos. También hubo música y {c}. La jornada terminó con un gran {d}.",items:{
- a:{shown:"san martin",answer:"San Martín",options:["san martin","San Martín","San martin"],tag:"Nombres propios y tildes",rule:"Los nombres propios de barrios o lugares comienzan con mayúscula. Martín lleva tilde por ser aguda terminada en n."},
- b:{shown:"exposición",answer:"exposición",options:["Exposición","exposición"],tag:"Mayúsculas",rule:"Los sustantivos comunes dentro de la oración se escriben con minúscula."},
- c:{shown:"juegos",answer:"juegos",options:["Juegos","juegos"],tag:"Mayúsculas",rule:"Los sustantivos comunes dentro de la oración se escriben con minúscula."},
- d:{shown:"baile",answer:"baile",options:["Baile","baile"],tag:"Mayúsculas",rule:"Los sustantivos comunes se escriben con minúscula dentro de la oración."}}},
- {title:"Una salida para conocer el río",cat:"Ambiente",colors:["#9dd2e8","#a8d7b0"],icons:["🛶","🌊","🐟"],caption:"La visita permitió observar el paisaje y conversar sobre su cuidado.",text:"Los alumnos visitaron la costa del río {a}. Allí observaron aves y recogieron residuos de la {b}. La guía explicó cómo cuidar el {c} y por qué es importante no arrojar {d}.",items:{
- a:{shown:"paraná",answer:"Paraná",options:["paraná","Paraná"],tag:"Nombres propios",rule:"Los nombres propios de ríos comienzan con mayúscula."},
- b:{shown:"orilla",answer:"orilla",options:["Orilla","orilla"],tag:"Mayúsculas",rule:"Los sustantivos comunes dentro de la oración se escriben con minúscula."},
- c:{shown:"ambiente",answer:"ambiente",options:["Ambiente","ambiente"],tag:"Mayúsculas",rule:"Los sustantivos comunes se escriben con minúscula dentro de la oración."},
- d:{shown:"basura",answer:"basura",options:["Basura","basura"],tag:"Mayúsculas",rule:"Los sustantivos comunes dentro de la oración se escriben con minúscula."}}},
- {title:"Un grupo de alumnos creó un podcast",cat:"Educación digital",colors:["#bfc9ee","#e8b8d0"],icons:["🎙️","🎧","📱"],caption:"El audio incluirá entrevistas, recomendaciones y noticias escolares.",text:"Los estudiantes grabaron un {a} para contar las novedades de la escuela. Primero escribieron un {b} y luego practicaron la lectura. La edición quedó a cargo de un {c}. El primer episodio se podrá {d} desde la página escolar.",items:{
- a:{shown:"podcast",answer:"podcast",options:["Podcast","podcast"],tag:"Mayúsculas",rule:"Los sustantivos comunes y extranjerismos usados como nombres comunes se escriben con minúscula."},
- b:{shown:"guion",answer:"guion",options:["Guion","guion"],tag:"Mayúsculas",rule:"Los sustantivos comunes dentro de la oración se escriben con minúscula."},
- c:{shown:"ciudad",answer:"ciudad",options:["Ciudad","ciudad"],tag:"Mayúsculas",rule:"Los sustantivos comunes dentro de la oración se escriben con minúscula."},
- d:{shown:"escuchar",answer:"escuchar",options:["Escuchar","escuchar"],tag:"Mayúsculas",rule:"Los verbos dentro de la oración se escriben con minúscula."}}},
- {title:"La feria de ciencias recibió muchas visitas",cat:"Ciencia",colors:["#c3d6f2","#f0d19b"],icons:["🧪","🌋","🧲"],caption:"Los stands presentaron experimentos y preguntas para investigar.",text:"La feria abrió sus puertas el {a}. Los grupos mostraron experimentos sobre el suelo, el aire y el {b}. Una de las propuestas explicó la {c} de los imanes. Los visitantes pudieron hacer preguntas y {d} los resultados.",items:{
- a:{shown:"viernes",answer:"viernes",options:["Viernes","viernes"],tag:"Mayúsculas",rule:"Los días de la semana se escriben con minúscula."},
- b:{shown:"magnetismo",answer:"magnetismo",options:["Magnetismo","magnetismo"],tag:"Mayúsculas",rule:"Los sustantivos comunes dentro de la oración se escriben con minúscula."},
- c:{shown:"atracción",answer:"atracción",options:["Atracción","atracción"],tag:"Mayúsculas",rule:"Los sustantivos comunes dentro de la oración se escriben con minúscula."},
- d:{shown:"comparar",answer:"comparar",options:["Comparar","comparar"],tag:"Mayúsculas",rule:"Los verbos dentro de la oración se escriben con minúscula."}}},
- {title:"El equipo de música estrenó una canción",cat:"Arte",colors:["#efb7c3","#c3c3ee"],icons:["🎼","🎹","🎸"],caption:"La canción fue compuesta y ensayada por los propios estudiantes.",text:"La banda escolar presentó una canción {a} durante el acto. La letra habla de la {b} y del trabajo en equipo. Para el cierre, los músicos prepararon una {c} sorpresa. El público acompañó con {d}.",items:{
- a:{shown:"original",answer:"original",options:["Original","original"],tag:"Mayúsculas",rule:"Los adjetivos comunes dentro de la oración se escriben con minúscula."},
- b:{shown:"amistad",answer:"amistad",options:["Amistad","amistad"],tag:"Mayúsculas",rule:"Los sustantivos comunes dentro de la oración se escriben con minúscula."},
- c:{shown:"melodía",answer:"melodía",options:["Melodía","melodía"],tag:"Mayúsculas",rule:"Los sustantivos comunes dentro de la oración se escriben con minúscula."},
- d:{shown:"palmas",answer:"palmas",options:["Palmas","palmas"],tag:"Mayúsculas",rule:"Los sustantivos comunes dentro de la oración se escriben con minúscula."}}},
- {title:"Una campaña para separar los residuos",cat:"Ambiente",colors:["#b7dba9","#d6d7a1"],icons:["♻️","🗑️","🌎"],caption:"Los cestos de colores ayudarán a clasificar los materiales.",text:"La escuela colocó cestos para separar papel, plástico y {a}. En cada aula habrá un cartel con {b} claras. Los delegados explicarán cómo usar cada recipiente y por qué es importante {c}. La campaña comenzará el próximo {d}.",items:{
- a:{shown:"vidrio",answer:"vidrio",options:["Vidrio","vidrio"],tag:"Mayúsculas",rule:"Los sustantivos comunes se escriben con minúscula dentro de la oración."},
- b:{shown:"indicaciones",answer:"indicaciones",options:["Indicaciones","indicaciones"],tag:"Mayúsculas",rule:"Los sustantivos comunes dentro de la oración se escriben con minúscula."},
- c:{shown:"reciclar",answer:"reciclar",options:["Reciclar","reciclar"],tag:"Mayúsculas",rule:"Los verbos dentro de la oración se escriben con minúscula."},
- d:{shown:"lunes",answer:"lunes",options:["Lunes","lunes"],tag:"Mayúsculas",rule:"Los días de la semana se escriben con minúscula."}}},
- {title:"Un libro viajero recorrió las aulas",cat:"Lectura",colors:["#e6c4a2","#b9d5c6"],icons:["📕","✉️","🚌"],caption:"Cada curso dejó una recomendación para el siguiente lector.",text:"El libro viajero pasó por todas las {a}. En sus páginas, los chicos escribieron una {b} y dibujaron a sus personajes favoritos. Al final del recorrido, el libro regresó a la {c}. Allí quedará disponible para nuevas {d}.",items:{
- a:{shown:"aulas",answer:"aulas",options:["Aulas","aulas"],tag:"Mayúsculas",rule:"Los sustantivos comunes dentro de la oración se escriben con minúscula."},
- b:{shown:"recomendación",answer:"recomendación",options:["Recomendación","recomendación"],tag:"Mayúsculas",rule:"Los sustantivos comunes dentro de la oración se escriben con minúscula."},
- c:{shown:"biblioteca",answer:"biblioteca",options:["Biblioteca","biblioteca"],tag:"Mayúsculas",rule:"Los sustantivos comunes dentro de la oración se escriben con minúscula."},
- d:{shown:"lecturas",answer:"lecturas",options:["Lecturas","lecturas"],tag:"Mayúsculas",rule:"Los sustantivos comunes dentro de la oración se escriben con minúscula."}}},
- {title:"La ciudad celebró una fecha especial",cat:"Historia",colors:["#e9c4a0","#b4c5e5"],icons:["🏛️","🇦🇷","📜"],caption:"La jornada incluyó relatos, música y actividades para las familias.",text:"El acto recordó un hecho importante de la historia {a}. Los estudiantes prepararon una línea de tiempo y leyeron documentos. La directora destacó el valor de la {b} y la participación. Al finalizar, todos compartieron una {c} tradicional y escucharon canciones {d}.",items:{
- a:{shown:"argentina",answer:"argentina",options:["Argentina","argentina"],tag:"Mayúsculas",rule:"En este uso, argentina funciona como adjetivo gentilicio y se escribe con minúscula."},
- b:{shown:"memoria",answer:"memoria",options:["Memoria","memoria"],tag:"Mayúsculas",rule:"Los sustantivos comunes se escriben con minúscula dentro de la oración."},
- c:{shown:"merienda",answer:"merienda",options:["Merienda","merienda"],tag:"Mayúsculas",rule:"Los sustantivos comunes se escriben con minúscula dentro de la oración."},
- d:{shown:"patrias",answer:"patrias",options:["Patrias","patrias"],tag:"Mayúsculas",rule:"Los adjetivos comunes dentro de la oración se escriben con minúscula."}}},
- {title:"Un taller enseña a reparar bicicletas",cat:"Tecnología y comunidad",colors:["#b5d9d1","#f0c995"],icons:["🚲","🔧","🧰"],caption:"La propuesta busca promover la movilidad y el cuidado de los objetos.",text:"En el club comenzó un taller para aprender a {a} bicicletas. Los participantes conocerán las herramientas y sus {b}. También practicarán cómo ajustar los frenos y revisar las {c}. La actividad será gratuita y abierta a toda la {d}.",items:{
- a:{shown:"reparár",answer:"reparar",options:["reparár","reparar"],tag:"Tildación",rule:"Los infinitivos terminados en -ar no llevan tilde: reparar."},
- b:{shown:"funciones",answer:"funciones",options:["Funciones","funciones"],tag:"Mayúsculas",rule:"Los sustantivos comunes dentro de la oración se escriben con minúscula."},
- c:{shown:"ruedas",answer:"ruedas",options:["Ruedas","ruedas"],tag:"Mayúsculas",rule:"Los sustantivos comunes dentro de la oración se escriben con minúscula."},
- d:{shown:"comunidad",answer:"comunidad",options:["Comunidad","comunidad"],tag:"Mayúsculas",rule:"Los sustantivos comunes se escriben con minúscula dentro de la oración."}}},
- {title:"Una exposición muestra fotografías antiguas",cat:"Historia local",colors:["#d6c5aa","#a9bdd2"],icons:["📷","🕰️","🖼️"],caption:"Las imágenes permiten comparar cómo cambió el barrio con el tiempo.",text:"La muestra reúne fotografías de la {a} del barrio. Algunas imágenes tienen más de cien años. Los visitantes podrán reconocer edificios y {b} que todavía existen. Cada fotografía incluye una breve {c}. La exposición estará abierta hasta el {d}.",items:{
- a:{shown:"historia",answer:"historia",options:["Historia","historia"],tag:"Mayúsculas",rule:"Los sustantivos comunes se escriben con minúscula dentro de la oración."},
- b:{shown:"plazas",answer:"plazas",options:["Plazas","plazas"],tag:"Mayúsculas",rule:"Los sustantivos comunes dentro de la oración se escriben con minúscula."},
- c:{shown:"descripción",answer:"descripción",options:["Descripción","descripción"],tag:"Mayúsculas",rule:"Los sustantivos comunes dentro de la oración se escriben con minúscula."},
- d:{shown:"sabado",answer:"sábado",options:["sabado","sábado"],tag:"Tildación",rule:"Sábado es una palabra esdrújula y lleva tilde."}}},
- {title:"Los estudiantes preparan una guía de turismo",cat:"Geografía",colors:["#b4d8ed","#c4d6a2"],icons:["🗺️","🧭","🏞️"],caption:"La guía recomienda lugares para conocer y cuidar.",text:"El curso elaboró una guía para recorrer la provincia de {a}. Incluyeron mapas, fotografías y {b} de cada sitio. También señalaron caminos para llegar y consejos para cuidar el {c}. La versión digital estará lista en {d}.",items:{
- a:{shown:"cordoba",answer:"Córdoba",options:["cordoba","Córdoba","Cordoba"],tag:"Nombres propios y tildes",rule:"Los nombres de provincias comienzan con mayúscula. Córdoba lleva tilde."},
- b:{shown:"descripciones",answer:"descripciones",options:["Descripciones","descripciones"],tag:"Mayúsculas",rule:"Los sustantivos comunes dentro de la oración se escriben con minúscula."},
- c:{shown:"paisaje",answer:"paisaje",options:["Paisaje","paisaje"],tag:"Mayúsculas",rule:"Los sustantivos comunes se escriben con minúscula dentro de la oración."},
- d:{shown:"internet",answer:"internet",options:["Internet","internet"],tag:"Mayúsculas",rule:"La palabra internet puede escribirse con minúscula por ser un nombre común de uso general."}}},
- {title:"Un grupo organiza una maratón de lectura",cat:"Lectura",colors:["#e8c2aa","#c1d3ef"],icons:["📚","⏱️","🏃"],caption:"La propuesta invita a compartir historias durante toda una mañana.",text:"La maratón comenzará a las nueve y tendrá distintas estaciones de lectura. Cada participante podrá elegir un {a}. Los docentes prepararon cuentos, poemas y {b}. Al terminar, los grupos compartirán sus {c}. La actividad busca despertar el {d} por los libros.",items:{
- a:{shown:"relato",answer:"relato",options:["Relato","relato"],tag:"Mayúsculas",rule:"Los sustantivos comunes dentro de la oración se escriben con minúscula."},
- b:{shown:"adivinanzas",answer:"adivinanzas",options:["Adivinanzas","adivinanzas"],tag:"Mayúsculas",rule:"Los sustantivos comunes dentro de la oración se escriben con minúscula."},
- c:{shown:"opiniones",answer:"opiniones",options:["Opiniones","opiniones"],tag:"Mayúsculas",rule:"Los sustantivos comunes dentro de la oración se escriben con minúscula."},
- d:{shown:"interés",answer:"interés",options:["Interés","interés"],tag:"Mayúsculas",rule:"Los sustantivos comunes dentro de la oración se escriben con minúscula."}}},
- {title:"La escuela recibió una visita especial",cat:"Comunidad",colors:["#e7c1d1","#b9d4be"],icons:["👩‍🔬","🏫","🔭"],caption:"Una investigadora conversó con los chicos sobre su trabajo.",text:"La científica {a} visitó la escuela para conversar con los estudiantes. Contó cómo comenzó a investigar y mostró algunos {b}. Los chicos prepararon preguntas sobre el {c} y la exploración espacial. Al final, le entregaron una tarjeta de {d}.",items:{
- a:{shown:"maría",answer:"María",options:["maría","María"],tag:"Nombres propios",rule:"Los nombres propios de personas comienzan con mayúscula."},
- b:{shown:"instrumentos",answer:"instrumentos",options:["Instrumentos","instrumentos"],tag:"Mayúsculas",rule:"Los sustantivos comunes dentro de la oración se escriben con minúscula."},
- c:{shown:"universo",answer:"universo",options:["Universo","universo"],tag:"Mayúsculas",rule:"Los sustantivos comunes se escriben con minúscula dentro de la oración."},
- d:{shown:"agradecimiento",answer:"agradecimiento",options:["Agradecimiento","agradecimiento"],tag:"Mayúsculas",rule:"Los sustantivos comunes dentro de la oración se escriben con minúscula."}}},
- {title:"El vivero municipal entregará árboles",cat:"Ambiente",colors:["#b3d8a9","#d8d19b"],icons:["🌳","🌿","🪴"],caption:"La iniciativa promueve la plantación de especies nativas.",text:"El vivero municipal entregará árboles para las veredas. Cada familia recibirá una ficha con información sobre el {a} y los cuidados necesarios. Se recomienda regar las plantas con {b} y evitar dañar las raíces. La inscripción será {c} y comenzará el próximo {d}.",items:{
- a:{shown:"crecimiento",answer:"crecimiento",options:["Crecimiento","crecimiento"],tag:"Mayúsculas",rule:"Los sustantivos comunes dentro de la oración se escriben con minúscula."},
- b:{shown:"frecuencia",answer:"frecuencia",options:["Frecuencia","frecuencia"],tag:"Mayúsculas",rule:"Los sustantivos comunes se escriben con minúscula dentro de la oración."},
- c:{shown:"gratuita",answer:"gratuita",options:["Gratuita","gratuita"],tag:"Mayúsculas",rule:"Los adjetivos comunes dentro de la oración se escriben con minúscula."},
- d:{shown:"martes",answer:"martes",options:["Martes","martes"],tag:"Mayúsculas",rule:"Los días de la semana se escriben con minúscula."}}}
+const mk=(s,a,tag,rule,x)=>({shown:s,answer:a,options:x?[s,a,x]:[s,a],tag,rule});
+const sp=(s,a,r)=>mk(s,a,"Ortografía",r);
+const mp=(s,a,x)=>mk(s,a,"M antes de P",`Antes de p siempre se escribe m: ${a}.`,x);
+const mb=(s,a,x)=>mk(s,a,"M antes de B",`Antes de b siempre se escribe m: ${a}.`,x);
+const nv=(s,a,x)=>mk(s,a,"N antes de V",`Antes de v se escribe n: ${a}.`,x);
+const cz=(s,a,r,x)=>mk(s,a,"Uso de C, Z y S",r,x);
+const ac=(s,a,r,x)=>mk(s,a,"Tildación",r,x);
+const pu=(s,a,r,x)=>mk(s,a,"Puntuación",r,x);
+const PF="Cuando una idea termina se cierra con punto. La oración siguiente empieza con mayúscula.";
+const PE="En una enumeración los elementos se separan con coma; solo los dos últimos se unen con y.";
+const PN="El punto final cierra el texto.";
+const S=(title,cat,colors,icons,caption,text,items)=>({title,cat,colors,icons,caption,text,items});
+
+const FACIL=[
+S("Un día en la escuela","Vida escolar",["#9bd8f4","#b7d8a8"],["🏫","🎒","📖"],"Los chicos comenzaron la jornada con muchas ganas de aprender.",
+"Los chicos llegaron a la {a} de entrada. Cada uno llevó su {b} con los útiles. La maestra les contó una {c} muy divertida. Después fueron a regar la {d}.",
+{a:sp("ora","hora","Hora se escribe con h inicial, aunque no se pronuncie."),b:sp("mochilla","mochila","Mochila se escribe con una sola l."),c:sp("istoria","historia","Historia se escribe con h inicial."),d:sp("uerta","huerta","Huerta se escribe con h delante de ue, como huevo y hueso.")}),
+S("Una excursión al parque","Comunidad",["#b9e1a4","#9fc3ee"],["🌳","🦆","🚌"],"El curso pasó una mañana al aire libre.",
+"El curso {a} al parque con mucha alegría. Allí vieron patos y mucha {b} paseando. Un guardaparques les mostró un nido en la {c} de un árbol. Por suerte, no cayó ni una gota de {d}.",
+{a:sp("biajó","viajó","Viajó se escribe con v, igual que viaje y viajero."),b:sp("jente","gente","Gente se escribe con g, como general y gigante."),c:sp("rrama","rama","Al comienzo de una palabra se escribe una sola r, aunque suene fuerte."),d:sp("yuvia","lluvia","Lluvia se escribe con ll.")}),
+S("Un cumpleaños en el aula","Vida escolar",["#f4c4a1","#e7c1d1"],["🎂","🎈","🎁"],"Todo el grado festejó junto.",
+"Hoy festejamos el {a} de Valentina. Trajo una torta {b} de chocolate. Todos cantaron y soplaron las {c}. Después abrimos los {d} con mucho cuidado.",
+{a:sp("cumpleanos","cumpleaños","Cumpleaños se escribe con ñ."),b:sp("ermosa","hermosa","Hermosa se escribe con h inicial."),c:sp("belitas","velitas","Velitas viene de vela, que se escribe con v."),d:sp("rejalos","regalos","Regalos se escribe con g, igual que regalar.")}),
+S("Una aventura de piratas","Lectura",["#e6c4a2","#b9d5c6"],["🏴‍☠️","⛵","📕"],"Los cuentos de piratas son los favoritos de la biblioteca.",
+"Hoy leímos un {a} sobre piratas. Viajaban en un {b} muy antiguo. Una tarde {c} a una isla desierta. Allí {d} un tesoro.",
+{a:sp("livro","libro","Libro se escribe con b, igual que biblioteca y librería."),b:sp("varco","barco","Barco se escribe con b."),c:sp("yegaron","llegaron","Llegaron se escribe con ll."),d:sp("allaron","hallaron","Hallaron, del verbo hallar, se escribe con h inicial y ll.")}),
+S("Un partido en el recreo","Deportes",["#a8d6c0","#f3d58e"],["⚽","🏫","🥅"],"El recreo fue de los más divertidos.",
+"En el recreo armamos un {a} de fútbol. Un nene pateó la pelota tan fuerte que casi rompe una {b}. La maestra nos pidió que no {c} por el pasillo.",
+{a:sp("ekipo","equipo","Equipo se escribe con qu: la u no se pronuncia."),b:sp("bentana","ventana","Ventana se escribe con v."),c:sp("coramos","corramos","Corramos lleva rr entre vocales porque suena fuerte.")}),
+S("Una huerta en el patio","Ambiente",["#b9e1a4","#f2d48e"],["🌱","🥕","💧"],"La huerta crece con el trabajo de todos.",
+"Los chicos sembraron {a} en la huerta. Todos los días {b} agua con una regadera. Esperan cosechar tomates {c}.",
+{a:sp("berduras","verduras","Verduras se escribe con v."),b:sp("yevan","llevan","Llevan se escribe con ll."),c:sp("jigantes","gigantes","Gigantes se escribe con g, igual que gigante.")})
 ];
-let activeStories=STORIES;
+
+const NORMAL=[
+S("Un torneo para toda la escuela","Deportes",["#9bd8f4","#77bd78"],["🏟️","⚽","📣"],"La comunidad escolar acompañó a los equipos.",
+"El domingo pasado se jugó la final en el {a} de deportes. Los alumnos llevaron un gran {b} para alentar a su equipo. Hubo mucho {c} en la tribuna. Después de la final hubo un {d} para todos.",
+{a:mp("canpo","campo","cambo"),b:mb("tanbor","tambor","tampor"),c:cz("entuciasmo","entusiasmo","Entusiasmo se escribe con s.","entuziasmo"),d:cz("almuerso","almuerzo","Almuerzo se escribe con z, como almorzar.","almuerco")}),
+S("Un invento para cuidar el ambiente","Ciencia y ambiente",["#d8c2ff","#86d5c5"],["🔬","♻️","💡"],"El proyecto busca reducir los residuos de la escuela.",
+"Los chicos de quinto grado enviaron una {a} a la feria de ciencias. Su nuevo {b} servirá para reciclar plástico. Lo usarán varias {c} durante la semana. Todos tienen mucha {d}.",
+{a:nv("inbitación","invitación","imvitación"),b:nv("imbento","invento","inbento"),c:cz("veses","veces","Las palabras terminadas en z cambian la z por c en el plural: vez → veces.","vezes"),d:cz("ilución","ilusión","Ilusión se escribe con s: ilusionar, ilusionado.","iluzión")}),
+S("Un viaje de estudios a Mendoza","Comunidad",["#ffd49a","#9fc3ee"],["🏔️","🍇","🚌"],"El grupo conocerá paisajes de la región cuyana.",
+"En el {a} viajarán a Mendoza. El recorrido {b} el lunes por la mañana. Todos esperan con ganas la {c}. Llevarán {d} y ropa de abrigo.",
+{a:nv("imbierno","invierno","inbierno"),b:mp("enpezará","empezará","empesará"),c:cz("excurción","excursión","Excursión se escribe con s: excursionista.","excurzión"),d:mb("sonbreros","sombreros","sompreros")}),
+S("Un concurso de cuentos fantásticos","Cultura",["#c2b1f7","#f5a9c9"],["📚","🐉","✨"],"Los relatos elegidos se compartirán con la comunidad.",
+"Un jurado elegirá el cuento ganador. El premio será un libro {a}. Habrá {b} en vivo. Un músico tocará la {c} para cerrar el acto. Todos se irán con muchas {d}.",
+{a:mb("asonbroso","asombroso","asombrozo"),b:cz("cansiones","canciones","Canciones se escribe con c en la terminación -ciones.","canziones"),c:mp("tronpeta","trompeta","trompeda"),d:cz("sonrizas","sonrisas","Sonrisas se escribe con s: sonreír, sonrisa.","sonrisaz")}),
+S("La biblioteca sumó nuevos libros","Lectura",["#f4c4a1","#b7d8a8"],["📚","📖","🦉"],"Los ejemplares ya están disponibles para los lectores.",
+"La biblioteca recibió una {a} de libros. Los chicos podrán {b} sobre cada lectura. La semana próxima van a {c} un taller. Será en un {d} muy tranquilo.",
+{a:cz("donasión","donación","Donación se escribe con c en la terminación -ción.","donazión"),b:nv("conbersar","conversar","comversar"),c:mp("enpezar","empezar","empesar"),d:mb("anbiente","ambiente","ampiente")}),
+S("Una jornada para aprender sobre el agua","Ciencias",["#a9d9f1","#7db7d2"],["💧","🌎","🧪"],"La propuesta invita a cuidar un recurso fundamental.",
+"Los grupos prepararon afiches para evitar la {a} del agua. Cada equipo presentó sus {b}. Los carteles fueron muy {c}. Hubo {d} para todos.",
+{a:cz("contaminasión","contaminación","Contaminación se escribe con c en la terminación -ción.","contaminazión"),b:cz("concluciones","conclusiones","Conclusiones se escribe con s: concluir, conclusión.","concluziones"),c:nv("inbentivos","inventivos","imventivos"),d:mp("enpanadas","empanadas","empamadas")})
+];
+
+const DIFICIL=[
+S("La escuela organizó un gran torneo","Deportes",["#9bd8f4","#77bd78"],["🏟️","⚽","📣"],"La comunidad escolar acompañó a los equipos.",
+"El domingo pasado se jugó la final en el {a} de la escuela. Hubo mucha {c} y {e} Todos los alumnos llevaron un gran {b} para alentar a su equipo. Al final, los jugadores {d} abrazaron a sus familias y bailaron.",
+{a:mp("canpo","campo","cambo"),b:mb("tanbor","tambor","tampor"),c:ac("musica","música","Música es esdrújula: todas las esdrújulas llevan tilde.","músíca"),d:pu("saltaron","saltaron,",PE,"saltaron."),e:pu("alegría","alegría.",PF,"alegría,")}),
+S("Un invento para cuidar el ambiente","Ciencia y ambiente",["#d8c2ff","#86d5c5"],["🔬","♻️","💡"],"El proyecto busca reducir los residuos de la escuela.",
+"Los chicos de quinto grado enviaron una {a} a la feria de ciencias. Su nuevo {b} servirá para reciclar plástico varias {c} durante la semana. Los materiales son {d} de conseguir. Los chicos esperan ganar un {e}",
+{a:nv("inbitación","invitación","imvitación"),b:nv("imbento","invento","inbento"),c:cz("veses","veces","Las palabras terminadas en z cambian la z por c en el plural: vez → veces.","vezes"),d:ac("facíles","fáciles","Fáciles es esdrújula: la fuerza está en la primera sílaba y la tilde va en la a.","facilés"),e:pu("premio","premio.",PN,"premio,")}),
+S("Un viaje de estudios a Mendoza","Comunidad",["#ffd49a","#9fc3ee"],["🏔️","🍇","🚌"],"El grupo conocerá paisajes de la región cuyana.",
+"Durante el {a} viajarán a Mendoza para visitar los viñedos. Todos tienen mucha {b} de conocer la cordillera. Llevarán ropa {c} gorros y guantes. Los docentes {d} viajarán con el grupo. Será una experiencia {e}",
+{a:nv("imbierno","invierno","inbierno"),b:cz("ilución","ilusión","Ilusión se escribe con s: ilusionar, ilusionado.","iluzión"),c:pu("abrigada","abrigada,",PE,"abrigada."),d:ac("tambien","también","También es aguda terminada en n: lleva tilde.","tambíen"),e:pu("inolvidable","inolvidable.",PN,"inolvidable,")}),
+S("Un concurso de cuentos fantásticos","Cultura",["#c2b1f7","#f5a9c9"],["📚","🐉","✨"],"Los relatos elegidos se compartirán con la comunidad.",
+"Un jurado elegirá el cuento {a} La premiación será el viernes por la tarde. El premio será un libro {b} y una {c} para toda la clase. Habrá una {d} en vivo y un {e} muy {f}",
+{a:pu("ganador","ganador.",PF,"ganador,"),b:mb("asonbroso","asombroso","asombrozo"),c:cz("sorpreza","sorpresa","Sorpresa se escribe con s.","sorpreca"),d:ac("cancion","canción","Canción es aguda terminada en n: lleva tilde.","cáncion"),e:ac("espectaculo","espectáculo","Espectáculo es esdrújula: lleva tilde en la a.","espectaculó"),f:pu("divertido","divertido.",PN,"divertido,")}),
+S("Una huerta que crece entre todos","Ambiente",["#b9e1a4","#f2d48e"],["🌱","🥕","🐝"],"Estudiantes y docentes trabajan juntos en la huerta escolar.",
+"Los estudiantes prepararon la tierra y sembraron semillas de {a} lechuga y zanahoria. Ayer {b} a cosechar. La primera {c} será compartida con las {d} familias. Junto a la huerta plantaron {e} frutales. Todos cuidan la {g} de la {f}",
+{a:pu("tomate","tomate,",PE,"tomate."),b:mp("enpezaron","empezaron","empesaron"),c:cz("cocecha","cosecha","Cosecha se escribe con s.","cozecha"),d:ac("demas","demás","Demás lleva tilde en la a.","démas"),e:ac("arboles","árboles","Árboles es esdrújula: lleva tilde en la a.","arbóles"),f:pu("escuela","escuela.",PN,"escuela,"),g:sp("uerta","huerta","Huerta se escribe con h delante de ue, como huevo y hueso.")}),
+S("El museo abrió una muestra interactiva","Cultura y tecnología",["#b9c9ee","#e9c49a"],["🏛️","🖼️","🤖"],"La exposición permite conocer objetos de distintas épocas.",
+"El museo de la ciudad inauguró una muestra sobre {a}. Habrá planos, {b} fotos y objetos de otras épocas. La {c} estará abierta hasta el {d} de diciembre. La entrada es {e} Los chicos pueden ir con su familia. Es una muy buena {f}",
+{a:nv("imbentos","inventos","inbentos"),b:pu("mapas","mapas,",PE,"mapas."),c:cz("exposisión","exposición","Exposición se escribe con c en la terminación -ción.","exposizión"),d:ac("sabado","sábado","Sábado es esdrújula: lleva tilde en la primera a.","sabádo"),e:pu("gratis","gratis.",PF,"gratis,"),f:pu("oportunidad","oportunidad.",PN,"oportunidad,")})
+];
+let activeStories=FACIL;
 let selectedDifficulty="normal";
 const $=s=>document.querySelector(s);
 const state={level:0,score:0,streak:0,solved:0,first:0,errors:0,failed:{},mistakeTags:{},attempts:{},active:null,busy:false,stars:[]};
@@ -470,23 +391,35 @@ function shuffled(list){
 }
 function startGame(difficulty=selectedDifficulty){selectedDifficulty=difficulty;
  document.body.classList.remove("mode-facil","mode-normal","mode-dificil");document.body.classList.add("mode-"+difficulty);
- const modeInfo={facil:["MODO FÁCIL","2 opciones · sin penalización · pistas disponibles"],normal:["MODO NORMAL","3 opciones · puntaje estándar · bonus por racha"],dificil:["MODO DIFÍCIL","sin pistas · cada error resta 35 puntos · mayor recompensa"]};
+ const modeInfo={facil:["MODO FÁCIL","2 opciones · palabras mal escritas · sin penalización · pistas disponibles"],normal:["MODO NORMAL","3 opciones · mp, mb, nv, c, z y s · bonus por racha"],dificil:["MODO DIFÍCIL","errores sin marcar: letras, tildes, comas y puntos · error −35 · falsa alarma −10 · sin pistas"]};
  $("#modeName").textContent=modeInfo[difficulty][0];$("#modeRule").textContent=modeInfo[difficulty][1];
  $("#hintBtn").style.display=difficulty==="dificil"?"none":"";
- const third=Math.ceil(STORIES.length/3);
- const pools={facil:STORIES.slice(0,third),normal:STORIES.slice(third,third*2),dificil:STORIES.slice(third*2)};
- // Cada partida presenta las noticias en un orden diferente.
+ const pools={facil:FACIL,normal:NORMAL,dificil:DIFICIL};
+ $("#instrText").innerHTML=difficulty==="dificil"?"<b>Consejo de redacción:</b> esta vez ningún error está marcado. Leé con atención y tocá las palabras que creas incorrectas (letras, tildes, comas y puntos). Si tocás una que está bien, perdés puntos.":"<b>Consejo de redacción:</b> tocá o hacé clic en cada fragmento subrayado para revisarlo. Podés usar las teclas 1, 2 y 3 para elegir.";
  activeStories=shuffled(pools[difficulty]||pools.normal);
  Object.assign(state,{level:0,score:0,streak:0,solved:0,first:0,errors:0,failed:{},mistakeTags:{},attempts:{},active:null,busy:false,stars:[]});updateScore();show("#gameScreen");loadStory();sound(660)}
+function renderText(s){
+ const hard=selectedDifficulty==="dificil";
+ const tok=w=>`<button class="word plain" type="button" data-plain="1">${escapeHTML(w)}</button>`;
+ const itm=id=>{const it=s.items[id];return `<button class="word${hard?" hid":""}" type="button" id="word-${id}" data-id="${id}" aria-label="Revisar ${escapeHTML(it.shown)}">${escapeHTML(it.shown)}</button>`};
+ if(!hard)return "<p>"+s.text.replace(/\{([a-z])\}/g,(_,id)=>itm(id))+"</p>";
+ return "<p>"+s.text.split(/(\{[a-z]\})/).map(p=>{const m=p.match(/^\{([a-z])\}$/);return m?itm(m[1]):p.split(/\s+/).filter(Boolean).map(tok).join(" ")}).filter(Boolean).join(" ")+"</p>";
+}
 function loadStory(){
  const s=activeStories[state.level],count=Object.keys(s.items).length;
  $("#remaining").textContent=`${count} correcciones`;$("#category").textContent=s.cat;$("#headline").textContent=s.title;$("#caption").textContent=s.caption;
  const ill=$("#illustration");ill.style.setProperty("--c1",s.colors[0]);ill.style.setProperty("--c2",s.colors[1]);ill.innerHTML=s.icons.map(x=>`<span>${x}</span>`).join("");renderTwemoji(ill);
- $("#articleText").innerHTML="<p>"+s.text.replace(/\{([a-z])\}/g,(_,id)=>{const item=s.items[id];return `<button class="word" type="button" id="word-${id}" data-id="${id}" aria-label="Revisar ${item.shown?escapeHTML(item.shown):"signo de puntuación"}">${item.shown?escapeHTML(item.shown):"▯"}</button>`})+"</p>";
+ $("#articleText").innerHTML=renderText(s);
  $("#feedback").innerHTML="";$("#publishBtn").classList.remove("visible");$("#publishBtn").disabled=true;updateProgress();updateDots();closeChoices();
 }
-function updateProgress(){const total=Object.keys(activeStories[state.level].items).length;$("#progressCopy").textContent=`${state.solved} de ${activeStories.reduce((n,s)=>n+Object.keys(s.items).length,0)} correcciones resueltas`;$("#remaining").textContent=`${total-Object.keys(state.attempts).filter(k=>k.startsWith(state.level+"-")&&state.attempts[k].solved).length} pendientes`;}
+function updateProgress(){const total=Object.keys(activeStories[state.level].items).length;$("#progressCopy").textContent=`${state.solved} de ${activeStories.reduce((n,s)=>n+Object.keys(s.items).length,0)} correcciones resueltas`;$("#remaining").textContent=`${total-Object.keys(state.attempts).filter(k=>k.startsWith(state.level+"-")&&state.attempts[k].solved).length} ${selectedDifficulty==="dificil"?"errores por encontrar":"pendientes"}`;}
+function falseAlarm(btn){
+ if(!$("#publishBtn").disabled)return;closeChoices();
+ state.errors++;state.streak=0;state.score=Math.max(0,state.score-10);state.mistakeTags["Falsas alarmas (palabras que estaban bien)"]=(state.mistakeTags["Falsas alarmas (palabras que estaban bien)"]||0)+1;
+ updateScore();sound(170,.2,"triangle",.18);btn.classList.remove("wrongflash");void btn.offsetWidth;btn.classList.add("wrongflash");toast("Ese fragmento está bien. ¡Seguí buscando! (−10)");
+}
 function openChoices(btn){
+ if(btn.dataset.plain){if(!state.busy)falseAlarm(btn);return;}
  if(state.busy||btn.classList.contains("solved"))return;
  closeChoices();const id=btn.dataset.id,item=activeStories[state.level].items[id];state.active={id,btn};
  btn.classList.add("selected");const pop=$("#choicePop"),holder=$("#choices");holder.innerHTML="";
@@ -540,11 +473,11 @@ function finishGame(){
 function review(){const tags=Object.entries(state.mistakeTags);if(!tags.length){toast("¡No hay errores para repasar!");return;}$("#report").scrollIntoView({behavior:"smooth",block:"center"});}
 $("#articleText").addEventListener("click",e=>{const b=e.target.closest(".word");if(b)openChoices(b)});
 $("#hintBtn").addEventListener("click",()=>{if(!state.active){toast("Primero seleccioná una palabra subrayada.");return;}const item=activeStories[state.level].items[state.active.id];toast("Pista: "+item.tag+". "+item.rule);sound(440,.08);});
-$("#publishBtn").addEventListener("click",publish);document.querySelectorAll(".difficulty-btn").forEach(btn=>btn.addEventListener("click",()=>startGame(btn.dataset.difficulty)));$("#againBtn").addEventListener("click",startGame);$("#reviewBtn").addEventListener("click",review);
+$("#publishBtn").addEventListener("click",publish);document.querySelectorAll(".difficulty-btn").forEach(btn=>btn.addEventListener("click",()=>startGame(btn.dataset.difficulty)));$("#againBtn").addEventListener("click",()=>startGame(selectedDifficulty));$("#reviewBtn").addEventListener("click",review);
 
-$("#infoBtn").addEventListener("click",()=>{const d=document.querySelector(".teacher");if($("#endScreen").classList.contains("active")){d.open=!d.open;d.scrollIntoView({behavior:"smooth",block:"center"});}else toast("La ficha docente está disponible al finalizar la edición.");});
+$("#infoBtn")?.addEventListener("click",()=>{const d=document.querySelector(".teacher");if($("#endScreen").classList.contains("active")){d.open=!d.open;d.scrollIntoView({behavior:"smooth",block:"center"});}else toast("La ficha docente está disponible al finalizar la edición.");});
 document.addEventListener("pointerdown",e=>{if(state.active&&!e.target.closest("#choicePop")&&!e.target.closest(".word")&&!e.target.closest("#hintBtn"))closeChoices();});
-document.addEventListener("keydown",e=>{if(state.active){if(e.key==="Escape"){closeChoices();state.active.btn.focus();}if(["1","2","3"].includes(e.key)){const b=[...$("#choices").children].filter(x=>!x.disabled)[Number(e.key)-1];b?.click();}}});
+document.addEventListener("keydown",e=>{if(state.active){if(e.key==="Escape"){closeChoices();state.active.btn.focus();}if(["1","2","3","4"].includes(e.key)){const b=[...$("#choices").children].filter(x=>!x.disabled)[Number(e.key)-1];b?.click();}}});
 addEventListener("resize",()=>{if(state.active)positionPop(state.active.btn)});addEventListener("scroll",()=>{if(state.active)closeChoices()},{passive:true});
 const canvas=$("#confetti"),ctx=canvas.getContext("2d");let particles=[],frame=0;
 function resizeCanvas(){canvas.width=innerWidth*devicePixelRatio;canvas.height=innerHeight*devicePixelRatio;ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0)}resizeCanvas();addEventListener("resize",resizeCanvas);
