@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Coche Robot: aprende a programar</title>
+<title>Coche Secuenciador: aprende a programar</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Lilita+One&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -406,8 +406,8 @@ function gen(i){
  throw 0}
 const NL=12,ORD=[...Array(4)].flatMap((_,w)=>[...Array(NL)].map((_,k)=>k<9?w*9+k:36+w*3+k-9)),WK=i=>{const p=ORD.indexOf(i);return[p/NL|0,p%NL]},NXT=i=>ORD[ORD.indexOf(i)+1],MX=ORD.length*3;
 let B=[],V=0,mu=false,li=0,L,cells,prog=[],sel=null,run=false,sp=1,car={},got=false,st=null,hints=0,dr=null,ac;
-try{const o=JSON.parse(localStorage.getItem("crc2")||"{}");B=o.b||[];V=o.v||0;mu=!!o.m}catch(e){}
-const sv=()=>{try{localStorage.setItem("crc2",JSON.stringify({b:B,v:V,m:mu}))}catch(e){}};
+try{const o=JSON.parse(localStorage.getItem("crc2")||"{}");mu=!!o.m}catch(e){}
+const sv=()=>{try{localStorage.setItem("crc2",JSON.stringify({m:mu}))}catch(e){}};
 const tot=()=>B.reduce((a,b)=>a+(b||0),0);
 const stars=n=>"★".repeat(n)+"☆".repeat(3-n);
 const count=()=>prog.reduce((a,b)=>a+1+(b.c?b.c.length:0),0);
@@ -427,10 +427,10 @@ function home(){
  const WD=["Secuencias y semáforos","Aprende a repetir","Obstáculos en la ciudad","Combina todo lo aprendido"];
  const tr=(l,t,k)=>`<div class="an" style="left:${l}%;top:${t}px"><i class="bb tree">${k?PINE:TREE}</i></div>`;
  const trees=[[5,36,0],[20,26,1],[38,34,0],[57,24,1],[75,36,0],[92,28,1],[12,200,1],[31,212,0],[52,204,1],[70,214,0],[88,206,1]].map(a=>tr(...a)).join("");
- $("#h").innerHTML=`<header id="hh"><i class="sun"></i><i class="cl c1"></i><i class="cl c2"></i><i class="cl c3"></i><i class="cl" style="top:46%;scale:1.3;animation-duration:90s;animation-delay:-50s"></i><div id="scene"><div id="plane"><div class="rdp"></div>${trees}<div class="dvr">${car3(...VH[V].slice(1))}</div></div></div><h1 class="logo" aria-label="Coche Robot">${[..."Coche Robot"].map((c,i)=>`<span aria-hidden="true" style="--d:${i*55}ms">${c==" "?"&nbsp;":c}</span>`).join("")}</h1><p class="sub">Programa el coche con bloques, recoge monedas y llega a la bandera.</p></header>`+
+ $("#h").innerHTML=`<header id="hh"><i class="sun"></i><i class="cl c1"></i><i class="cl c2"></i><i class="cl c3"></i><i class="cl" style="top:46%;scale:1.3;animation-duration:90s;animation-delay:-50s"></i><div id="scene"><div id="plane"><div class="rdp"></div>${trees}<div class="dvr">${car3(...VH[V].slice(1))}</div></div></div><h1 class="logo" aria-label="Coche Secuenciador">${[..."Coche Secuenciador"].map((c,i)=>`<span aria-hidden="true" style="--d:${i*55}ms">${c==" "?"&nbsp;":c}</span>`).join("")}</h1><p class="sub">Programa el coche con bloques, recoge monedas y llega a la bandera.</p></header>`+
  `<div id="bar"><div class="pill"><b><svg viewBox="0 0 24 24">${SS}</svg>${T} / ${MX}</b><div><small>${nv<0?"¡Tienes todos los vehículos!":"Próximo vehículo: "+VH[nv][0]+" ("+(nv*5-T)+" ★ más)"}</small><div class="pbar"><i style="width:${T/MX*100}%"></i></div></div></div><button class="play" data-lv="${nx}">▶ ${T?"Continuar":"¡Jugar!"}</button></div>`+
  `<div class="wrap"><div id="wl">`+WN.map((n,w)=>{const t=ORD.slice(w*NL,w*NL+NL).reduce((a,i)=>a+(B[i]||0),0);return `<section class="wc" style="--w:${WC[w]}"><div class="wh"><span class="wi2">${WI[w]}</span><div><h2>${n}</h2><p>${WD[w]}</p></div><div class="wt">★ ${t} / ${NL*3}<div class="pbar"><i style="width:${t/(NL*3)*100}%"></i></div></div></div><div class="lg2">${[...Array(NL)].map((_,k)=>{const i=ORD[w*NL+k],s=B[i]||0;return `<button class="mb${i==nx&&!s?" nx":""}" style="--i:${i}" data-lv="${i}" aria-label="Reto ${k+1}, ${s} estrellas">${k+1}${ST(s)}</button>`}).join("")}</div></section>`}).join("")+`</div>`+
- `<section class="gc"><div class="wh"><span class="wi2" style="--w:#f08c00">🚗</span><div><h2>Garaje</h2><p>Un vehículo nuevo cada 5 estrellas</p></div></div><div class="gg">${VH.map((v,i)=>`<button class="vc" data-v="${i}" aria-pressed="${i==V}"${i*5>T?" disabled":""}><div class="pvw"><div class="pv">${car3(...v.slice(1))}</div></div>${i*5>T?"🔒 "+i*5+" ★":v[0]}</button>`).join("")}</div></section><p style="text-align:center;font-size:12px;margin:14px 0 0;color:#5d6d92">Sprites de árboles, ovejas y casas: Twemoji (jdecked/twemoji, Twitter) © CC-BY 4.0</p></div>`;
+ `<section class="gc"><div class="wh"><span class="wi2" style="--w:#f08c00">🚗</span><div><h2>Garaje</h2><p>Un vehículo nuevo cada 5 estrellas</p></div></div><div class="gg">${VH.map((v,i)=>`<button class="vc" data-v="${i}" aria-pressed="${i==V}"${i*5>T?" disabled":""}><div class="pvw"><div class="pv">${car3(...v.slice(1))}</div></div>${i*5>T?"🔒 "+i*5+" ★":v[0]}</button>`).join("")}</div></section></div>`;
  view("#h")}
 function place(){const c=$("#car");c.style.cssText=`left:${car.x/L.W*100}%;top:${car.y/L.H*100}%;width:${100/L.W}%;height:${100/L.H}%;--t:${.4/(sp*1.33)}s`;c.firstChild.style.transform=`rotate(${car.deg}deg)`}
 function hzs(t){document.querySelectorAll(".hz").forEach(h=>h.classList.toggle("on",blocked(h.dataset.h,t)));const e=$("#tn");if(e)e.textContent=t}
