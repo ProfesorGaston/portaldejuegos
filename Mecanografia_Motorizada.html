@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mecanografía Motorizada</title>
+<title>Mecanografía Motorizada - Prof. Gastón</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Figtree:wght@500;700;800&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
@@ -252,6 +252,38 @@ tr.w td{background:var(--signal)}
 #panels .p{display:flex;flex-direction:column;justify-content:center}
 #panels .tg{font-size:clamp(28px,3vw,50px)}
 
+/* La pista mantiene el mismo tamaño con 1, 2, 3 o 4 jugadores:
+   el panel de jugadores ocupa siempre la altura de la pista y no la agranda */
+@media(min-width:861px){
+  #panels{contain:size;min-height:0;grid-auto-rows:minmax(0,1fr)}
+  #panels .p{min-height:0;overflow:hidden}
+}
+#panels[data-n="3"]{gap:12px}
+#panels[data-n="4"]{gap:10px}
+#panels[data-n="3"] .p,#panels[data-n="4"] .p{padding:8px 14px 10px}
+#panels[data-n="3"] .ph h3,#panels[data-n="4"] .ph h3{font-size:19px}
+#panels[data-n="3"] .spd,#panels[data-n="4"] .spd{font-size:24px}
+#panels[data-n="3"] .brow,#panels[data-n="4"] .brow{margin-top:6px}
+#panels[data-n="3"] .bar,#panels[data-n="4"] .bar{height:13px}
+#panels[data-n="3"] .keys,#panels[data-n="4"] .keys{margin-top:5px}
+#panels[data-n="3"] .tg,#panels[data-n="4"] .tg{margin-top:6px;font-size:clamp(22px,2.4vw,36px)}
+#panels[data-n="3"] .nx,#panels[data-n="4"] .nx{font-size:clamp(14px,1.6vw,20px)}
+#panels[data-n="4"] .tg{font-size:clamp(20px,2.1vw,30px)}
+#panels[data-n="4"] .nx{font-size:clamp(13px,1.4vw,17px)}
+/* Pantallas angostas: el panel va debajo de la pista con alto fijo para cualquier cantidad de jugadores */
+@media(max-width:860px){
+  #panels{height:300px;grid-auto-rows:minmax(0,1fr);gap:8px}
+  #panels .p{min-height:0;overflow:hidden}
+  #panels[data-n="3"]{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #panels[data-n="4"]{grid-template-columns:repeat(3,minmax(0,1fr))}
+  #panels[data-n="3"] .p.me{grid-column:1/-1}
+  #panels[data-n="4"] .p.me{grid-column:1/-1}
+  #panels[data-n="3"] .p:not(.me) .tag,#panels[data-n="4"] .p:not(.me) .tag{display:none}
+  #panels[data-n="4"] .p:not(.me) .ph h3{font-size:15px}
+  #panels[data-n="4"] .p:not(.me) .spd{font-size:18px}
+  #panels[data-n="4"] .p:not(.me) .spd small{display:none}
+}
+
 .tg,.nx,.keys i{text-transform:uppercase}
 .tg{letter-spacing:.08em}
 
@@ -397,6 +429,7 @@ function lbStart(){
 function lbDraw(){
   const el=$("#rooms");if(!el)return;
   const now=Date.now(),rs=Object.values(LB.rooms).filter(r=>r.k==="r"&&r.id!==LB.code&&now-r.seen<15000);
+  const rk=r=>r.g?2:r.n>=r.mx?1:0;rs.sort((x,y)=>rk(x)-rk(y));
   if(lbOk()&&!NET&&/^Sin conexión/.test($("#lmsg").textContent))$("#lmsg").textContent="";
   const nb=LB.ms.filter(m=>m.connected).length;
   $("#cnt").textContent=rs.length;$("#lbst").textContent=lbOk()?"En línea ("+nb+"/"+LB.ms.length+")":"Conectando…";
@@ -644,7 +677,7 @@ function newGame(on){
     rs.push(r);
   }
   G={rs,n,len:on?on.len:OPT.len[sel.len][1],time:0,cd:3.99,state:"count",online:!!on,me:on?on.me:0,tx:0,gid:on?on.gid:0,ids:on?on.ids:null};
-  const P=$("#panels");P.innerHTML="";
+  const P=$("#panels");P.innerHTML="";P.dataset.n=rs.length;
   rs.forEach(r=>{
     const d=document.createElement("div");d.className="p"+(r.h?" me":"");d.id="p"+r.id;d.style.setProperty("--c",r.c);
     d.innerHTML=`<div class="ph"><h3>${esc(r.name)}</h3><span class="tag">${r.remote?"Rival":r.h?"Vos":"Compu"}</span><div class="spd"><b class="sp">0</b><small>km/h</small></div></div>`
